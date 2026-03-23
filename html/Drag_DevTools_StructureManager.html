@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="viewport" content="user-scalable=no">
+        <link rel="icon" href="../icon/icon.png" type="image/png">
+        <link rel="apple-touch-icon" href="../icon/icon.png">
+		<link href="../css/Drag_DevTools.css" rel="stylesheet">
+		<style>
+			html {
+				overflow-y: auto;
+			}
+
+			#content {
+				height: 100%;
+				margin: 0;
+			}
+			
+			#inputsContainer {
+				display: flex;
+				flex-direction: column;
+				padding: 1em 1em 4.375em 1em;
+				border-right: 0.0625em solid white;
+			}
+			
+			#inputsContainer > * {
+				margin-right: 1em;
+				margin-bottom: 1em;
+			}
+			
+			.inputContainer {
+				display: flex;
+				flex-direction: column;
+			}
+			
+			.inputDesc {
+				text-align: center;
+				font-size: 0.8125em;
+			}
+			
+			.inputWrapper {
+				display: flex; 
+				align-items: center; 
+				justify-content: center; 
+			}
+			
+			.inputWrapper > * {
+				margin-right: 0.3125em;
+				margin-bottom: 0.3125em;
+			}
+			
+			.structWrapper {
+				display: grid; 
+				grid-template-columns: 500fr 1fr 1fr; 
+				align-items: center; 
+				justify-content: center; 
+				gap: 0.3125em; 
+				max-width: fit-content;
+			}
+			
+			.structWrapper > * {
+				margin-right: 0.3125em;
+				margin-bottom: 0.3125em;
+			}
+			
+			.structWrapper > *:last-child {
+				margin-right: 0em;
+				margin-bottom: 0em;
+			}
+			
+			#bottom-container {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				padding: 1em;
+				padding-right: 4em;
+				border-top: 0.125em solid rebeccapurple;
+				background-color: var(--background-color);
+				display: flex;
+				justify-content: flex-end;
+				z-index: 10;
+			}
+			
+			#bottom-container > * {
+				margin-right: 1.5em;
+			}
+			
+			#bottom-container > *:last-child {
+				margin-right: 0em;
+			}
+
+			#bottom-container > button {
+				cursor: pointer;
+				padding: 0.5em 2em;
+			}
+			
+			input[type="checkbox"] + span {
+				cursor: pointer;
+			}
+			
+			.gap5 > * {
+				margin-right: 0.3125em;
+				margin-bottom: 0.3125em;
+			}
+		</style>
+    </head>
+    <body style="height: 100%">
+		<div id="content">
+			<div id="inputsContainer"></div>
+			<div id="bottom-container">
+				<button onclick="ok()">OK</button>
+				<button onclick="quit();">Cancel</button>
+			</div>
+		</div>
+		<!--<div onclick="toggleLightMode()" id="lightMode">
+			<span>&#9790;</span>
+			<span>&#9728;</span>-->
+		</div>
+		<script type="text/javascript">
+			function main() {
+				document.title = "Drag_DevTools_StructureManager";
+				loadDataMainWindow();
+				$.Drag.VisualEvent.setLightMode(document);
+				
+				showStructInputsFields(data.value, data.structName, document.querySelector('#inputsContainer'));
+			};
+			
+			function loadDataMainWindow() {
+				$ = window.opener;
+			};
+			
+			function showStructInputsFields(structValue, structName, nodeTarget) {
+				const pluginName = data.pluginName;
+				
+				let inputs = $.Drag.VisualEvent.pluginJSDocData[pluginName].structs[structName].params.map(item => {return {...item}}); //two level deep copy
+				let content = "";
+				
+				for (const input of inputs) {
+					content += `
+							<span class="inputContainer ${input.type === "empty" ? 'hidden' : ''}">
+								<span><b>${input.text}</b>, ${input.name}:${input.type || "text"}${input.isList ? '[]' : ''}</span>
+								${input.desc ? '<span class="inputDesc">' + input.desc + '</span>' : '<br>'}
+								<div class="gap5" style="display: flex; flex-direction: column;">
+					`;
+					
+					input.isPluginParameter = true;
+					input.pluginName = pluginName;
+					
+					if (!input.value)
+						input.value = structValue[input.name] !== undefined ? structValue[input.name] : input.default !== undefined ? input.default : "";
+						
+					if (input.isList)
+						try { 
+							input.value = typeof input.value === "string" && input.value[0] === "[" ? JSON.parse(input.value) : [input.value]; 
+							if (!Array.isArray(input.value))
+								input.value = [input.value];
+							if (input.value.length === 0)
+								input.value.push("");
+						} catch(err) { 
+							input.value = [""];
+						}
+					else
+						input.value = [input.value];
+					
+					for (const [i, value] of input.value.entries()) {
+						if (input.type === "boolean") {
+							input.values = ["true", "false"];
+							input.options = [input.on ? input.on : "On", input.off ? input.off : "Off"];
+						}
+						
+						if (input.type === "location") {
+							let defaultValue;
+							try { defaultValue = JSON.parse(input.default); } catch(err) { defaultValue = {mapId: 0, x: 0, y: 0} };
+							
+							const loc = structValue[input.name] ? JSON.parse(structValue[input.name]) : defaultValue;
+							
+							input.value[i] = [parseInt(loc.mapId) || 0, parseInt(loc.x) || 0, parseInt(loc.y) || 0];
+							input.data += ` data-allowSearch=true' data-allowMapChange='true'"`;
+						}
+						
+						if (input.type === "struct")
+							if (input.value[i] !== "")
+								try { 
+									input.value[i] = JSON.parse(input.value[i]); 
+								} catch(err) { 
+									try {
+										input.value[i] = JSON.parse($.Drag.VisualEvent.unescapeQuotes(input.value[i], true));
+									} catch(err2) {
+										input.value = {};
+									}
+								}
+							else
+								input.value[i] = {};
+					}
+					
+					if (!input.isList)
+						input.value = input.value[0];
+					
+					const values = input.isList ? Array.isArray(input.value) ? input.value : [input.value] : [input.value]; 
+					
+					for (const [j, value] of values.entries()) {
+						input.value = value;
+						input.data += ` data-inputName="${input.name}"`;
+						input.noAutofitCheckbox = true;
+						content += `
+									<div class="firstChildWidth100 ${input.type === 'struct' ? 'structWrapper' : 'inputWrapper'}">
+										${$.Drag.VisualEvent.getInputField(input)}
+									</div>
+						`;
+					}
+					
+					content += `			
+								</div>
+							</span>
+					`;
+				}
+				nodeTarget.innerHTML = content;
+				
+				for (const node of nodeTarget.querySelectorAll('[data-inputType="struct"]')) {
+					node.style.opacity = 0;
+					
+					const structContainer = document.createElement('div');
+					structContainer.setAttribute('id', 'structContainer');
+					structContainer.style.marginLeft = '20%';
+					node.parentElement.appendChild(structContainer);
+					
+					node.value = "Structure Parameters"; 
+					node.setAttribute("onclick", "this.blur();");
+					
+					addStructInputsFields(node);
+				}
+			};
+			
+			function addStructInputsFields(input) {
+				const structContainer = input.parentElement.querySelector('#structContainer');
+				const structContent = document.createElement('div');
+				structContent.setAttribute('id', 'structContent');
+				structContainer.appendChild(structContent);
+				console.log(input.getAttribute('data-structValue'));
+				// console.log($.Drag.VisualEvent.unescapeQuotes(input.getAttribute('data-structValue'), true));
+				// const structValue = JSON.parse($.Drag.VisualEvent.unescapeQuotes(input.getAttribute('data-structValue'), true));
+				const structValue = JSON.parse(input.getAttribute('data-structValue'));
+				// const structValue = eval('(' + input.getAttribute('data-structValue') + ')')
+				const structName = input.getAttribute('data-structName');
+				showStructInputsFields(structValue, structName, structContent);
+			};
+			
+			function gatherStructureValues(container = document.querySelector('#inputsContainer')) {
+				const val = {};
+				for (const wrapper of container.querySelectorAll('.inputWrapper, .structWrapper')) {
+					if (wrapper.classList.contains('inputWrapper')) {
+						for (const input of wrapper.querySelectorAll('input, textarea, select')) {
+							const inputName = input.getAttribute('data-inputName');
+							if (inputName === null || input.getAttribute('data-valueGathered') === "true" || (input.type === "radio" && !input.checked))
+								continue;
+							
+							if (input.getAttribute('data-isList') === "true") {
+								val[inputName] = val[inputName] || [];
+								val[inputName].push($.Drag.VisualEvent.getPluginCommandInputValue(input));
+							} else 
+								val[inputName] = $.Drag.VisualEvent.getPluginCommandInputValue(input);
+							input.setAttribute('data-valueGathered', "true");
+						}
+					} else {
+						const structInput = wrapper.firstElementChild;
+						const structName = structInput.getAttribute('data-structName');
+						if (structName === null)
+								continue;
+							
+						const structContent = wrapper.querySelector('#structContent');
+						if (structInput.getAttribute('data-isList') === "true") {
+							val[structName] = val[structName] || [];
+							val[structName].push(JSON.stringify(gatherStructureValues(structContent)));
+						} else
+							val[structName] = JSON.stringify(gatherStructureValues(structContent));
+					}
+				}
+				
+				for (const property in val)
+					if (Array.isArray(val[property]))
+						val[property] = JSON.stringify(val[property]);
+				
+				return val;
+			};
+
+			function ok() {
+				const val = gatherStructureValues();
+				// data.input.setAttribute('data-structValue', $.Drag.VisualEvent.escapeQuotes(JSON.stringify(val)));
+				data.input.setAttribute('data-structValue', JSON.stringify(val));
+				data.input.dispatchEvent(new Event('change', {bubbles: true}));
+				quit();
+			};
+
+			function quit() {
+				window.close();
+			};
+
+			main();
+
+		</script>
+	</body>
+</html>

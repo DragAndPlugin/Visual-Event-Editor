@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="viewport" content="user-scalable=no">
+        <link rel="icon" href="../icon/icon.png" type="image/png">
+        <link rel="apple-touch-icon" href="../icon/icon.png">
+		<link href="../css/Drag_DevTools.css" rel="stylesheet">
+		<style>
+			html {
+				overflow-y: auto;
+				width: 100%;
+				overflow: hidden;
+			}
+			
+			body {
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+			}
+			
+			input[type="text"]:disabled, input[type="number"]:disabled {
+				text-indent: initial !important;
+			}
+
+			#content {
+				height: 100%;
+				width: 100%;
+				margin: 0;
+				position: relative;
+				overflow: hidden;
+			}
+			
+			#search-merchandises {
+				padding: 0.5em;
+				cursor: pointer;
+				border: 0.125em solid transparent;
+				display: flex;
+				align-items: center;
+				justify-content: flex-start;
+				max-width: 90%;
+			}
+			
+			#search-merchandises > * {
+				margin-right: 0.75em;
+			}
+			
+			#search-merchandises > *:last-child {
+				margin-right: 0em;
+			}
+			
+			#reorder-merchandises {
+				padding-left: 1em; 
+				display: flex; 
+				flex-direction: column; 
+			}
+			
+			#reorder-merchandises > * {
+				margin-right: 0.5em;
+				margin-bottom: 0.5em;
+			}
+			
+			#reorder-merchandises > *:last-child {
+				margin-right: 0em;
+				margin-bottom: 0em;
+			}
+			
+			#reorder-price, #reorder-type {
+				display: flex; 
+				margin-left: 1em; 
+			}
+			
+			#reorder-price > *, #reorder-type > * {
+				margin-right: 0.5em;
+				margin-bottom: 0.5em;
+			}
+			
+			#reorder-price > *:last-child, #reorder-type > *:last-child {
+				margin-right: 0em;
+				margin-bottom: 0em;
+			}
+			
+			#merchandises-list {
+				display: flex;
+				flex-direction: column;
+				margin-bottom: 3.125em;
+				background: rgb(0 0 0 / .3);
+			}
+			
+			#merchandise-container {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				padding-top: 0.5em;
+				padding-bottom: 0.10em;
+				position: relative;
+				border: 0.0625em solid transparent;
+			}
+			
+			#merchandise-container > * {
+				margin-right: 0.5em;
+				margin-bottom: 0.5em;
+			}
+			
+			#merchandise-container > *:last-child {
+				margin-right: 0em;
+				margin-bottom: 0em;
+			}
+			
+			#merchandise-container:nth-child(odd) {
+				background: rgb(0 0 0 / .15);
+			}
+			
+			#merchandise-container:nth-child(even) {
+				background: rgb(255 255 255 / 0.15);
+			}
+			
+			#item-container, #price-container {
+				display: flex;
+				align-items: baseline;
+				justify-content: center;
+			}
+			
+			#item-container > *, #price-container > * {
+				margin-right: 0.5em !important;
+				margin-bottom: 0.5em !important;
+			}
+			
+			#item-container > *:last-child, #price-container > *:last-child {
+				margin-right: 0em;
+				margin-bottom: 0em;
+			}
+			
+			#merchandise-grab {
+				position: absolute;
+				left: 0px;
+				top: 50%;
+				transform: translate(0px, -50%);
+				cursor: -webkit-grab;
+				padding: 0.625em 0.625em;
+			}
+			
+			.select {
+				margin: 0px !important;
+			}
+			
+			.selected {
+				border: 0.0625em solid var(--color) !important;
+			}
+			
+			#bottom-container {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				padding: 0.5em;
+				max-height: 3.125em;
+				border-top: 0.125em solid rebeccapurple;
+				background-color: var(--background-color);
+				display: flex;
+				justify-content: flex-end;
+				box-sizing: border-box;
+			}
+			
+			#bottom-container > * {
+				margin-right: 1.5em;
+			}
+			
+			#bottom-container > *:last-child {
+				margin-right: 0em;
+			}
+
+			#bottom-container > button {
+				cursor: pointer;
+				padding: 0.5em 2em;
+			}
+			
+			input[type="checkbox"] + span {
+				cursor: pointer;
+			}
+		</style>
+    </head>
+    <body style="height: 100%">
+		<div id="content">
+			<div id="search-merchandises">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="25px" height="25px" style="width: 1.5em; height: 1.5em;">
+					<circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"></circle>
+					<line x1="16.5" y1="16.5" x2="22" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
+				</svg>
+				<input type="text" placeholder="Search by type, name, id, price, price type..." onchange="searchMerchandise(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();">
+			</div>
+			<div id="reorder-merchandises">
+				<span>Reorder By:</span>
+				<div id="reorder-price">
+				<button style="padding: 0.5em 2em;" onclick="reorderByPrice(this);">Price</button>
+				<div class="select" style="margin: 0.5em 1em 0em 1em;">
+					<select>
+						<option value="asc">ASC</option>
+						<option value="desc">DESC</option>
+					</select>
+					<span class="focus"></span>
+				</div>
+				</div>
+				<div id="reorder-type">
+					<button style="padding: 0.5em 2em;" onclick="reorderByType(this);">Type</button>
+					<div class="select" style="margin: 0.5em 1em 0em 1em;">
+						<select>
+							<option value="012">Items &gt; Weapons &gt; Armors</option>
+							<option value="021">Items &gt; Armors &gt; Weapons</option>
+							<option value="102">Weapons &gt; Items &gt; Armors</option>
+							<option value="120">Weapons &gt; Armors &gt; Items</option>
+							<option value="201">Armors &gt; Items &gt; Weapons</option>
+							<option value="210">Armors &gt; Weapons &gt; Items</option>
+						</select>
+						<span class="focus"></span>
+					</div>
+				</div>
+			</div>
+			<h2 style="margin: 0.5em 0em;">Merchandises :</h2>
+			<div id="first-add-merchandise" style="text-align: center;"></div>
+			<div id="merchandises-list"></div>
+			<div id="bottom-container">
+				<button onclick="ok()">OK</button>
+				<button onclick="quit();">Cancel</button>
+			</div>
+		</div>
+		<!--<div onclick="toggleLightMode()" id="lightMode">
+			<span>&#9790;</span>
+			<span>&#9728;</span>
+		</div>-->
+		<script type="text/javascript">
+			//to do : keys + delete shortcut
+			
+			function main() {
+				document.title = "Drag_DevTools_ShopProcessing";
+				loadDataMainWindow();
+				$.Drag.VisualEvent.setLightMode(document);
+				
+				setup();
+				showMerchandisesList();
+			};
+			
+			function loadDataMainWindow() {
+				$ = window.opener;
+			};
+			
+			function setup() {
+				if (!data.value)
+					data.value = [];
+				else
+					data.value = data.value.split(',').map(Number);
+				
+				if (data.value.length % 4 > 0)
+					console.warn(`Number of values is not valid: ${data.value.length}`);
+			};
+			
+			function showMerchandisesList() {
+				document.querySelector('#first-add-merchandise').innerHTML = getAddMerchandiseButton();
+				
+				let content = ``;
+				for (let i = 0; i < data.value.length; i += 4) {
+					const itemType = data.value[i];
+					const itemId = data.value[i + 1];
+					const priceType = data.value[i + 2];
+					let price = data.value[i + 3];
+					
+					if (priceType === 0 && price === 0)
+						price = $.Drag.VisualEvent.getDefaultItemPrice(itemType, itemId);
+					
+					content += getMerchandiseElements(itemType, itemId, priceType, price);
+				}
+				
+				document.querySelector('#merchandises-list').innerHTML = content;
+			}
+			
+			function getMerchandiseElements(itemType = 0, itemId = 1, priceType = 0, price = 0) {
+				return `
+					<div id="merchandise-container">
+						<div id="item-container">
+							<span>Item :</span>
+							${getSelectItemTypeElement(itemType, itemId)}
+							${getSelectItemElement(itemType, itemId)}
+						</div>
+						<div id="price-container">
+							<span>Price :</span>
+							${getSelectPriceTypeElement(priceType)}
+							${getNumberPriceInput(priceType, price)}
+						</div>
+						<div>
+							${getAddMerchandiseButton()}
+							${getRemoveMerchandiseButton()}
+						</div>
+						<div id="merchandise-grab" onmousedown="startGrabMerchandise(this);">&#8942;</div>
+					</div>
+				`;
+			};
+			
+			//search
+			function searchMerchandise(input) {
+				const searchValue = input.value.toLowerCase().trim();
+				for (const merchandiseContainer of document.querySelectorAll('#merchandise-container')) {
+					const itemType = Array.from(merchandiseContainer.querySelector('#merchandise-item-type').options).find(option => option.selected).text.toLowerCase();
+					const item = merchandiseContainer.querySelector('#merchandise-item-id').value.toLowerCase().trim();
+					const priceType = Array.from(merchandiseContainer.querySelector('#merchandise-price-type').options).find(option => option.selected).text.toLowerCase();
+					const price = merchandiseContainer.querySelector('#merchandise-price-value').value;
+					
+					if (itemType.includes(searchValue) || item.includes(searchValue) || price.includes(searchValue) || priceType.includes(searchValue))
+						merchandiseContainer.classList.remove('hidden');
+					else
+						merchandiseContainer.classList.add('hidden');
+				};
+			};
+			
+			
+			//grab and drag
+			function startGrabMerchandise(elem) {				
+				window._grabTarget = elem.parentElement;
+				if (!window._grabTarget)
+					return;
+				
+				window._grabTargetRect = window._grabTarget.getBoundingClientRect();
+				
+				for (const selected of document.querySelectorAll('.selected'))
+					selected.classList.remove('selected');
+				window._grabTarget.classList.add('selected');
+				
+				window._grabTarget.style.cursor = "-webkit-grabbing";
+				
+				event.stopPropagation();
+				event.preventDefault();
+				return false;
+			};
+			
+			window.addEventListener("mousemove", moveGrabbedMerchandise);
+			function moveGrabbedMerchandise(ev) {
+				if (!window._grabTarget)
+					return;
+				
+				const container = window._grabTarget.parentElement;
+				const childs = Array.from(container.children);
+				const rects = childs.map(child => child.getBoundingClientRect());
+				let index = rects.findIndex((rect, i) => ev.y >= rect.y && ev.y <= rect.y + rect.height);
+				
+				if (index === -1)
+					index = ev.y <= rects[0].y ? 0 : - 1;
+				
+				if (index === -1)
+					index = ev.y >= rects[rects.length - 1].y + rects[rects.length - 1].height / 2 ? rects.length : rects.length - 1;
+				
+				const currentIndex = childs.indexOf(window._grabTarget);
+				if (index !== currentIndex) {
+					if (index < currentIndex)
+						container.insertBefore(window._grabTarget, childs[index]);
+					else 
+						container.insertBefore(window._grabTarget, childs[index + 1]);
+					
+					data._refreshPreview = true;
+				}
+			};
+			
+			window.addEventListener("mouseup", onMouseUp);
+			function onMouseUp(ev) {				
+				for (const selected of document.querySelectorAll('.selected'))
+					if (ev.path.filter(elem => elem.id === "move-route")[0] !== selected)
+						selected.classList.remove('selected');
+				
+				if (!window._grabTarget)
+					return;
+				
+				window._grabTarget.style.removeProperty('cursor');
+				window._grabTarget = null;
+			};
+			
+			//reorder
+			function reorderByPrice(button) {
+				const orderBy = button.parentElement.querySelector('select').value;
+				const merchandisesContainer = document.querySelector('#merchandises-list');
+				const merchandises = Array.from(merchandisesContainer.querySelectorAll('#merchandise-container'));
+				
+				if (orderBy === "asc")
+					merchandises.sort((a, b) => parseInt(a.querySelector('#merchandise-price-value').value) - parseInt(b.querySelector('#merchandise-price-value').value))
+				else if (orderBy === "desc")
+					merchandises.sort((a, b) => parseInt(b.querySelector('#merchandise-price-value').value) - parseInt(a.querySelector('#merchandise-price-value').value))
+				
+				merchandisesContainer.innerHTML = merchandises.map(element => element.outerHTML).join('');
+			};
+			
+			function reorderByType(button) {
+				const orderBy = button.parentElement.querySelector('select').value;
+				const merchandisesContainer = document.querySelector('#merchandises-list');
+				const merchandises = Array.from(merchandisesContainer.querySelectorAll('#merchandise-container'));
+				
+				merchandises.sort((a, b) => orderBy.indexOf(a.querySelector('#merchandise-item-type').value) - orderBy.indexOf(b.querySelector('#merchandise-item-type').value))
+				merchandisesContainer.innerHTML = merchandises.map(element => element.outerHTML).join('');
+			};
+			
+			//add & remove
+			function addMerchandise(button) {
+				const container = button.parentElement.parentElement;
+				if (container.id === "merchandise-container")
+					container.insertAdjacentHTML('afterend', getMerchandiseElements());
+				else
+					document.querySelector('#merchandises-list').insertAdjacentHTML('afterbegin', getMerchandiseElements());
+			};
+			
+			function removeMerchandise(button) {
+				button.parentElement.parentElement.remove();
+			};
+			
+			
+			//getters & setters
+			function getSelectItemTypeElement(itemType = 0, itemId = 1) {
+				return `
+					<div class="select" style="margin: 0.5em 1em 0em 1em;">
+						<select id="merchandise-item-type" onchange="changeSelectItemElement(this);" data-user${itemType}Value="${itemId}">
+							<option ${itemType === 0 ? 'selected' : ''} value="0">Item</option>
+							<option ${itemType === 1 ? 'selected' : ''} value="1">Weapon</option>
+							<option ${itemType === 2 ? 'selected' : ''} value="2">Armor</option>
+						</select>
+						<span class="focus"></span>
+					</div>
+				`;
+			};
+			
+			function changeSelectItemElement(select) {
+				const itemType = parseInt(select.value);
+				const itemContainer = select.parentElement.parentElement;
+				const itemIdInput = itemContainer.querySelector('#merchandise-item-id');
+				
+				const value = parseInt(select.getAttribute(`data-user${itemType}Value`)) || 1;
+				itemIdInput.parentElement.outerHTML = getSelectItemElement(itemType, value);
+				
+				setDefaultItemPrice(itemContainer.parentElement);
+			};
+			
+			function getSelectItemElement(itemType = 0, itemId = 1) {
+				const params = {value: itemId, id: "merchandise-item-id", onchange: "onChangeItemId"}
+				switch (itemType) {
+					case 0: 
+						params.type = "item";
+						return $.Drag.VisualEvent.getInputField(params);
+						break;
+					case 1: 
+						params.type = "weapon";
+						return $.Drag.VisualEvent.getInputField(params);
+						break;
+					case 2: 
+						params.type = "armor";
+						return $.Drag.VisualEvent.getInputField(params);
+						break;
+				};
+			};
+
+			function onChangeItemId(input) { 
+				const itemContainer = input.parentElement.parentElement;
+				const itemTypeInput = itemContainer.querySelector('#merchandise-item-type');
+				const itemType = parseInt(itemTypeInput.value);
+				
+				const itemId = parseInt(input.getAttribute('data-value'));
+				itemTypeInput.setAttribute(`data-user${itemType}Value`, itemId);
+				
+				setDefaultItemPrice(itemContainer.parentElement);
+			};
+			
+			function setDefaultItemPrice(merchandiseContainer) {
+				const itemTypeInput = merchandiseContainer.querySelector('#merchandise-item-type');
+				const itemIdInput = merchandiseContainer.querySelector('#merchandise-item-id');
+				
+				const itemType = parseInt(itemTypeInput.value);
+				const itemId = parseInt(itemIdInput.getAttribute('data-value'));
+				
+				const itemPrice = $.Drag.VisualEvent.getDefaultItemPrice(itemType, itemId);
+				const priceInput = merchandiseContainer.querySelector('#merchandise-price-value');
+				priceInput.value = itemPrice;
+			};
+			
+			function getSelectPriceTypeElement(priceType = 0) {
+				return `
+					<div class="select" style="margin: 0.5em 1em 0em 1em;">
+						<select onchange="toggleNumberPriceInput(this);" id="merchandise-price-type">
+							<option ${priceType === 0 ? 'selected' : ''} value="0">Standard</option>
+							<option ${priceType === 1 ? 'selected' : ''} value="1">Specify</option>
+						</select>
+						<span class="focus"></span>
+					</div>
+				`;
+			};
+			
+			function getNumberPriceInput(priceType = 0, price = 0) {
+				return `
+					${$.Drag.VisualEvent.getInputField({type: "integer", value: price, min: 0, placeholder: "Input price...", disabled: priceType === 0, id: "merchandise-price-value"})}
+				`
+			};
+			
+			function getAddMerchandiseButton() {
+				return `
+					<span style="cursor: pointer; height: 1.5em;" onclick="addMerchandise(this);">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="width: 1.5em; height: 1.5em;">
+							<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"></circle>
+							<line x1="12" y1="7" x2="12" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
+							<line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
+						</svg>
+					</span>
+				`;
+			};
+			
+			function getRemoveMerchandiseButton() {
+				return `
+					<span style="cursor: pointer; height: 1.5em;" onclick="removeMerchandise(this);">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" style="width: 1.5em; height: 1.5em;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="10"></circle>
+							<line x1="8" y1="12" x2="16" y2="12"></line>
+						</svg>
+					</span>
+				`;
+			};
+			
+			function toggleNumberPriceInput(select) {
+				const container = select.parentElement.parentElement;
+				const input = container.querySelector('input[type="number"]');
+				if (!input)
+					return;
+				
+				if (select.value === "0") {
+					input.disabled = true;
+					input.setAttribute('data-userValue', input.value);
+					
+					const itemType = parseInt(container.previousElementSibling.querySelector('select').value);
+					const itemId = parseInt(container.previousElementSibling.querySelector('input').value);
+					input.value = $.Drag.VisualEvent.getDefaultItemPrice(itemType, itemId);
+				} else {
+					input.disabled = false;
+					const userValue = parseInt(input.getAttribute('data-userValue'));
+					if (!isNaN(userValue))
+						input.value = userValue;
+				}
+			};
+			
+			function gatherMerchandisesValues() {
+				const values = [];
+				for (const merchandiseContainer of document.querySelectorAll('#merchandise-container')) {
+					const itemType = parseInt(merchandiseContainer.querySelector('#merchandise-item-type').value);
+					const itemId = parseInt(merchandiseContainer.querySelector('#merchandise-item-id').getAttribute('data-value'));
+					const priceType = parseInt(merchandiseContainer.querySelector('#merchandise-price-type').value)
+					const price = priceType ? parseInt(merchandiseContainer.querySelector('#merchandise-price-value').value) : 0;
+					
+					values.push(itemType, itemId, priceType, price);
+				};
+				return values;
+			};
+
+			function ok() {
+				const val = gatherMerchandisesValues();
+				if (data.input) {
+					data.input.setAttribute('data-value', val);
+					data.input.dispatchEvent(new Event('change', {bubbles: true}));
+				}
+				quit();
+			};
+
+			function quit() {
+				window.close();
+			};
+
+			main();
+
+		</script>
+	</body>
+</html>

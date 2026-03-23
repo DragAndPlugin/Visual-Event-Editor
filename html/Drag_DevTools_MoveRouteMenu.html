@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="viewport" content="user-scalable=no">
+        <link rel="icon" href="../icon/icon.png" type="image/png">
+        <link rel="apple-touch-icon" href="../icon/icon.png">
+		<link href="../css/Drag_DevTools.css" rel="stylesheet">
+		<style>
+			html {
+				overflow-y: auto;
+			}
+			
+			svg {
+				width: 1.5em;
+				height: 1.5em;
+			}
+
+			#content {
+				display: grid;
+				height: 100%;
+				margin: 0;
+				grid-template-columns: 0.3fr 0.7fr;
+			}
+			
+			#move-route-list-panel {
+				box-sizing: border-box;
+				border-right: 0.125em solid rebeccapurple;
+				overflow-y: auto;
+				padding-bottom: 3.125em;
+				display: flex;
+				flex-direction: column;
+			}
+			
+			#move-route-list-panel > * {
+				margin-bottom: 1em;
+			}
+			
+			#move-route-list-panel > *:last-child {
+				margin-bottom: 0em;
+			}
+			
+			#move-route-commands-panel {
+				text-align: center;
+				position: relative;
+				display: flex;
+				flex-direction: column;
+			}
+			
+			#move-route-commands-panel > h3 {
+				text-align: left;
+				padding: 1em;
+				padding-left: 2em;
+				background: rgb(0 0 0 / 0.3);
+				margin: 0;
+				border-bottom: 0.0625em solid rebeccapurple;
+			}
+			
+			.search {
+				padding: 0.5em;
+				cursor: pointer;
+				border: 0.125em solid transparent;
+				display: flex;
+				align-items: center;
+				justify-content: flex-start;
+				max-width: 40%;
+			}
+			
+			.search > * {
+				margin-right: 0.75em;
+			}
+			
+			.search > *:last-child {
+				margin-right: 0em;
+			}
+			
+			#move-route-list {
+				height: 75%;
+				background: rgb(0 0 0 / .3);
+				overflow-y: auto;
+			}
+			
+			#move-route-list > div {
+				padding: 0.3125em 0 0.3125em 1em;
+				cursor: -webkit-grab;
+				box-sizing: border-box;
+				border: 0.0625em solid transparent;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				min-height: 2.6875em;
+			}
+			
+			#delete-move-route {
+				width: 15%;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				border-left: 0.0625em solid var(--color);
+				cursor: pointer;
+				opacity: 0;
+				align-self: stretch;
+			}	
+
+			.selected > #delete-move-route, #move-route-list > div:hover > #delete-move-route {
+				opacity: 1;
+			}
+			
+			#move-route-list > div:nth-child(odd) {
+				background: rgb(0 0 0 / .15);
+			}
+			
+			#move-route-list > div:nth-child(even) {
+				background: rgb(255 255 255 / 0.15);
+			}
+			
+			#move-route-options {
+				display: flex;
+				flex-direction: column;
+				background: rgb(0 0 0 / 0.3);
+				padding: 0.5em 0.5em;
+			}
+			
+			#move-route-options > * {
+				margin-bottom: 0.5em;
+			}
+			
+			#move-route-options > *:last-child {
+				margin-bottom: 0em;
+			}
+			
+			#move-route-options > div {
+				align-items: center;
+			}
+			
+			#move-route-options > div > * {
+				margin-right: 0.5em;
+			}
+			
+			#move-route-options > div > *:last-child {
+				margin-right: 0em;
+			}
+			
+			#move-route-commands {
+				display: grid;
+				justify-content: center;
+				margin-bottom: 3.125em;
+				position: relative;
+				height: 100%;
+			}
+			
+			#move-route-commands > * {
+				margin-right: 1em;
+			}
+			
+			#move-route-commands > *:last-child {
+				margin-right: 0em;
+			}
+			
+			#move-route-commands > div {
+				display: flex;
+				flex-direction: column;
+			}
+			
+			#move-route-commands > div > * {
+				margin-bottom: 0.5em;
+			}
+			
+			#move-route-commands > div > *:last-child {
+				margin-bottom: 0em;
+			}
+			
+			#move-route-parameters-container {
+				display: flex; 
+			}
+			
+			#move-route-parameters-container > * {
+				margin-right:  0.5em;
+			}
+			
+			#move-route-parameters-container > *:last-child {
+				margin-right: 0em;
+			}
+			
+			#move-route-parameters-container > div {
+				width: 100%;
+			}
+			
+			.selected, #move-route-list > div:hover {
+				border: 0.0625em solid white !important;
+			}
+			
+			#move-route-parameters {
+				background: var(--background-color);
+				border: 0.125em solid var(--color);
+				border-radius: 0.3125em;
+				padding: 1em;
+				box-shadow: 0.3125em 0.3125em 0.625em 0.1875em black;
+				max-width: 30%;
+				position: absolute;
+			}
+			
+			#move-route-parameters-content {
+				display: flex; 
+				max-width: 50%; 
+			}
+			
+			#move-route-parameters-content > * {
+				margin-right: 0.25em;
+			}
+			
+			#move-route-parameters-content > *:last-child {
+				margin-right: 0em;
+			}
+			
+			#bottom-container {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				padding: 0.5em;
+				max-height: 3.125em;
+				border-top: 0.125em solid rebeccapurple;
+				background-color: var(--background-color);
+				display: flex;
+				justify-content: flex-end;
+				box-sizing: border-box;
+			}
+			
+			#bottom-container > * {
+				margin-right: 1.5em;
+			}
+			
+			#bottom-container > *:last-child {
+				margin-right: 0em;
+			}
+
+			#bottom-container > button {
+				cursor: pointer;
+				padding: 0.5em 2em;
+			}
+			
+			input[type="checkbox"] + span {
+				cursor: pointer;
+			}
+			
+			textArea {
+				width: 100%;
+				resize: none;
+			}
+			
+			label {
+				display: block;
+			}
+		</style>
+    </head>
+    <body style="height: 100%">
+		<div id="content">
+			<div id="move-route-list-panel"></div>
+			<div id="move-route-commands-panel">
+				<h3>Move Route Commands</h3>
+				<div class="search">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="25px" height="25px" style="width: 1.5em; height: 1.5em;">
+						<circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/>
+						<line x1="16.5" y1="16.5" x2="22" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+					</svg>
+					<input type="text" placeholder="Search..." onchange="searchMoveRoute(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</div>
+				<div id="move-route-commands"></div>
+			</div>
+			<div id="bottom-container">
+				<button onclick="ok()">OK</button>
+				<button onclick="quit();">Cancel</button>
+			</div>
+		</div>
+		<!--<div onclick="toggleLightMode()" id="lightMode">
+			<span>&#9790;</span>
+			<span>&#9728;</span>
+		</div>-->
+		<script type="text/javascript">
+			function main() {
+				document.title = "Drag_DevTools_MoveRouteMenu";
+				loadDataMainWindow();
+				$.Drag.VisualEvent.setLightMode(document);
+
+				makeMoveRouteLeftPanel();
+				makeMoveRouteCommandsButton();
+			};
+
+			function loadDataMainWindow() {
+				$ = window.opener;
+			};
+
+			function makeMoveRouteLeftPanel() {
+				const panel = document.querySelector('#move-route-list-panel');
+				let content = `
+					<div style="margin-top: 1em;">
+						<label style="margin-left: 1em;">Target :</label>
+						<div class="select" style="margin: 0.5em 1em 0em 1em;">
+							<select>
+								${(function fun() {
+									if (data.thisEventOnly)
+										return `
+											<option selected data-name="This Event" value="0">This Event</option>
+										`;
+									
+									let res = '';
+									for (const [i, option] of ["Player", "This Event"].concat($.$dataMap ? $.$dataMap.events.filter(ev => ev).map(ev => ev.name) : []).entries()) {
+										if (!option)
+											continue;
+										
+										const value = -1 + i;
+										res += `
+											<option ${value === data.eventId ? 'selected' : ''} data-name="${option}" value="${value}">${option}</option>
+										`;
+									}
+									return res;
+								})()}
+							</select>
+							<span class="focus"></span>
+						</div>
+					</div>
+					<div id="move-route-list"></div>
+					<div style="display: flex; justify-content: space-around;">
+						<button onclick="openMoveRoutePreview(this);" id="move-route-preview" data-isMoveRoutePreview="true" style="width: 40%;">Preview...</button>
+						<button onclick="clearMoveRouteList(this);" id="move-route-clear" style="width: 40%;">Clear List</button>
+					</div>
+					<div id="move-route-options">
+						<div class="flex">
+							<input id="move-route-repeat" type="checkbox" onchange=""/ ${data.repeat ? "checked" : ""}>
+							<span onclick="toggleCheckbox(this.previousElementSibling);">Repeat Movements</span>
+						</div>
+						<div class="flex">
+							<input id="move-route-skip" type="checkbox" onchange=""/ ${data.skip ? "checked" : ""}>
+							<span onclick="toggleCheckbox(this.previousElementSibling);">Skip If Cannot Move</span>
+						</div>
+						<div class="flex">
+							<input id="move-route-wait" ${data.thisEventOnly ? 'disabled' : ''} type="checkbox" onchange="" ${data.wait && !data.thisEventOnly ? "checked" : ""}/>
+							<span ${!data.thisEventOnly ? 'onclick="toggleCheckbox(this.previousElementSibling);"' : ''} style="${data.thisEventOnly ? 'color: grey;' : ''}">Wait For Completion</span>
+						</div>
+					</div>
+				`;	
+				
+				panel.innerHTML = content;
+				
+				const moveRouteList = document.querySelector('#move-route-list');
+				for (const [i, code] of data.list.entries()) {
+					if (code === 0)
+						continue;
+					const moveRoute = getMoveRouteElement(code, data.parameters[i]);
+					moveRouteList.appendChild(moveRoute);
+					
+					for (const [i, input] of Array.from(moveRoute.querySelectorAll('*[data-isCommandParameter="true"]')).entries()) {
+						if (input.onchange)
+							input.onchange();
+						if (input.onblur)
+							input.onblur();
+						// input.setAttribute('onchange', input.getAttribute('onchange') + " updateInputContainer(this);");
+						input.setAttribute('data-parameterId', i);
+					}
+				}
+			};
+			
+			function updateInputContainer(input) {
+				const container = $.Drag.VisualEvent.getAncestorById(input, "move-route");
+				const value = input.type === "number" ? Number(input.value) : input.value;
+				const parameterId = parseInt(input.getAttribute('data-parameterId'));
+				const containerParameters = JSON.parse(container.getAttribute('data-parameters'));
+				containerParameters[parameterId] = value;
+				container.setAttribute('data-parameters', JSON.stringify(containerParameters));
+				data._refreshPreview = true;
+			};
+			
+			function toggleCheckbox(checkbox) {
+				checkbox.checked = !checkbox.checked;
+				if (checkbox.onchange)
+					checkbox.onchange();
+			};
+			
+			function makeMoveRouteCommandsButton() {
+				const moveRouteCommands = document.querySelector('#move-route-commands');
+				const columnCount = 3;
+				const names = $.Drag.VisualEvent.moveRouteNames;
+				moveRouteCommands.style.gridTemplateColumns = `repeat(${columnCount}, 0.3fr)`;
+				
+				let content = "";
+				for (let i = 0; i < columnCount; i++) {
+					content += `<div>`;
+					for (let j = 1; j < names.length / columnCount; j++) {
+						const index = i * Math.floor(names.length / columnCount) + j; 
+						const hasParams = !!$.Drag.VisualEvent.moveRouteParameters[index];
+						content += `
+							<button data-code="${index}" data-name="${names[index]}" onclick="${hasParams ? 'promptMoveRouteParameters(this)' : 'addMoveRouteList(this)'}">${names[index]}${hasParams ? '...' : ''}</button>
+						`;
+					}					
+					content += `</div>`;
+				};
+				content += `
+					<div id="move-route-parameters" class="hidden">
+						<div id="move-route-parameters-container"></div>
+						<button id="confirm-move-route" onclick="confirmAddMoveRoute(this);">OK</button>
+					</div>`;
+				
+				moveRouteCommands.innerHTML = content;
+			};
+			
+			function searchMoveRoute(input) {
+				const moveRouteCommands = document.querySelector('#move-route-commands');
+				const search = input.value.toLowerCase().trim();
+
+				for (const moveRoute of moveRouteCommands.querySelectorAll('button[data-name]'))
+					if (moveRoute.getAttribute('data-name').toLowerCase().includes(search))
+						moveRoute.classList.remove('hidden');
+					else
+						moveRoute.classList.add('hidden');
+			};
+			
+			function promptMoveRouteParameters(button) {
+				const code = parseInt(button.getAttribute('data-code'));
+				const parameters = $.Drag.VisualEvent.getMoveCommandParameters(code);
+				let content = ``;
+				for (const parameter of parameters)
+					content += `<div style="text-align: left;"><label>${parameter.name || ''} :</label>${$.Drag.VisualEvent.getInputField(parameter)}</div>`;
+				
+				const parametersContainer = document.querySelector('#move-route-parameters-container');
+				parametersContainer.innerHTML = content;
+				
+				const hasResizableInput = !!parametersContainer.querySelector('textarea');
+				
+				const container = document.querySelector('#move-route-parameters');
+				container.classList.remove('hidden');
+				if (!hasResizableInput) {
+					container.style.top = `calc(${button.getBoundingClientRect().y - button.getBoundingClientRect().height - container.getBoundingClientRect().height}px - 6.25em)`;
+					container.style.left = button.getBoundingClientRect().x - button.parentElement.parentElement.getBoundingClientRect().x  + "px";
+					container.style.removeProperty('right');
+					container.style.removeProperty('bottom');
+					container.style.removeProperty('maxWidth');
+					container.style.removeProperty('maxHeight');
+					
+				} else {
+					container.style.top = "3.125em";
+					container.style.left = "3.125em";
+					container.style.right = "3.125em";
+					container.style.bottom = "3.125em";
+					container.style.maxWidth = "100%";
+					container.style.maxHeight = "fit-content";
+				}
+				
+				document.querySelector('#confirm-move-route').setAttribute('data-code', code)
+			};
+			
+			function confirmAddMoveRoute(button) {
+				button.parentElement.classList.add('hidden');
+				
+				const inputs = Array.from(document.querySelectorAll('#move-route-parameters-container *[data-isCommandParameter="true"]'));
+				for (const input of inputs) 
+					input.setAttribute('value', input.value); // sounds stupid but needed to refresh outerhtml
+				const html = inputs.map(input => input.tagName === "SELECT" ? input.parentElement.outerHTML : input.outerHTML);
+				const parameters = inputs.map(input => input.type === "number" ? Number(input.value) : input.value);
+				const moveRoute = getMoveRouteElement(button.getAttribute('data-code'), [], html);
+				
+				for (const input of moveRoute.querySelectorAll('*[data-isCommandParameter="true"]')) {
+					input.value = input.getAttribute('value');
+					input.setAttribute('onchange', (input.getAttribute('onchange') || "") + " updateInputContainer(this);");
+				}
+				
+				moveRoute.setAttribute('data-parameters', JSON.stringify(parameters));
+				insertMoveRouteInList(moveRoute);
+			};
+			
+			function addMoveRouteList(button) {
+				const moveRoute = getMoveRouteElement(button.getAttribute('data-code'));
+				insertMoveRouteInList(moveRoute);
+			};
+			
+			function insertMoveRouteInList(moveRoute) {
+				const moveRouteList = document.querySelector('#move-route-list');
+				const selected = moveRouteList.querySelector('.selected');
+				
+				if (selected)
+					selected.before(moveRoute);
+				else
+					moveRouteList.appendChild(moveRoute);
+					
+				data._refreshPreview = true;
+			};
+			
+			function clearMoveRouteList() {
+				const moveRouteList = document.querySelector('#move-route-list');
+				moveRouteList.innerHTML = "";
+				data._refreshPreview = true;
+			};
+			
+			function openMoveRoutePreview(button) {
+				const [list, parameters] = gatherMoveRouteListAndParameters();
+				button.setAttribute('data-list', JSON.stringify(list));
+				button.setAttribute('data-parameters', JSON.stringify(parameters));
+				button.setAttribute('data-value', `${data.mapId},${data.x},${data.y}`);
+				button.setAttribute('data-mapId', data.mapId);
+				button.setAttribute('data-x', data.x);
+				button.setAttribute('data-y', data.y);
+				data._refreshPreview = false; 
+				$.Drag.VisualEvent.openMapLocationPicker(button);
+				
+				if (!window._previewInterval)
+					window._previewInterval = setInterval(updateMoveRoutePreview, 250);
+			};
+			
+			function updateMoveRoutePreview() {
+				if (data._refreshPreview) {
+					data._refreshPreview = false;
+					
+					const button = document.querySelector('#move-route-preview');
+					const [list, parameters] = gatherMoveRouteListAndParameters();
+					button.setAttribute('data-list', JSON.stringify(list));
+					button.setAttribute('data-parameters', JSON.stringify(parameters));
+					button.setAttribute("data-needRefresh", "true")
+				}
+			};
+			
+			function deleteMoveRoute(elems) {
+				if (!elems)
+					return;
+				if (!Array.isArray(elems))
+					elems = [elems];
+				
+				for (const elem of elems) {
+					const moveRoute = $.Drag.VisualEvent.getAncestorById(elem, "move-route");
+					moveRoute.remove();
+				}
+				
+				data._refreshPreview = true;
+			};
+			
+			function getMoveRouteElement(code = 0, parametersValues = [], parametersHTML = []) {
+				parametersValues = parametersValues ? parametersValues : []; 
+				
+				const moveRoute = document.createElement('div');
+				moveRoute.id = "move-route";
+				moveRoute.addEventListener("mousedown", startGrabMoveRoute);
+				moveRoute.setAttribute('data-code', code);
+				moveRoute.setAttribute('data-parameters', JSON.stringify(parametersValues));
+				
+				let parameterContent = `<div id="move-route-parameters-content">`;
+				if (parametersValues.length > 0) {
+					const parameters = $.Drag.VisualEvent.getMoveCommandParameters(code) || [];
+					for (const [i, parameter] of parameters.entries()) {
+						const param = {...parameter};
+						param.onchange = `${param.onchange || ""} updateInputContainer(this);`;
+						if (parametersValues[i] !== undefined)
+							param.value = parametersValues[i];
+						parameterContent += `<div>${$.Drag.VisualEvent.getInputField(param)}</div>`;
+					}
+				}
+				
+				for (const html of parametersHTML)
+					parameterContent += html;
+				parameterContent += `</div>`;
+				
+				moveRoute.innerHTML = `
+					<span>${$.Drag.VisualEvent.moveRouteNames[code]}${parametersValues.length > 0 || parametersHTML.length > 0 ? ':' : ''}</span>
+					${parametersValues.length > 0 || parametersHTML.length > 0 ? parameterContent : ''}
+					<span id="delete-move-route" onclick="deleteMoveRoute(this);">
+						<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 25 25" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="10"></circle>
+							<line x1="15" y1="9" x2="9" y2="15"></line>
+							<line x1="9" y1="9" x2="15" y2="15"></line>
+						</svg>
+					</span>
+				`;
+				
+				return moveRoute;
+			};
+			
+			function startGrabMoveRoute(ev) {
+				const targetIsInput = ev.path.filter(elem => elem.getAttribute && elem.getAttribute('data-iscommandparameter')).length > 0;
+				if (targetIsInput)
+					return;
+				
+				window._grabTarget = ev.path.filter(elem => elem.id === "move-route")[0];
+				if (!window._grabTarget)
+					return;
+				
+				window._grabTargetRect = window._grabTarget.getBoundingClientRect();
+				for (const selected of document.querySelectorAll('.selected'))
+					selected.classList.remove('selected');
+				window._grabTarget.classList.add('selected');
+				window._grabTarget.style.cursor = "-webkit-grabbing";
+				
+				event.stopPropagation();
+				event.preventDefault();
+				return false;
+			};
+			
+			window.addEventListener("mousemove", moveGrabbedMoveRoute);
+			function moveGrabbedMoveRoute(ev) {
+				if (!window._grabTarget)
+					return;
+				
+				const container = window._grabTarget.parentElement;
+				const moveRoutes = Array.from(container.children);
+				const rects = moveRoutes.map(child => child.getBoundingClientRect());
+				let index = rects.findIndex((rect, i) => ev.y >= rect.y && ev.y <= rect.y + rect.height);
+				
+				if (index === -1)
+					index = ev.y <= rects[0].y ? 0 : - 1;
+				
+				if (index === -1)
+					index = ev.y >= rects[rects.length - 1].y + rects[rects.length - 1].height / 2 ? rects.length : rects.length - 1;
+				
+				const currentIndex = moveRoutes.indexOf(window._grabTarget);
+				if (index !== currentIndex) {
+					if (index < currentIndex)
+						container.insertBefore(window._grabTarget, moveRoutes[index]);
+					else 
+						container.insertBefore(window._grabTarget, moveRoutes[index + 1]);
+					
+					data._refreshPreview = true;
+				}
+			};
+			
+			function moveMoveRoute(elems, direction) {	
+				if (!elems || elems.length < 1)
+					return;
+				if (!Array.isArray(elems))
+					elems = [elems];
+				
+				const container = elems[0].parentElement;
+				const moveRoutes = Array.from(container.children);
+				
+				for (const elem of elems) {
+					const currentIndex = moveRoutes.indexOf(elem);
+					direction = direction > 0 ? direction + 1 : direction;
+					const index = (currentIndex + direction) > moveRoutes.length ? 0 : currentIndex + direction;
+					container.insertBefore(elem, moveRoutes[index]);
+				};
+				
+				data._refreshPreview = true;
+			};
+			
+			window.addEventListener("mouseup", onMouseUp);
+			function onMouseUp(ev) {				
+				// for (const selected of document.querySelectorAll('.selected'))
+					// if (ev.path.filter(elem => elem.id === "move-route")[0] !== selected)
+						// selected.classList.remove('selected');
+				
+				if (!window._grabTarget)
+					return;
+				
+				window._grabTarget.style.removeProperty('cursor');
+				window._grabTarget = null;
+			};
+			
+			window.addEventListener("mousedown", function(ev) {
+				const moveRouteParameters = document.querySelector('#move-route-parameters');
+				if (!ev.path.includes(moveRouteParameters))
+					moveRouteParameters.classList.add('hidden');
+			});
+			
+			window.addEventListener("keydown", function(event) {
+				if (event.keyCode == 38)
+					moveMoveRoute(Array.from(document.querySelectorAll('.selected')), -1);
+				if (event.keyCode == 40)
+					moveMoveRoute(Array.from(document.querySelectorAll('.selected')), 1);
+				if (event.keyCode == 46)
+					deleteMoveRoute(Array.from(document.querySelectorAll('.selected')));
+			}, false);
+			
+			function gatherMoveRouteListAndParameters() {
+				const moveRouteList = document.querySelector('#move-route-list');
+				const moveRoutes = moveRouteList.querySelectorAll('#move-route');
+				
+				const list = Array.from(moveRoutes).map(moveRoute => parseInt(moveRoute.getAttribute('data-code'))).filter(code => !isNaN(code)).concat([0]);
+				const parameters = Array.from(moveRoutes).map(moveRoute => moveRoute.getAttribute('data-parameters') !== '[]' ? JSON.parse(moveRoute.getAttribute('data-parameters')) : null).concat([null]);
+				
+				return [list, parameters];
+			};
+
+			function ok() {
+				const [list, parameters] = gatherMoveRouteListAndParameters();
+
+				data.input.setAttribute('data-list', JSON.stringify(list));
+				data.input.setAttribute('data-parameters', JSON.stringify(parameters));
+				data.input.setAttribute('data-repeat', document.querySelector("#move-route-repeat").checked);
+				data.input.setAttribute('data-skip', document.querySelector("#move-route-skip").checked);
+				data.input.setAttribute('data-wait', document.querySelector("#move-route-wait").checked);
+				data.input.dispatchEvent(new Event('change', {bubbles: true}));
+				
+				quit();
+			};
+
+			function quit() {
+				window.close();
+			};
+
+			main();
+
+		</script>
+	</body>
+</html>
