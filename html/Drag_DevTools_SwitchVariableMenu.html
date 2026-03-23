@@ -260,6 +260,23 @@
 				}
 				
 				document.querySelector('#item-maximum-input').value = items.length - 1;
+				startUpdating();
+			};
+			
+			function startUpdating() {
+				setInterval(update, 10);
+			};
+			
+			function update() {
+				const renamePanelChilds = Array.from(document.querySelectorAll('#rename-panel > div'));
+				for (child of renamePanelChilds) {
+					const id = parseInt(child.getAttribute('data-id'));
+					const label = child.querySelector('label');
+					const currentValue = getItemValue(id);
+					const newHtml = `${String(id).padStart(4, '0')} (${currentValue}):`;
+					if (label.innerHTML !== newHtml);
+						label.innerHTML = newHtml;
+				}
 			};
 			
 			function changeMaximumItems() {

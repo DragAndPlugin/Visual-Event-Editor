@@ -44,11 +44,13 @@
 				<span onclick="pasteCommonEvent(this);" id="common-event-paste">Paste</span>
 				<span onclick="clearCommonEvent();" id="common-event-clear">Clear</span>
 				<span onclick="discardCommonEventChanges(this);" id="common-event-discard">Discard Changes</span>
+				<span onclick="deleteCommonEventCache(this);" id="common-event-cache-delete">Clear Cache</span>
 			</div>
 		</div>
 		<div id="map-event-contextmenu" class="contextmenu hidden">
 			<p>General</p>
 			<div>
+				<span onclick="openMapPropertiesMenu(this);" id="map-properties-edit">Edit Map Properties</span>
 				<span id="map-event-create">Create</span>
 			</div>
 			<p id="map-event-actions">Map Event Actions</p>
@@ -59,6 +61,7 @@
 				<span onclick="pasteMapEvent(this);" id="map-event-paste">Paste</span>
 				<span onclick="deleteMapEvent(this);" id="map-event-delete">Delete</span>
 				<span onclick="discardMapEventChanges(this);" id="map-event-discard">Discard Changes</span>
+				<span onclick="deleteMapEventCache(this);" id="map-event-cache-delete">Clear Cache</span>
 			</div>
 		</div>
 		<div id="troop-event-contextmenu" class="contextmenu hidden">
@@ -72,6 +75,7 @@
 				<span onclick="pasteTroopEvent(this);" id="troop-event-paste">Paste</span>
 				<span onclick="clearTroopEvent();" id="troop-event-clear">Clear</span>
 				<span onclick="discardTroopEventChanges(this);" id="troop-event-discard">Discard Changes</span>
+				<span onclick="deleteTroopEventCache(this);" id="troop-event-cache-delete">Clear Cache</span>
 			</div>
 		</div>
 		<div id="top-bar">
@@ -158,7 +162,7 @@
 		<div id="left-panel">
 			<div id="window-title-container">
 				<span>DRAG &amp; PLUGIN'S</span>
-				<span>VISUAL EVENT EDITOR<span id="title-visual-event-version"></span></span>
+				<span>VISUAL EVENT EDITOR<span id="title-visual-event-version"></span> [BETA]</span>
 				<span id="title-new-version" class="hidden" onclick="openPluginItchLink();">
 					<svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 						<path style="stroke-width: 1; stroke: forestgreen; fill: forestgreen;" d="M11 3.01254C10.9983 2.46026 11.4446 2.01114 11.9969 2.00941C12.5492 2.00768 12.9983 2.45399 13 3.00627L11 3.01254Z"></path>
@@ -256,6 +260,7 @@
 		</div>-->
 		<script type="text/javascript">
 			function init() {
+				// openDevTools();
 				console.log("Having Chrome's dev tools open can cause performance issue with the visual event editor. If you notice performance drop, please try to close Chrome's dev tool.");
 				showLoading();
 				document.title = "Drag_DevTools_VisualEventEditor";
@@ -274,6 +279,7 @@
 				if (window.data && window.data.targetId)
 					setupTopPanel();
 				
+				importEditorMods();
 				setupNodeList();
 				const setupGraphEditorInterval = setInterval(() => {
 					if (($.Utils.RPGMAKER_NAME !== "MZ" || window._mzPluginCommandsLoaded) && window._dataLoaded >= $.Drag.VisualEvent.dataFiles.length) {						
@@ -288,8 +294,6 @@
 						if (window._cache.editor.options.uiScale)
 							setFontSize(window._cache.editor.options.uiScale);
 						
-						window.xNodeSnap = 40;
-						window.yNodeSnap = 40;
 						window.nodes = [];
 						loadDummyNodes();
 						
@@ -316,7 +320,8 @@
 			};
 			
 			function checkNewVersionAvailable(data) {
-				if (data !== $.Drag.VisualEvent.version) {
+				data = data.trim().toLowerCase();
+				if (data !== $.Drag.VisualEvent.version.trim().toLowerCase()) {
 					document.querySelector('#title-new-version').classList.remove('hidden');
 					document.querySelector('#title-new-version > span').innerHTML = `New version available (v${data}) !`;
 				}
@@ -974,6 +979,9 @@
 							</svg>
 							<input type="text" placeholder="Search Common Event..." data-eventType="Common Event" onchange="searchEvent(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
 						</div>
+						<div id="common-event-select">
+							${getCommonEventSelect()}
+						</div>
 						<div id="common-event-list">
 							${getCommonEventList()}
 						</div>
@@ -1004,6 +1012,7 @@
 							</svg>
 							<input type="text" placeholder="Search Map Event..." data-eventType="Map Event" onchange="searchEvent(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
 						</div>
+						<div id="map-event-select"></div>
 						<div id="map-event-list"></div>
 					</div>
 					<div id="troop-event-container" data-collapsed="${!!(window._cache.editor.eventListCollapsed && window._cache.editor.eventListCollapsed['troop-event'])}">
@@ -1017,6 +1026,9 @@
 								<line x1="16.5" y1="16.5" x2="22" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
 							</svg>
 							<input type="text" placeholder="Search Troop Event..." data-eventType="Troop Event" onchange="searchEvent(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+						</div>
+						<div id="troop-event-select">
+							${getTroopEventSelect()}
 						</div>
 						<div id="troop-event-list">
 							${getTroopEventList()}
@@ -1046,10 +1058,122 @@
 				window._cache.editor.eventListCollapsed[type] = collapsed;
 			};
 			
-			function getCommonEventList() {
-				const commonEventCount = window._cache.graph["Common Event"].ceCount ? window._cache.graph["Common Event"].ceCount : window.data.$dataCommonEvents.length - 1;
+			
+			
+			function makeMapEventList(data = window.data.loadedMap) {	
+				const mapEventList = document.querySelector('#map-event-list');		
+				const mapEventSelect = document.querySelector('#map-event-select');				
+				if (!data) {
+					mapEventList.innerHTML = ``;
+					mapEventSelect.innerHTML = ``;
+					return;
+				}
+				
+				const mapList = document.querySelector('#mapList');
+				mapList.value = window.data.mapTargetId;
+				mapEventSelect.innerHTML = getMapEventSelect(data);
+				
+				const mapEventCount = getMapEventCount(data);
+				const max = Math.min(100, mapEventCount);
+				const list = getRangedMapEventList(1, max, data);
+				mapEventList.innerHTML = list;
+			};
+			
+			function getMapEventSelect(data = window.data.loadedMap, value = 0) {
+				return $.Drag.VisualEvent.getInputField({type: "select", options: getMapEventSelectOptions(), value: value, onchange: "onMapEventSelectChange(this);"});
+			};
+			
+			function getMapEventCount(data = window.data.loadedMap) {
+				if (!data)
+					return 0;
+				
+				const maxMapEventId = data.events.reduce((maxId, ev) => ev ? Math.max(ev.id, maxId) : maxId, 0);
+				const maxCacheEventId = getCacheMaxEventId("Map Event", window.data.mapTargetId);
+				return Math.max(maxMapEventId, maxCacheEventId);
+			};
+			
+			function getMapEventSelectOptions(data = window.data.loadedMap) {
+				const mapEventCount = Math.ceil(getMapEventCount() / 100);
+				const mapEventOptions = [];
+				for (let i = 0; i <= mapEventCount - 1; i++)
+					mapEventOptions.push(`${i * 100} - ${(i * 100) + 100}`);
+				return mapEventOptions;
+			};
+			
+			function onMapEventSelectChange(select) {
+				setTimeout(() => {
+					const mapEventCount = getMapEventCount();
+					const mapEventList = document.querySelector('#map-event-list');
+					const min = parseInt(select.value) * 100;
+					const max = Math.min(min + 100, mapEventCount);
+					mapEventList.innerHTML = getRangedMapEventList(min, max);
+				}, 1);
+			};
+			
+			function getRangedMapEventList(min = 1, max = min + 100, data = window.data.loadedMap) {
+				if (!data)
+					return "";
+				
 				let list = "";
-				for (let i = 1; i <= commonEventCount; i++)
+				for (let i = min; i <= max; i++) {
+					if (hasItemInEventCache("deleted", "Map Event", window.data.mapTargetId, i) && getEventCacheItem("deleted", "Map Event", window.data.mapTargetId, i))
+						list += `
+							<div class="selectable" data-eventId="${i}" data-eventType="Map Event" data-unsaved="true">
+								<span class="red">DELETED</span>
+							</div>
+						`;
+					else if (hasEventInCache("Map Event", i, window.data.mapTargetId) || data.events[i])
+						list += `
+							<div class="${i === window.data.targetId && window.data.targetType === "Map Event" ? 'selected' : ''} selectable" 
+								data-eventId="${i}" data-eventType="Map Event" ${isUnsaved("Map Event", i, window.data.mapTargetId) ? 'data-unsaved="true"' : ''} onclick="selectEvent(this);">
+								${String(i).padStart(3, "0")} ${(hasItemInEventCache("data", "Map Event", window.data.mapTargetId, i) ? getEventCacheItem("data", "Map Event",  window.data.mapTargetId, i).name : data.events[i].name) || '<span class="red">No name</span>'}
+							</div>
+						`;
+				}
+				return list;
+			};
+			
+			function refreshMapEventList() {
+				makeMapEventList();
+			};
+			
+			function getCommonEventSelect() {
+				const commonEventCount = getCommonEventCount();
+				return $.Drag.VisualEvent.getInputField({type: "select", options: getCommonEventSelectOptions(), value: Math.floor(commonEventCount / 100), onchange: "onCommonEventSelectChange(this);"});
+			};
+			
+			function getCommonEventCount() {
+				return window._cache.graph["Common Event"].ceCount ? window._cache.graph["Common Event"].ceCount : window.data.$dataCommonEvents.length - 1;
+			};
+			
+			function getCommonEventSelectOptions() {
+				const commonEventCount = Math.ceil(getCommonEventCount() / 100);
+				const commonEventOptions = [];
+				for (let i = 0; i <= commonEventCount - 1; i++)
+					commonEventOptions.push(`${i * 100} - ${(i * 100) + 100}`);
+				return commonEventOptions;
+			};
+			
+			function onCommonEventSelectChange(select) {
+				setTimeout(() => {
+					const commonEventCount = getCommonEventCount();
+					const commonEventList = document.querySelector('#common-event-list');
+					const min = parseInt(select.value) * 100;
+					const max = Math.min(min + 100, commonEventCount);
+					commonEventList.innerHTML = getRangedCommonEventList(min, max);
+				}, 1);
+			};
+			
+			function getCommonEventList() {			
+				const commonEventCount = getCommonEventCount();
+				const min = Math.floor(data.targetId / 100) * 100;
+				const max = Math.min(min + 100, commonEventCount);
+				return getRangedCommonEventList(min, max);
+			};
+			
+			function getRangedCommonEventList(min = 1, max = min + 100) {
+				let list = "";
+				for (let i = Math.max(min, 1); i <= max; i++)
 					list += `
 						<div class="${i === window.data.targetId && window.data.targetType === "Common Event" ? 'selected' : ''} selectable" 
 							data-eventId="${i}" data-eventType="Common Event" ${isUnsaved("Common Event", i) ? 'data-unsaved="true"' : ''} onclick="selectEvent(this);">
@@ -1064,10 +1188,43 @@
 				document.querySelector('#common-event-list').innerHTML = getCommonEventList();
 			};
 			
+			function getTroopEventSelect() {
+				const troopEventCount = getTroopEventCount();
+				return $.Drag.VisualEvent.getInputField({type: "select", options: getTroopEventSelectOptions(), value: Math.floor(troopEventCount / 100), onchange: "onTroopEventSelectChange(this);"});
+			};
+			
+			function getTroopEventCount() {
+				return window._cache.graph["Troop Event"].count ? window._cache.graph["Troop Event"].count : window.data.$dataTroops.length - 1;
+			};
+			
+			function getTroopEventSelectOptions() {
+				const troopEventCount = Math.ceil(getTroopEventCount() / 100);
+				const troopEventTabulationArray = [];
+				for (let i = 0; i <= troopEventCount - 1; i++)
+					troopEventTabulationArray.push(`${i * 100} - ${(i * 100) + 100}`);
+				return troopEventTabulationArray;
+			};
+			
+			function onTroopEventSelectChange(select) {
+				setTimeout(() => {
+					const troopEventCount = getTroopEventCount();
+					const tabTroopEventList = document.querySelector('#troop-event-list');
+					const min = parseInt(select.value) * 100;
+					const max = Math.min(min + 100, troopEventCount);
+					tabTroopEventList.innerHTML = getRangedTroopEventList(min, max);
+				}, 1);
+			};
+			
 			function getTroopEventList() {
-				const troopEventCount = window._cache.graph["Troop Event"].count ? window._cache.graph["Troop Event"].count : window.data.$dataTroops.length - 1;
+				const troopEventCount = getTroopEventCount();
+				const min = Math.floor(troopEventCount / 100) * 100;
+				const max = Math.min(min + 100, troopEventCount);
+				return getRangedTroopEventList(min, max);
+			};
+			
+			function getRangedTroopEventList(min = 1, max = min + 100) {
 				let list = "";
-				for (let i = 1; i <= troopEventCount; i++)
+				for (let i = Math.max(min, 1); i <= max; i++)
 					list += `
 						<div class="${i === window.data.targetId && window.data.targetType === "Troop Event" ? 'selected' : ''} selectable" 
 							data-eventId="${i}" data-eventType="Troop Event" ${isUnsaved("Troop Event", i) ? 'data-unsaved="true"' : ''} onclick="selectEvent(this);">
@@ -1157,7 +1314,6 @@
 				if (!members || !troopId)
 					return;
 				
-				console.log(members);
 				document.querySelector('#troop-event-members').value = members.map(member => window.data.$dataEnemies[member.enemyId].name).join(', ');
 				setAsUnsaved("Troop Event", troopId, 0, null);
 				
@@ -1216,6 +1372,12 @@
 					ceDiscard.classList.remove('disabled');
 				else
 					ceDiscard.classList.add('disabled');
+				
+				const ceCache = contextmenu.querySelector('#common-event-cache-delete');
+				if (hasEventInCache("Common Event", eventId))
+					ceCache.classList.remove('disabled');
+				else
+					ceCache.classList.add('disabled');
 			};
 			
 			function hideCommonEventContextMenu() {
@@ -1226,6 +1388,29 @@
 				contextmenu.classList.add('hidden');
 				
 				window._commonEventContextMenuOpened = false;
+			};
+			
+			function deleteCommonEventCache() {
+				const contextmenu = document.querySelector('#common-event-contextmenu');
+				if (!contextmenu)
+					return;
+				
+				const eventId = parseInt(contextmenu.getAttribute('data-eventId'));
+				if (!eventId)
+					return;
+				
+				$.Drag.VisualEvent.loadDataFile("CommonEvents", (data) => {
+					const commonEvent = data[eventId] ? $.Drag.VisualEvent.deepCopyJSON(data[eventId]) : $.Drag.VisualEvent.getDefaultCommonEvent();
+					saveEventDataInCache(commonEvent, "Common Event", 0, eventId);
+					clearEventNodesCache("Common Event", 0, eventId);
+					setAsSaved("Common Event", eventId);
+					
+					if (eventId === window.data.targetId && window.data.targetType === "Common Event")
+					reloadGraphEditor(window.data.targetId, window.data.targetType);
+				
+					refreshCommonEventList();
+					hideCommonEventContextMenu();
+				});
 			};
 			
 			function discardCommonEventChanges() {
@@ -1393,6 +1578,12 @@
 				else
 					eClear.classList.add('disabled');
 				
+				const eCache = contextmenu.querySelector('#troop-event-cache-delete');
+				if (hasEventInCache("Troop Event", eventId))
+					eCache.classList.remove('disabled');
+				else
+					eCache.classList.add('disabled');
+				
 				const eDiscard = contextmenu.querySelector('#troop-event-discard');
 				if (isUnsaved("Troop Event", eventId))
 					eDiscard.classList.remove('disabled');
@@ -1408,6 +1599,31 @@
 				contextmenu.classList.add('hidden');
 				
 				window._troopEventContextMenuOpened = false;
+			};
+			
+			function deleteTroopEventCache() {
+				const contextmenu = document.querySelector('#troop-event-contextmenu');
+				if (!contextmenu)
+					return;
+				
+				const eventId = parseInt(contextmenu.getAttribute('data-eventId'));
+				if (!eventId)
+					return;
+				
+				$.Drag.VisualEvent.loadDataFile("Troops", (data) => {
+					const troopEvent = data[eventId] ? $.Drag.VisualEvent.deepCopyJSON(data[eventId]) : $.Drag.VisualEvent.getDefaultTroopEvent();
+					saveEventDataInCache(troopEvent, "Troop Event", 0, eventId);
+					clearEventNodesCache("Troop Event", 0, eventId);
+					setAsSaved("Troop Event", eventId);
+					
+					if (eventId === window.data.targetId && window.data.targetType === "Troop Event")
+						reloadGraphEditor(window.data.targetId, window.data.targetType, 0);
+					
+					refreshTroopEventList();
+					hideTroopEventContextMenu();
+				});
+				
+				
 			};
 			
 			function discardTroopEventChanges() {
@@ -1571,7 +1787,7 @@
 			};
 			
 			function requestLoadDataMap(mapId = window.data.mapTargetId) {				
-				const filename = `Map${String(mapId).padStart(3, "0")}`;
+				const filename = $.Drag.VisualEvent.getMapFileName(mapId);
 				$.Drag.VisualEvent.loadDataFile(filename, onDataMapLoad);
 			};
 			
@@ -1611,43 +1827,6 @@
 				makeMapEventList();
 			};
 			
-			function makeMapEventList(data = window.data.loadedMap) {	
-				const mapEventList = document.querySelector('#map-event-list');			
-				if (!data) {
-					mapEventList.innerHTML = ``
-					return;
-				}
-				
-				const mapList = document.querySelector('#mapList');
-				mapList.value = window.data.mapTargetId;
-				
-				const maxMapEventId = data.events.reduce((maxId, ev) => ev ? Math.max(ev.id, maxId) : maxId, 0);
-				const maxCacheEventId = getCacheMaxEventId("Map Event", window.data.mapTargetId);
-				
-				let list = "";
-				for (let i = 1; i <= Math.max(maxMapEventId, maxCacheEventId); i++) {
-					if (hasItemInEventCache("deleted", "Map Event", window.data.mapTargetId, i) && getEventCacheItem("deleted", "Map Event", window.data.mapTargetId, i))
-						list += `
-							<div class="selectable" data-eventId="${i}" data-eventType="Map Event" data-unsaved="true">
-								<span class="red">DELETED</span>
-							</div>
-						`;
-					else if (hasEventInCache("Map Event", i, window.data.mapTargetId) || data.events[i])
-						list += `
-							<div class="${i === window.data.targetId && window.data.targetType === "Map Event" ? 'selected' : ''} selectable" 
-								data-eventId="${i}" data-eventType="Map Event" ${isUnsaved("Map Event", i, window.data.mapTargetId) ? 'data-unsaved="true"' : ''} onclick="selectEvent(this);">
-								${String(i).padStart(3, "0")} ${(hasItemInEventCache("data", "Map Event", window.data.mapTargetId, i) ? getEventCacheItem("data", "Map Event",  window.data.mapTargetId, i).name : data.events[i].name) || '<span class="red">No name</span>'}
-							</div>
-						`;
-				}
-				
-				mapEventList.innerHTML = list;
-			};
-			
-			function refreshMapEventList() {
-				makeMapEventList();
-			};
-			
 			function showMapEventContextMenu(e) {
 				const contextmenu = document.querySelector('#map-event-contextmenu');
 				if (!contextmenu)
@@ -1674,7 +1853,13 @@
 				const locationInput = $.Drag.VisualEvent.getInputParameters('currentMapLocation');
 				locationInput.mapId = window.data.mapTargetId;
 				locationInput.value = [0, 0];
-				eCreate.innerHTML = `<span style="margin-right: 10px;">Create</span><div style="margin-right: 10px;">${$.Drag.VisualEvent.getInputField(locationInput)}</div><button onclick="createMapEvent(this);">OK</button></span>`;
+				eCreate.innerHTML = `<span style="margin-right: 10px;">New Event</span><div style="margin-right: 10px;">${$.Drag.VisualEvent.getInputField(locationInput)}</div><button onclick="createMapEvent(this);">OK</button></span>`;
+				
+				const eEdit = contextmenu.querySelector('#map-properties-edit');
+				if (window.data.mapTargetId)
+					eEdit.classList.remove('disabled');
+				else
+					eEdit.classList.add('disabled');
 				
 				const eActions = contextmenu.querySelector('#map-event-actions');
 				eActions.innerHTML = `Map Event ${eventId} Actions`;
@@ -1711,6 +1896,12 @@
 					eDelete.classList.add('disabled');
 				}
 				
+				const eCache = contextmenu.querySelector('#map-event-cache-delete');
+				if (hasEventInCache("Map Event", eventId, window.data.mapTargetId))
+					eCache.classList.remove('disabled');
+				else
+					eCache.classList.add('disabled');
+				
 				const eDiscard = contextmenu.querySelector('#map-event-discard');
 				if (isDeleted || (eventId && isUnsaved("Map Event", eventId, window.data.mapTargetId)))
 					eDiscard.classList.remove('disabled');
@@ -1725,6 +1916,36 @@
 				
 				contextmenu.classList.add('hidden');
 				window._mapEventContextMenuOpened = false;
+			};
+			
+			function openMapPropertiesMenu(input) {
+				$.Drag.VisualEvent.openMapPropertiesMenu(input, window.data.mapTargetId);				
+				hideMapEventContextMenu();
+			};
+			
+			function deleteMapEventCache() {
+				const contextmenu = document.querySelector('#map-event-contextmenu');
+				if (!contextmenu)
+					return;
+				
+				const eventId = parseInt(contextmenu.getAttribute('data-eventId'));
+				if (!eventId || !window.data.mapTargetId)
+					return;
+				
+				$.Drag.VisualEvent.loadDataFile($.Drag.VisualEvent.getMapFileName(window.data.mapTargetId), (data) => {
+					const mapEvent = data.events[eventId] ? $.Drag.VisualEvent.deepCopyJSON(data.events[eventId]) : $.Drag.VisualEvent.getDefaultMapEvent();
+					clearEventNodesCache("Map Event", window.data.mapTargetId, eventId);
+					saveEventDataInCache(mapEvent, "Map Event", window.data.mapTargetId, eventId);
+					deleteEventCache("Map Event", window.data.mapTargetId, eventId);
+					// window.data.loadedMap.events[eventId] = mapEvent;
+					setAsSaved("Map Event", eventId, window.data.mapTargetId);
+					
+					if (eventId === window.data.targetId && window.data.targetType === "Map Event")
+						reloadGraphEditor(window.data.targetId, window.data.targetType, 0);
+					
+					refreshMapEventList();
+					hideMapEventContextMenu();
+				});
 			};
 			
 			function discardMapEventChanges() {
@@ -1936,86 +2157,25 @@
 				}
 			};
 			
-			function setupNodeList() {
+			function importEditorMods() {
+				console.log(`Importing editor mods...`);
+				window._mods = {};
 				const RMName = $.Utils.RPGMAKER_NAME;
-				const nodeList = document.querySelector('#nodeList');
-				let html =  ``;
-				
-				//native commands
-				for (const commandCategory in $.Drag.VisualEvent.commandsCategories) {
-					const commands = $.Drag.VisualEvent.commandsCategories[commandCategory];
-					if (commands.length > 0) {
-						html += `<div><p data-commandCategory="${commandCategory}">${commandCategory.toUpperCase()}</p>`;
-						for (const command of commands) {
-							if (command === "command357")
-								continue;
-							
-							if ($.Drag.VisualEvent.commandsEngine[command] !== undefined && $.Drag.VisualEvent.commandsEngine[command] !== RMName)
-								continue;
-							
-							const commandName = $.Drag.VisualEvent.getCommandName(command);
-							html += `
-								<div id="node-list-command" onclick="addNodeFromNodeList(this);" data-commandCategory="${commandCategory}" data-command="${command}" data-commandName="${commandName}">
-									${commandName}
-								</div>`;
-							
-						}
-						html += `</div>`;
-					}
+				const filenames = $.Drag.VisualEvent.getFileList('html/mods').filter(file => file.endsWith(".js"));
+				for (filename of filenames) {
+					const filenameWithoutExt = filename.replace('.js', '');
+					const mod = require(`./html/mods/${filenameWithoutExt}`);
+					
+					if (!mod.engine)
+						mod.engine = ["MZ", "MV"];
+					if (!Array.isArray(mod.engine))
+						mod.engine = [mod.engine];
+					if (!mod.engine.map(item => item.toUpperCase().trim()).includes(RMName))
+						continue;
+					
+					window._mods[filenameWithoutExt] = mod;
+					console.log(`Imported ${filename} successfully !`);
 				}
-				
-				nodeList.innerHTML += html;
-				
-				//plugin commands
-				let pluginReady = 0;
-				
-				if (RMName === "MZ") {
-					for (const plugin of $.Drag.VisualEvent.getPluginList()) {
-						console.log(`Importing commands from ${plugin}...`); 
-						$.Drag.VisualEvent.fetchPluginCommands(plugin, function(pluginData) {
-							let phtml = ``;
-							if (pluginData.commands && Object.keys(pluginData.commands).length > 0) {
-								phtml += `<div><p data-commandCategory="${plugin}">${plugin.toUpperCase()}</p>`;
-								for (const command in pluginData.commands) {
-									const commandText = pluginData.commands[command].text;
-									const commandName = pluginData.commands[command].name;
-									phtml += `
-										<div id="node-list-command" onclick="addNodeFromNodeList(this);" data-isPluginCommand="true" data-commandCategory="${plugin}" data-command="${command}" data-commandText="${commandText}" data-commandName="${commandName}">
-											${commandText || commandName || ""}
-										</div>`;
-								}
-								phtml += `</div>`;
-								
-								console.log(`Successfully imported ${Object.keys(pluginData.commands).length} commands from ${plugin} !`); 
-							}
-							nodeList.innerHTML += phtml;
-							
-							pluginReady++;
-							if (pluginReady >= $.Drag.VisualEvent.getPluginList().length)
-								window._mzPluginCommandsLoaded = true;
-							
-						}, false, true);
-					}
-				}
-			};
-			
-			function searchNodeList(input) {
-				const search = input.value.trim().toLowerCase();
-				const container = input.parentElement;
-				const list = container.querySelectorAll('div[data-commandName]');
-				for (const elem of list) 
-					if (elem.getAttribute('data-commandName').toLowerCase().includes(search) || elem.getAttribute('data-commandCategory').toLowerCase().includes(search) || (elem.getAttribute('data-commandText') && elem.getAttribute('data-commandText').toLowerCase().includes(search)))
-						elem.classList.remove('hidden');
-					else
-						elem.classList.add('hidden');
-				
-				//hide category header if empty
-				const categories = container.querySelectorAll('p[data-commandCategory]');
-				for (const category of categories) 
-					if (container.querySelectorAll(`div[data-commandCategory="${category.getAttribute('data-commandCategory')}"]:not(.hidden)`).length > 0)
-						category.classList.remove('hidden');
-					else
-						category.classList.add('hidden');
 			};
 			
 			function reloadGraphEditor(id, type, pageId = null, refreshTopPanel = true) {
@@ -2077,41 +2237,48 @@
 						setupGraphNodesFromCache();
 						console.log(`Setup graph nodes from cache completed in ${performance.now() - start}ms`);
 					} else {
+						window.onNodesReady = deepCacheAllGraphNodes;
 						if (hasItemInEventCache("data", window.data.targetType, window.data.mapTargetId, window.data.targetId)) {
 							const dataCache = getEventCacheItem("data", window.data.targetType, window.data.mapTargetId, window.data.targetId);
 							if (window.data.targetType === "Common Event" || dataCache.pages[window.data.pageId || 0]) {
 								setupGraphNodes(dataCache);
-								// rearrangeAllNodes();
 							} else {
-								window.onNodesReady = deepCacheAllGraphNodes;
+								// window.onNodesReady = deepCacheAllGraphNodes;
 								setupGraphNodes();
 								saveEventDataInCache();
-								// rearrangeAllNodes();
-								// deepCacheAllGraphNodes();
 							}
 						} else {
-							window.onNodesReady = deepCacheAllGraphNodes;
+							// window.onNodesReady = deepCacheAllGraphNodes;
 							setupGraphNodes();
 							saveEventDataInCache();
-							// rearrangeAllNodes();
-							// deepCacheAllGraphNodes();
 						}
 						
 						console.log(`Setup graph nodes from data completed in ${performance.now() - start}ms`);
 					}
 				}
+				
+				triggerModsFunction("onEditorReady");
+			};
+			
+			function triggerModsFunction(func, args = []) {
+				args.unshift(window);
+				for (const mod of Object.values(window._mods))
+					if (typeof mod[func] === "function")
+						mod[func](...args);
+			};
+			
+			function getEventNodeName() {
+				return `${window.data.targetType.toUpperCase()} ${String(window.data.targetId).padStart(4, '0')}${window.data.targetType === "Troop Event" || window.data.targetType === "Map Event" ? ': Page ' + ((window.data.pageId || 0) + 1) : ''}`;
 			};
 			
 			function setupGraphNodesFromCache() {
-				// const frag = document.createDocumentFragment();
-				
 				const cacheNodes = getGraphNodesFromCache();
 				for (const cacheNode of cacheNodes) {	
 					if (!cacheNode)
 						continue;
 
 					if (cacheNode.nodeId === 0) {
-						const name = `${window.data.targetType[0]}EV${String(window.data.targetId).padStart(4, '0')}${window.data.targetType === "Troop Event" || window.data.targetType === "Map Event" ? ': Page ' + ((window.data.pageId || 0) + 1) : ''}`;
+						const name = getEventNodeName();
 						addNodeFromParams({
 							x: cacheNode.x, y: cacheNode.y, nodeId: cacheNode.nodeId, name: name, classList: "nodeEvent undeletable uncopyable",
 							isPluginCommand: false,	commandCode: 0, parametersValues: cacheNode.parameters
@@ -2121,58 +2288,39 @@
 					}
 					
 					const isPluginCommand = cacheNode.commandCode === 357;
+					const isCustom = typeof cacheNode.commandCode === "string";
+					
+					if (isCustom) {
+						if (!window._customNodes[cacheNode.commandCode])
+							continue;
+						
+						cacheNode.commandCategory = window._customNodes[cacheNode.commandCode].category;
+						cacheNode.commandName = window._customNodes[cacheNode.commandCode].name;
+					}
+					
 					const node = addNodeFromParams({
-						x: cacheNode.x, y: cacheNode.y, nodeId: cacheNode.nodeId,
+						x: cacheNode.x, y: cacheNode.y, nodeId: cacheNode.nodeId, isCustom: isCustom,
 						isPluginCommand: isPluginCommand, commandName: cacheNode.commandName, commandText: cacheNode.commandText, commandCategory: cacheNode.commandCategory,
-						commandCode: cacheNode.commandCode, parametersValues: cacheNode.parameters
+						commandCode: cacheNode.commandCode, parametersValues: cacheNode.parameters, parameterListsLength: cacheNode.listsLength
 					}, false, false);
-					
-					// const node = !isPluginCommand ? window._dummyNodes.native[`command${cacheNode.commandCode}`].cloneNode(true) : window._dummyNodes[cacheNode.commandCategory][cacheNode.commandName].cloneNode(true);
-					// addNodeToGraphNode(node, false, false, cacheNode.nodeId); //300ms
-					// attributeNodeId(node, cacheNode.nodeId);
-					// setNodePosition(node, cacheNode.x, cacheNode.y, false, false);
-					// setNodeOffset(node, 0, 0); //40ms
-					
-					// nodeResizeObserver.observe(node);
-					// node.onmousedown = onMouseDownGraphEditorNode.bind(null, node);
-					// node.onmouseup = onMouseUpGraphEditorNode.bind(null, node);
-					
-					// node.setAttribute('data-_ready', 'true');
-					// frag.appendChild(node);
-					
-					// if (cacheNode.parameters)
-						// assignNodeParametersValues(node, cacheNode.parameters); //100ms (200ms without frag)
 				}
 				
-				// const graphNode = document.querySelector('#graphNodes');
-				// graphNode.appendChild(frag); // 100ms
-				
-				// for (const [i, node] of Array.from(graphNode.children).entries())
-					// if (cacheNodes[i].parameters)
-						// assignNodeParametersValues(node, cacheNodes[i].parameters); //500ms
-				
-				// triggerAllOnReadyOnChange();
-				// autofitAllTextArea();
-				// if (window._setupGraphInterval)
-					// clearInterval(window._setupGraphInterval);
-				
-				// window._setupGraphInterval = setInterval(() => {
-					// if (document.querySelector('#graphNode:not([data-_ready])'))
-						// return;
-						
-					// clearInterval(window._setupGraphInterval);
-					// window._setupGraphInterval = null;
+				const test = setInterval(() => {
+					if (!window._allNodesReady)
+						return;
 					
-					// for (const cacheNode of cacheNodes)
-						// if (cacheNode)
-							// reconnectNodeFromConnectionsMap(getNodeById(cacheNode.nodeId), cacheNode.connectionsMap);
-				// }, 10);
-				
-				const fragSVG = document.createDocumentFragment();
-				for (const cacheNode of cacheNodes)
-					if (cacheNode)
-						reconnectNodeFromConnectionsMap(getNodeById(cacheNode.nodeId), cacheNode.connectionsMap, true, fragSVG, false); // 350ms
-				document.querySelector('#graphSVG').appendChild(fragSVG);
+					for (const cacheNode of cacheNodes)
+						if (cacheNode)
+							rebuildListFromConnectionsMap(getNodeById(cacheNode.nodeId), cacheNode.connectionsMap);
+					
+					const fragSVG = document.createDocumentFragment();
+					for (const cacheNode of cacheNodes)
+						if (cacheNode)
+							reconnectNodeFromConnectionsMap(getNodeById(cacheNode.nodeId), cacheNode.connectionsMap, true, fragSVG, false);
+					
+					document.querySelector('#graphSVG').appendChild(fragSVG);
+					clearInterval(test);
+				}, 100);
 			};
 			
 			function attributeNodeId(node, nodeId) {
@@ -2196,8 +2344,9 @@
 				window._indentNodes = [];
 				window._highestHeightBranch = [0];
 				
-				let y = window.xNodeSnap * 2;
-				let x = window.yNodeSnap * 2;
+				const nodeSnap = getNodeSnap();
+				let y = nodeSnap.x * 2;
+				let x = nodeSnap.y * 2;
 				
 				if (!target)
 					target = window.data.targetType === "Common Event" ? window.data.$dataCommonEvents[window.data.targetId] : window.data.targetType === "Map Event" ? window.data.loadedMap.events[window.data.targetId] : window.data.targetType === "Troop Event" ? window.data.$dataTroops[window.data.targetId] : null;
@@ -2208,15 +2357,15 @@
 				
 				const eventIsUnsaved = isUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
 				// const frag = document.createDocumentFragment();
-				const name = `${window.data.targetType[0]}EV${String(window.data.targetId).padStart(4, '0')}${window.data.targetType === "Troop Event" || window.data.targetType === "Map Event" ? ': Page ' + ((window.data.pageId || 0) + 1) : ''}`;
 				
+				const name = getEventNodeName();
 				let node = addGraphNode(
 					{x: x, y: y, name: name, classList: "nodeEvent undeletable uncopyable", 
 					haveOutputExecNode: true, indent: 0, inputs: getEventInput(window.data.targetType, window.data.targetId, window.data.pageId || 0, parseInt(document.querySelector('#mapList').value) || 0)},
 					false, false); //, () => {
 						
 				window._indentNodes[0] = node;
-				x += Math.ceil((node.offsetWidth + window.xNodeSnap) / window.xNodeSnap) * window.xNodeSnap;
+				x += Math.ceil((node.offsetWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
 				
 				// if (!eventIsUnsaved)
 					// deepCacheGraphNode(node);
@@ -2267,7 +2416,7 @@
 					
 					const classList = getCommandClassList(commandCode);
 					const outputLabel = getCommandOutputLabel(commandCode);
-					const name = commandCode === 357 ? getCommandName(commandCode, command.parameters[0], command.parameters[2]) : getCommandName(commandCode);
+					const name = commandCode === 357 ? getCommandName(commandCode, command.parameters[0], command.parameters[1]) : getCommandName(commandCode);
 					const footer = getCommandFooter(commandCode, hasWarning);
 					
 					const prevNode = window._indentNodes[command.indent] ? window._indentNodes[command.indent] : window._indentNodes[command.indent - 1];
@@ -2275,13 +2424,13 @@
 					
 					if (prevNodeCommandCode !== "0") {
 						const dummyNodeWidth = getDummyNodeWidth(prevNodeCommandCode, command.parameters[0], command.parameters[1]);
-						x = Math.ceil((getNodePosition(prevNode)[0] + dummyNodeWidth + window.xNodeSnap) / window.xNodeSnap) * window.xNodeSnap;
+						x = Math.ceil((getNodePosition(prevNode)[0] + dummyNodeWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
 						
 						const dummyNodeHeight = getDummyNodeHeight(commandCode, command.parameters[0], command.parameters[1]);
 						if (dummyNodeHeight > (window._highestHeightBranch[command.indent] || 0))
-							window._highestHeightBranch[command.indent] = dummyNodeHeight + window.yNodeSnap;
+							window._highestHeightBranch[command.indent] = dummyNodeHeight + nodeSnap.y;
 					} else
-						x = Math.ceil((getNodePosition(prevNode)[0] + prevNode.offsetWidth + window.xNodeSnap) / window.xNodeSnap) * window.xNodeSnap;
+						x = Math.ceil((getNodePosition(prevNode)[0] + prevNode.offsetWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
 					
 					const node2 = addGraphNode({
 						x: x, y: y, name: name, commandCode: commandCode, attributes: attributes,
@@ -2291,7 +2440,7 @@
 						// if (!node2)
 							// return; //continue
 						
-						// x += Math.ceil((node2.offsetWidth + window.xNodeSnap) / window.xNodeSnap) * window.xNodeSnap;
+						// x += Math.ceil((node2.offsetWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
 						// const prevNode = window._indentNodes[command.indent] ? window._indentNodes[command.indent] : window._indentNodes[command.indent - 1];
 						// const outputConnection = prevNode.querySelector(`.outputConnection.exec[data-connected="false"][data-indent="${command.indent}"]:not([data-keepUnconnected="true"])`);
 						// const inputConnection = node2.querySelector(`.inputConnection.exec[data-connected="false"]`);
@@ -2311,11 +2460,11 @@
 					const inputConnection = node2.querySelector(`.inputConnection.exec[data-connected="false"]`);
 					drawCurve(outputConnection, inputConnection);
 					
-					// x += Math.ceil((node2.offsetWidth + window.xNodeSnap) / window.xNodeSnap) * window.xNodeSnap;
+					// x += Math.ceil((node2.offsetWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
 					// if (!window._indentNodes[command.indent])
-						// x = Math.ceil((window._indentNodes[command.indent - 1].offsetWidth + window.xNodeSnap) / window.xNodeSnap) * window.xNodeSnap;
+						// x = Math.ceil((window._indentNodes[command.indent - 1].offsetWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
 					// else
-						// x += Math.ceil((node2.offsetWidth + window.xNodeSnap) / window.xNodeSnap) * window.xNodeSnap;
+						// x += Math.ceil((node2.offsetWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
 					
 					
 					window._indentNodes[command.indent] = node2;
@@ -2351,6 +2500,10 @@
 				return `node-${commandCategory}`;
 			};
 			
+			function makeCustomClassList(commandCategory) {
+				return `node-${commandCategory.toLowerCase().replace(/ /g, "-").replace("&", "and")}`;
+			};
+			
 			function getCommandOutputLabel(commandCode) {
 				switch (commandCode) {
 					case 102:
@@ -2364,7 +2517,7 @@
 			};
 			
 			function getCommandName(commandCode, pluginName = "", pluginCommand = "") {
-				return commandCode === 357 ? `${pluginName}<br>${pluginCommand}` : $.Drag.VisualEvent.getCommandName(commandCode);
+				return commandCode === 357 ? `${pluginName}: ${pluginCommand}` : $.Drag.VisualEvent.getCommandName(commandCode);
 			};
 			
 			function getCommandFooter(commandCode, hasWarning) {
@@ -2667,28 +2820,16 @@
 			
 			function addNodeFromNodeList(elem) {			
 				const isPluginCommand = elem.getAttribute('data-isPluginCommand') === "true";
-				const commandCode = isPluginCommand ? 357 : parseInt(elem.getAttribute('data-command').replace('command', ''));
-				const commandName = isPluginCommand ? elem.getAttribute('data-commandName') : $.Drag.VisualEvent.getCommandName(commandCode);
+				const isCustom = elem.getAttribute('data-isCustom') === "true";
+				const commandCode = isPluginCommand ? 357 : isCustom ? elem.getAttribute('data-command') : parseInt(elem.getAttribute('data-command').replace('command', ''));
+				const commandName = isPluginCommand || isCustom ? elem.getAttribute('data-commandName') : $.Drag.VisualEvent.getCommandName(commandCode);
 				const commandText = elem.getAttribute('data-commandText');
 				const commandCategory = elem.getAttribute('data-commandCategory');
 				const [x, y] = getGraphCoordinatesFromAbsolute(window._nodeListx, window._nodeListy);
 				
-				// const node = addNodeFromParams({
-					// x: x, y: y, isPluginCommand: isPluginCommand, commandCode: commandCode, commandName: commandName, commandText: commandText, commandCategory: commandCategory
-				// }, true, true, () => {
-					// setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
-					// connectPendingCurve(node);				
-					// closeNodeListMenu();
-				// });
-				
 				const node = addNodeFromParams({
-					x: x, y: y, isPluginCommand: isPluginCommand, commandCode: commandCode, commandName: commandName, commandText: commandText, commandCategory: commandCategory
+					x: x, y: y, isPluginCommand: isPluginCommand, isCustom: isCustom, commandCode: commandCode, commandName: commandName, commandText: commandText, commandCategory: commandCategory
 				}, true, true);
-				
-				// const node = !isPluginCommand ? window._dummyNodes.native[elem.getAttribute('data-command')].cloneNode(true) : window._dummyNodes[commandCategory][commandName].cloneNode(true);
-				// addNodeToGraphNode(node, true, true);
-				// setNodePosition(node, x, y, true, true);
-				// setNodeOffset(node, 0, 0);
 				
 				setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
 				connectPendingCurve(node);				
@@ -2701,7 +2842,7 @@
 					return;
 				
 				const leftNodeId = pendingCurve.getAttribute('data-leftNodeId');
-				const rightNodeId = pendingCurve.getAttribute('data-righNodeId');
+				const rightNodeId = pendingCurve.getAttribute('data-rightNodeId');
 				
 				if (rightNodeId === "null" && leftNodeId === "null")
 					return;
@@ -2799,17 +2940,58 @@
 			};
 			
 			function getDummyNode(commandCode, commandCategory, commandName) {
-				return commandCode !== 357 ? window._dummyNodes.native[`command${commandCode}`].cloneNode(true) : window._dummyNodes[commandCategory][commandName].cloneNode(true);
+				if (commandCode !== 357) {
+					const node = window._dummyNodes.native[`command${commandCode}`];
+					return node ? node.cloneNode(true) : null;
+				} else {
+					if (window._dummyNodes[commandCategory] && window._dummyNodes[commandCategory][commandName])
+						return window._dummyNodes[commandCategory][commandName].cloneNode(true);
+					else
+						return null;
+				}
 			};
 			
 			function getDummyNodeWidth(commandCode, commandCategory, commandName) {
 				const dummyNode = getDummyNode(commandCode, commandCategory, commandName);
-				return parseInt(dummyNode.getAttribute('data-width'));
+				if (dummyNode)
+					return parseInt(dummyNode.getAttribute('data-width'));
+				return 0;
 			};
 			
 			function getDummyNodeHeight(commandCode, commandCategory, commandName) {
 				const dummyNode = getDummyNode(commandCode, commandCategory, commandName);
-				return parseInt(dummyNode.getAttribute('data-height'));
+				if (dummyNode)
+					return parseInt(dummyNode.getAttribute('data-height'));
+				return 0;
+			};
+			
+			function getCustomNodeData(name) {
+				const data = window._customNodes[name] || {};
+				
+				if (typeof data.exec_input !== "boolean")
+					data.exec_input = true;
+				if (typeof data.exec_input_params !== "object")
+					data.exec_input_params = {};
+				if (typeof data.exec_output !== "boolean")
+					data.exec_output = true;
+				if (typeof data.exec_output_params !== "object")
+					data.exec_output_params = {};
+				
+				return data;
+			};
+			
+			function getCustomNodeInputExecParams(name) {
+				return getCustomNodeData(name).exec_input_params;
+			};
+			
+			function getCustomNodeOutputExecParams(name) {
+				return getCustomNodeData(name).exec_output_params;
+			};
+			
+			function getCustomNodeParameters(name) {
+				const customNode = getCustomNodeData(name);
+				const parameters = customNode.inputs.concat(customNode.outputs).map(parameter => $.Drag.VisualEvent.interactiveInputs[parameter] ? $.Drag.VisualEvent.getInteractiveInputParameters(parameter) : $.Drag.VisualEvent.getInputParameters(parameter)); //$.Drag.VisualEvent.inputs[parameter]
+				return parameters;
 			};
 			
 			function addNodeFromParams(params = {}, saveInHistory = false, cache = false, onNodeReady = null) {
@@ -2817,7 +2999,9 @@
 				const commandParameters = 
 					params.isPluginCommand ? $.Drag.VisualEvent.getPluginCommandParameters(params.commandCategory, params.commandName) 
 					: params.commandCode === 0 ? getEventInput(window.data.targetType, window.data.targetId, window.data.pageId || 0, window.data.mapTargetId || 0) 
-						: $.Drag.VisualEvent.getCommandParameters(commandCode);
+						: params.isCustom ? getCustomNodeParameters(commandCode)
+							: $.Drag.VisualEvent.getCommandParameters(commandCode);
+							
 				if (!Array.isArray(commandParameters))
 					return;
 				
@@ -2826,6 +3010,8 @@
 				const [inputs, attributes, hasWarning] = !params.isPluginCommand ? makeInputsFromCommand(commandParameters) : makeInputsFromPluginCommand(params.commandCategory, params.commandName, params.commandText || params.commandName);
 				const miscInputs = commandParameters.filter(param => param.notParam && !param.isOutput) || [];
 				const outputs = makeOutputsFromCommand(commandParameters);
+				const haveInputExecNode = params.commandCode !== 0 && !(params.isCustom && !getCustomNodeData(params.commandCode).exec_input);
+				const haveOutputExecNode = !(params.isCustom && !getCustomNodeData(params.commandCode).exec_output);
 				
 				const associatedCommands = $.Drag.VisualEvent.getAssociatedCommands(commandCode);
 				for (const associatedCommand of associatedCommands) {
@@ -2850,54 +3036,34 @@
 								if (dependance.type === "moveRoute" || dependance.type === "location")
 									dependance.mapId = window.data.mapTargetId || 0;
 					}
-
-				const classList = params.classList || getCommandClassList(commandCode);
+					
+				const classList = params.isCustom ? makeCustomClassList(params.commandCategory) : params.classList || getCommandClassList(commandCode);
 				const outputLabel = getCommandOutputLabel(commandCode);
-				const name = params.name ? params.name : commandCode === 357 ? getCommandName(commandCode, params.commandCategory, params.commandName) : getCommandName(commandCode);
+				const name = params.name ? params.name : commandCode === 357 ? getCommandName(commandCode, params.commandCategory, params.commandText) : params.isCustom ? params.commandName : getCommandName(commandCode);
 				const footer = getCommandFooter(commandCode, hasWarning);
-				
-				// const node = addGraphNode({
-					// x: params.x, y: params.y, nodeId: params.nodeId, name: name, commandCode: commandCode, attributes: attributes,
-					// classList: classList + (hasWarning ? ' warning' : ''), haveInputExecNode: params.commandCode !== 0, haveOutputExecNode: true, 
-					// inputs: inputs, miscInputs: miscInputs, outputsExec: outputs, indent: 0, outputLabel: outputLabel, footer: footer
-				// }, saveInHistory, cache, () => {
-					// if (params.parametersValues)
-						// assignNodeParametersValues(node, params.parametersValues);
-					
-					// triggerAllOnReadyOnChange();
-					
-					// if (onNodeReady)
-						// onNodeReady();
-				// });
-				
 				const node = addGraphNode({
-					x: params.x, y: params.y, nodeId: params.nodeId, name: name, commandCode: commandCode, attributes: attributes,
-					classList: classList + (hasWarning ? ' warning' : ''), haveInputExecNode: params.commandCode !== 0, haveOutputExecNode: true, 
+					x: params.x, y: params.y, nodeId: params.nodeId, name: name, commandCode: commandCode, attributes: attributes, isCustom: params.isCustom,
+					classList: classList + (hasWarning ? ' warning' : ''), haveInputExecNode: haveInputExecNode, haveOutputExecNode: haveOutputExecNode, 
 					inputs: inputs, miscInputs: miscInputs, outputsExec: outputs, indent: 0, outputLabel: outputLabel, footer: footer
 				}, saveInHistory, cache, () => {
+					if (params.parameterListsLength)
+						assignNodeListsLength(node, params.parameterListsLength);
 					if (params.parametersValues)
 						assignNodeParametersValues(node, params.parametersValues);
 					
 					triggerAllOnReadyOnChange();
 				});
 				
-				// if (params.parametersValues)
-					// assignNodeParametersValues(node, params.parametersValues);
-				
-				// triggerAllOnReadyOnChange();
-				
 				return node;
 			};
 			
 			function assignNodeParametersValues(node, values) {
 				const commandCode = getNodeCommandCode(node);
-				
 				if (commandCode !== 357) {
 					const inputs = getNodeInputs(node, false, false);
-					for (const [i, value] of values.entries()) {
+					for (const [i, value] of values.entries())
 						if (inputs[i])
 							$.Drag.VisualEvent.setInputValue(inputs[i], value);
-					}
 				} else {
 					for (const key of Object.keys(values[3])) {
 						const input = node.querySelector(`*[data-parameterName="${key}"]`);
@@ -2935,6 +3101,29 @@
 				}
 			};
 			
+			function assignNodeListsLength(node, listsLength) {
+				const commandCode = getNodeCommandCode(node);
+				if (commandCode !== 357) {
+					let listId = 0;
+					const inputs = getNodeInputs(node, false, false);
+					for (const input of inputs) {
+						if (input.getAttribute('data-isList') === 'true' && listsLength[listId]) {
+							const wrapper = input.parentElement;							
+							const addListInputButton = wrapper.querySelector('#add-list-input-button');
+							for (let i = 1; i < listsLength[listId]; i++)
+								$.Drag.VisualEvent.addListInput(addListInputButton);
+							listId++;
+						}
+					}
+					for (const list of node.querySelectorAll('#list-wrapper')) {
+						const addListInputButton = list.querySelector('#add-list-input-button');
+						for (let i = 1; i < listsLength[listId]; i++)
+							$.Drag.VisualEvent.addListInput(addListInputButton);
+						listId++;
+					}
+				}
+			};
+			
 			// function addGraphNode2(params = {}, saveInHistory = false, cache = false, frag = null) {
 				// const isPluginCommand = params.commandCode === 357 
 				// const node = !isPluginCommand ? window._dummyNodes.native[`command${params.commandCode}`].cloneNode(true) : window._dummyNodes[params.attributes[0][1]][params.attributes[1][1]].cloneNode(true);
@@ -2945,8 +3134,7 @@
 			// };
 
 			function addGraphNode(params = {}, saveInHistory = false, cache = false, onNodeReady = null) {
-				// console.log("Adding graph node " + params.name);
-				// const graphNodes = document.querySelector('#graphNodes');
+				console.log(`Adding Graph Node ${params.name} (${params.commandCode})`);
 				const node = document.createElement('div');
 				
 				if (params.classList)
@@ -2959,20 +3147,32 @@
 				node.setAttribute('id', 'graphNode');
 				node.setAttribute('data-commandCode', params.commandCode || 0);
 				
+				const isCustom = params.isCustom;
+				const customNodeData = isCustom ? getCustomNodeData(params.commandCode) : null;
+				if (isCustom)
+					node.setAttribute('data-isCustom', 'true');
+				
 				if (params.attributes)
 					for (const attribute of params.attributes)
 						node.setAttribute(attribute[0], attribute[1]);
 				
-				node.innerHTML = `<p id="node-header" class="${params.headerClassList ? params.headerClassList : ""}">${params.name || ""}</p>`;
+				node.innerHTML = `<p id="node-header" class="${params.headerClassList ? params.headerClassList : ""}" style="${isCustom ? `background-color: ${getCustomNodeData(params.commandCode).color || ''};` : ''}">${params.name || ""}</p>`;
 				
 				let nodeContent = ``;
 				nodeContent += `
 					<div class="mBottom05 relative ${params.inputOutputContainerClassList ? params.inputOutputContainerClassList : ""}">
 						<div id="input-container">`;
 				
-				if (params.haveInputExecNode)
-					nodeContent += `
-							<span id="node-input" class="node-input-exec"><span data-connected="false" data-nodeId=${nodeId} data-connectionId="0" class="exec inputConnection"></span></span>`;
+				const customInputExecParams = isCustom ? getCustomNodeInputExecParams(params.commandCode) : null;
+				if (params.haveInputExecNode) {
+					const inputListLength = customInputExecParams && customInputExecParams.min_list ? customInputExecParams.min_list : 1;
+					for (let l = 0; l < inputListLength; l++)
+						nodeContent += `
+							<span id="node-input" class="node-input-exec">
+								<span data-connected="false" data-nodeId=${nodeId} data-connectionId="${l}" ${isCustom && customInputExecParams.is_list ? `data-isList="true"` : ''} ${isCustom && customInputExecParams.exclusive ? `data-exclusive="${customInputExecParams.exclusive}"` : ''} ${isCustom && customInputExecParams.curve_color ? `data-curveColor="${customInputExecParams.curve_color}"` : ''} class="exec inputConnection ${isCustom && customInputExecParams.symbol ? `noDefaultSymbol ${customNodeData.id}_input` : ''} ${isCustom && customInputExecParams.mono ? `mono` : ''}"></span> 
+								${isCustom && customInputExecParams.is_list ? $.Drag.VisualEvent.getListInputButtons(customInputExecParams.min_list) : ''}
+							</span>`;
+				}
 				
 				params.inputs = params.inputs || [];
 				node.setAttribute('data-_inputsReady', 'false');
@@ -3038,12 +3238,18 @@
 								<span ${outputExec.connectionData ? outputExec.connectionData : ''} data-connected="false" data-nodeId="${nodeId}" data-connectionId="${outputConnectionId++}" data-indent="${params.indent + 1 || 1}" class="exec outputConnection"></span>
 							</span>`;
 				
-				if (params.haveOutputExecNode)
-					nodeContent += `
+				const customOutputExecParams = isCustom ? getCustomNodeOutputExecParams(params.commandCode) : {};
+				if (params.haveOutputExecNode) {
+					const inputListLength = customInputExecParams && customInputExecParams.min_list ? customInputExecParams.min_list : 1;
+					for (let l = 0; l < inputListLength; l++)
+						nodeContent += `
 							<span class="nodeOutput" id="main-exec-output"> 
 								${params.outputLabel || ''}
-								<span data-connected="false" data-nodeId="${nodeId}" data-connectionId="${outputConnectionId++}" data-indent="${params.indent || 0}" class="exec outputConnection"></span>
-							</span>`;	
+								${isCustom && customOutputExecParams.is_list ? $.Drag.VisualEvent.getListInputButtons(customOutputExecParams.min_list) : ''}
+								<span data-connected="false" data-nodeId="${nodeId}" data-connectionId="${outputConnectionId++}" data-indent="${params.indent || 0}" ${isCustom && customOutputExecParams.is_list ? `data-isList="true"` : ''} ${isCustom && customOutputExecParams.exclusive ? `data-exclusive="${customOutputExecParams.exclusive}"` : ''} ${isCustom && customOutputExecParams.curve_color ? `data-curveColor="${customOutputExecParams.curve_color}"` : ''} class="exec outputConnection ${isCustom && customOutputExecParams.symbol ? `noDefaultSymbol ${customNodeData.id}_output` : ''}"></span>
+							</span>`;
+					
+				}
 				
 				// params.outputs = params.outputs || [];
 				// for (const [i, output] of params.outputs.entries()) //not used for now
@@ -3067,9 +3273,6 @@
 					
 					if (!window._preventAddNode)
 						addNodeToGraphNode(node, saveInHistory, cache, null, null);
-					
-					// if (onNodeReady)
-						// onNodeReady();
 				// }, 1);
 				
 				return node;
@@ -3083,6 +3286,11 @@
 				triggerAllOnReadyOnChange(node);
 				autofitAllTextArea(node);
 				
+				triggerModsFunction("onNodeReady", [node]);
+				for (const mod of Object.values(window._mods))
+					if (typeof mod.onNodeReady === "function")
+						mod.onNodeReady(window, node);
+				
 				if (!document.querySelector('#graphNode[data-_inputsReady="false"]'))
 					onAllNodeReady();					
 			};
@@ -3095,6 +3303,8 @@
 					window.onNodesReady();
 					window.onNodesReady = null;
 				}
+				
+				window._allNodesReady = true;
 			};
 			
 			function addNodeToGraphNode(node, saveInHistory = false, cache = false, nodeId = null, frag = null) {
@@ -3141,6 +3351,7 @@
 					addToNodeHistory({type: "add", target: node});
 				
 				node.setAttribute('data-_ready', 'true');
+				triggerModsFunction("onAddNode", [node]);
 			};			
 			
 			function addNodeOutput(node, outputExec, position) {
@@ -3239,11 +3450,16 @@
 				const xMouseMovement = (event.x - mousex) * scaleMult;
 				const yMouseyMovement = (event.y - mousey) * scaleMult;	
 				
-				const xSnappedMovement = Math.round(xMouseMovement / window.xNodeSnap) * window.xNodeSnap;
-				const ySnappedMovement = Math.round(yMouseyMovement / window.yNodeSnap) * window.yNodeSnap;
+				const nodeSnap = getNodeSnap();
+				const xSnappedMovement = Math.round(xMouseMovement / nodeSnap.x) * nodeSnap.x;
+				const ySnappedMovement = Math.round(yMouseyMovement / nodeSnap.y) * nodeSnap.y;
 				
 				for (const node of document.querySelectorAll("#graphNode.selected"))
 					setNodeOffset(node, xSnappedMovement, ySnappedMovement, true);
+			};
+			
+			function getNodeSnap() {
+				return {x: parseInt(window._cache.editor.options.uiScale / 14 * 40), y: parseInt(window._cache.editor.options.uiScale / 14 * 40)};
 			};
 			
 			function getNodeOffset(node) {
@@ -3271,13 +3487,15 @@
 					if (!curveOffset)
 						return;
 					
-					const xDir = (xOffset - x) / window.xNodeSnap * -1;
-					const yDir = (yOffset - y) / window.yNodeSnap * -1;
+					const nodeSnap = getNodeSnap();
+					const xDir = (xOffset - x) / nodeSnap.x * -1;
+					const yDir = (yOffset - y) / nodeSnap.y * -1;
+					
 					const curves = getNodeCurves(node);
 					for (const curve of curves.inputs)
-						offsetCurve(curve, [0, 0], [window.xNodeSnap * xDir, window.yNodeSnap * yDir]);
+						offsetCurve(curve, [0, 0], [nodeSnap.x * xDir, nodeSnap.y * yDir]);
 					for (const curve of curves.outputs)
-						offsetCurve(curve, [window.xNodeSnap * xDir, window.yNodeSnap * yDir], [0, 0]);
+						offsetCurve(curve, [nodeSnap.x * xDir, nodeSnap.y * yDir], [0, 0]);
 					
 					// redrawNodeCurves(node);
 					// setTimeout(() => redrawNodeCurves(node), 0);
@@ -3297,8 +3515,9 @@
 				if (!node)
 					return;			
 				
-				x = parseInt(x / window.xNodeSnap) * window.xNodeSnap;
-				y = parseInt(y / window.yNodeSnap) * window.yNodeSnap;
+				const nodeSnap = getNodeSnap();
+				x = parseInt(x / nodeSnap.x) * nodeSnap.x;
+				y = parseInt(y / nodeSnap.y) * nodeSnap.y;
 				
 				if (saveInHistory)
 					addToNodeHistory({type: "move", target: node, from: getNodePosition(node), to: [x, y]});
@@ -3331,7 +3550,8 @@
 					
 					const inputNodes = getInputConnectedNodes(node);
 					if (inputNodes.length === 0) {
-						setNodePosition(node, window.xNodeSnap * 2, window.yNodeSnap * 2, false, false);
+						const nodeSnap = getNodeSnap();
+						setNodePosition(node, nodeSnap.x * 2, nodeSnap.y * 2, false, false);
 						node.setAttribute('data-_positionReset', 'true');
 						continue;
 					}
@@ -3366,7 +3586,8 @@
 					setGraphEditorScale(1, false, false, false, false);
 					
 					const noInputNodes = getAllNodesWithoutInputConnection();
-					let yOffset = window.yNodeSnap * 2;
+					const nodeSnap = getNodeSnap();
+					let yOffset = nodeSnap.y * 2;
 					for (const [i, node] of noInputNodes.entries()) {
 						const executionSequence = getMainExecutionSequence(node)[0];
 						if (resetAllPositions)
@@ -3374,7 +3595,7 @@
 						
 						const heightMap = getNodesHeightMap(executionSequence); //200ms
 						rearrangeNodes(executionSequence, heightMap, yOffset); //450ms
-						yOffset += heightMap.reduce((sum, a) => sum + a + window.yNodeSnap * 2, 0) + window.yNodeSnap * 2;
+						yOffset += heightMap.reduce((sum, a) => sum + a + nodeSnap.y * 2, 0) + nodeSnap.y * 2;
 					} 
 					
 					for (const node of document.querySelectorAll("*[data-_rearranged]"))
@@ -3432,7 +3653,8 @@
 			};
 			
 			function rearrangeNodes(nodes = getMainExecutionSequence()[0], heightmap = getNodesHeightMap(nodes), yOffset = 0, _index = 0) {
-				const height = yOffset + heightmap.slice(0, _index).reduce((sum, a) => sum + a + window.yNodeSnap * 2, 0);
+				const nodeSnap = getNodeSnap();
+				const height = yOffset + heightmap.slice(0, _index).reduce((sum, a) => sum + a + nodeSnap.y * 2, 0);
 				for (const node of nodes) {
 					if (node.getAttribute('data-_rearranged') === 'true')
 						continue;
@@ -3464,7 +3686,8 @@
 			
 			function placeNodeNextTo(targetNode, sourceNode, axis) {
 				// const rect = sourceNode.getBoundingClientRect();
-				const x = axis.includes('x') ? getNodePosition(sourceNode)[0] + sourceNode.offsetWidth + (window.xNodeSnap * 2) : getNodePosition(targetNode)[0];
+				const nodeSnap = getNodeSnap();
+				const x = axis.includes('x') ? getNodePosition(sourceNode)[0] + sourceNode.offsetWidth + (nodeSnap.x * 2) : getNodePosition(targetNode)[0];
 				const y = axis.includes('y') ? getNodePosition(sourceNode)[1] : getNodePosition(targetNode)[1];
 				
 				setNodePosition(targetNode, x, y, false, false);
@@ -3583,7 +3806,10 @@
 			};
 			
 			function getNodeCommandCode(node) {
-				return parseInt(node.getAttribute('data-commandCode')) || 0;
+				if (node.getAttribute('data-isCustom') !== "true")
+					return parseInt(node.getAttribute('data-commandCode')) || 0;
+				else
+					return node.getAttribute('data-commandCode') || "";
 			};
 			
 			function getEventPageData(eventType, eventId, pageId, parseIfCurrent = true) {
@@ -4118,7 +4344,7 @@
 						const isTile = tilesetNames.includes(mapEventParameters[1]);
 						mapEventPages[pageId].image = {
 							characterIndex: !isTile ? (Math.floor(mapEventParameters[2] / 48) * 4) + Math.floor((mapEventParameters[2] % 12) / 3) : 0,
-							characterName: mapEventParameters[1],
+							characterName: isTile ? "" : mapEventParameters[1],
 							direction: !isTile ? Math.max(Math.ceil((mapEventParameters[2] - (Math.floor(mapEventParameters[2] / 48) * 48)) / 12), 1) * 2 : 2,
 							pattern: !isTile ? Math.floor((mapEventParameters[2] % 12) % 3) : 0,
 							tileId: isTile ? parseInt(mapEventParameters[2]) : 0
@@ -4170,7 +4396,82 @@
 				// enableCullingGraphNodes();
 			};
 			
-			function _parseNodesBehavior(startingNode = getFirstNode(), indent = 0) {
+			function parseEventConditions() {
+				const firstNode = getFirstNode();
+				const conditionConnection = getNodeConnectionsById(firstNode, 0).input;
+				if (isConnectionConnected(conditionConnection)) {
+					let sConditions = "";
+					let node = getConnectionConnectedNodes(conditionConnection)[0];
+					let inputsCount = getNodeConnectedConnections(node).inputs.length;
+					const queue = [[node, [inputsCount, inputsCount]]];
+					
+					while (queue.length > 0) {
+						node = queue[0][0];
+						sConditions = parseNodeCondition(node, queue, sConditions);
+						
+						if (queue[0][1][0] <= 0)
+							queue.shift();
+						else {
+							node = getNodeConnectedNodes(node).inputs[queue[0][1][1] - queue[0][1][0]];
+							inputsCount = getNodeConnectedConnections(node).inputs.length;
+							
+							queue[0][1][0]--;
+							queue.unshift([node, [inputsCount, inputsCount]]);
+						}
+						
+					}
+					
+					return sConditions;
+				} else
+					return null;
+			};
+			
+			function parseNodeCondition(node, queue, sConditions) {
+				const code = getNodeCommandCode(node);
+				const params = parseNodeInputs(node);
+				const customNodeData = getCustomNodeData(code);
+				if (typeof customNodeData.parseCondition === "function")
+					sConditions = customNodeData.parseCondition(params, queue, sConditions);
+				else
+					switch (code) {
+						case "custom_node_event_conditions_and":
+							if (queue[0][1][0] === queue[0][1][1])
+								sConditions += "(";
+							else if (queue[0][1][0] === 0)
+								sConditions += ")";
+							else
+								sConditions += " && ";
+							break;
+						case "custom_node_event_conditions_or":
+							if (queue[0][1][0] === queue[0][1][1])
+								sConditions += "(";
+							else if (queue[0][1][0] === 0)
+								sConditions += ")";
+							else
+								sConditions += " || ";
+							break;
+						case "custom_node_event_conditions_not":
+							if (queue[0][1][0] === queue[0][1][1])
+								sConditions += "!";
+							break;
+						case "custom_node_event_conditions_switch":
+							sConditions += `s${params[0]}`;
+							break;
+						case "custom_node_event_conditions_variable":
+							sConditions += `v${params.join('_')}`;
+							break;
+						case "custom_node_event_conditions_selfswitch":
+							sConditions += `ss${params[0]}`;
+							break;
+						case "custom_node_event_conditions_item":
+							sConditions += `i${params[0]}`;
+							break;
+					};
+				
+				return sConditions;
+			};
+			
+			function _parseNodesBehavior(startingNode = getFirstNode(), indent = 0) { //obsolete, don't use
 				// const [nodes, loop] = getMainExecutionSequence(startingNode);
 				const nodes = getExecutionSequence(startingNode)[0];
 				const nodesBehavior = [];
@@ -4209,7 +4510,7 @@
 				return nodesBehavior;
 			};
 			
-			function parseNodesBehavior(startingNode = getFirstNode(), indent = 0, sequence = null, onlySelected = false) {
+			function parseNodesBehavior(startingNode = getFirstNode(), indent = 0, sequence = null, onlySelected = false, addEndBehavior = true) {
 				if (!sequence)
 					sequence = getExecutionSequence(startingNode, onlySelected)[0];
 				
@@ -4238,19 +4539,26 @@
 					if (!commandCode)
 						continue;
 					
+					const isCustom = node.getAttribute('data-isCustom') === "true";
+					
 					const nodeInputs = getNodeInputs(node);
 					const command = {
 						code: commandCode,
 						indent: indent,
 						parameters: parseNodeInputs(node, nodeInputs)
 					};
-					nodesBehavior.push(command);
 					
-					if (typeof window[`parseNode${commandCode}`] === "function")
-						window[`parseNode${commandCode}`](command, node, nodesBehavior, nodeInputs, data.subSequence);
+					if (!isCustom) {
+						nodesBehavior.push(command);
+						if (typeof window[`parseNode${commandCode}`] === "function")
+							window[`parseNode${commandCode}`](command, node, nodesBehavior, nodeInputs, data.subSequence);
+					} else
+						if (typeof window._customNodes[commandCode].parse === "function")
+							window._customNodes[commandCode].parse(window, command, node, nodesBehavior, nodeInputs, data.subSequence);
 				}
 				
-				nodesBehavior.push({code: 0, indent: indent, parameters: Array(0)}); //end of behavior
+				if (addEndBehavior)
+					nodesBehavior.push({code: 0, indent: indent, parameters: Array(0)}); //end of behavior
 				
 				// if (indent === 0)
 					// window._parseOnlySelected = undefined;
@@ -4386,6 +4694,12 @@
 			};
 			
 			function parseNode111(command, node, nodesBehavior, nodesInputs, sequence) { //conditionnal branch
+				//variable constant check for string/number
+				if (command.parameters[0] === 1 && command.parameters[2] === 1) {
+					if (!isNaN(Number(command.parameters[3])))
+						command.parameters[3] = Number(command.parameters[3]);
+				}
+				
 				//timer
 				if (command.parameters[0] === 3) {
 					command.parameters[1] = command.parameters[1] * 60 + command.parameters[2];
@@ -4447,6 +4761,11 @@
 			function parseNode121(command, node, nodesBehavior) { //control switch
 				if (command.parameters.length < 3)
 					$.Drag.VisualEvent.insert(command.parameters, 1, command.parameters[0])
+			};
+			
+			function parseNode122(command, node, nodesBehavior) { //control variable
+				if (command.parameters[1] < command.parameters[0])
+					command.parameters[1] = command.parameters[0];
 			};
 			
 			function parseNode124(command, node, nodesBehavior) { //control timer have only one value for mins + secs
@@ -4612,8 +4931,35 @@
 			
 			function refreshNode(node) {
 				redrawNodeCurves(node);
+				const connections = getNodeConnections(node);
+				for (const connection of connections.inputs.concat(connections.outputs))
+					setConnectionConnected(connection, getConnectionCurves(connection).length > 0)
 			};
 			
+			function refreshNodeConnections(node) {
+				//attribute unique connections ids to input and outputs and reattribute correct ids to curves
+				const inputConnections = Array.from(node.querySelectorAll('.exec.inputConnection'));
+				for (const [index, input] of inputConnections.entries()) {
+					const currentConnectionIndex = parseInt(input.getAttribute('data-connectionId'));
+					input.setAttribute('data-connectionId', index);
+					
+					if (currentConnectionIndex >= index) {
+						const connectionCurve = getCurveById(getNodeId(node), currentConnectionIndex, 'right');
+						setCurveConnectionId(connectionCurve, index, 'right');
+					}
+				}
+				
+				const outputConnections = Array.from(node.querySelectorAll('.exec.outputConnection'));
+				for (const [index, output] of outputConnections.entries()) {
+					const currentConnectionIndex = parseInt(output.getAttribute('data-connectionId'));
+					output.setAttribute('data-connectionId', index);
+					
+					if (currentConnectionIndex >= index) {
+						const connectionCurve = getCurveById(getNodeId(node), currentConnectionIndex, 'left');
+						setCurveConnectionId(connectionCurve, index, 'left');
+					}
+				}
+			};
 			
 			// GRAPH CONTEXT MENUS
 			// node context menu
@@ -4703,8 +5049,8 @@
 				const x = useNodeListPosition ? window._nodeListx : graphEditorRect.width / 2 - graphEditorRect.x;
 				const y = useNodeListPosition ? window._nodeListy : graphEditorRect.height / 2 - graphEditorRect.y - document.querySelector('#bottom-panel').getBoundingClientRect().height;
 				let [graphx, graphy] = getGraphCoordinatesFromAbsolute(x, y);
-				// graphx = parseInt(graphx / window.xNodeSnap) * window.xNodeSnap;
-				// graphy = parseInt(graphy / window.yNodeSnap) * window.yNodeSnap;
+				// graphx = parseInt(graphx / nodeSnap.x) * nodeSnap.x;
+				// graphy = parseInt(graphy / nodeSnap.y) * nodeSnap.y;
 				
 				const firstNodePosition = window._nodeClipboard.positions[0];
 				const clones = [];
@@ -4917,16 +5263,151 @@
 				closeNodeListMenu();
 			};
 
-			// node list menu
-			function showNodeListMenu(e) {
+			//--------------------------------------------------------------------------------------------------------
+			// NODE LIST MENU
+			
+			function setupNodeList() {
+				const RMName = $.Utils.RPGMAKER_NAME;
+				const nodeList = document.querySelector('#nodeList');
+				let html =  ``;
+				
+				//native commands
+				for (const commandCategory in $.Drag.VisualEvent.commandsCategories) {
+					const commands = $.Drag.VisualEvent.commandsCategories[commandCategory];
+					if (commands.length > 0) {
+						html += `<div><p data-commandCategory="${commandCategory}">${commandCategory.toUpperCase()}</p>`;
+						for (const command of commands) {
+							if (command === "command357")
+								continue;
+							
+							if ($.Drag.VisualEvent.commandsEngine[command] !== undefined && $.Drag.VisualEvent.commandsEngine[command] !== RMName)
+								continue;
+							
+							const commandName = $.Drag.VisualEvent.getCommandName(command);
+							html += `
+								<div id="node-list-command" onclick="addNodeFromNodeList(this);" data-exclusivity="exec" data-commandCategory="${commandCategory}" data-command="${command}" data-commandName="${commandName}">
+									${commandName}
+								</div>`;
+							
+						}
+						html += `</div>`;
+					}
+				}
+				
+				nodeList.innerHTML += html;
+				
+				//import plugin commands
+				let pluginReady = 0;
+				
+				if (RMName === "MZ") {
+					for (const plugin of $.Drag.VisualEvent.getPluginList()) {
+						console.log(`Importing commands from ${plugin}...`); 
+						$.Drag.VisualEvent.fetchPluginCommands(plugin, function(pluginData) {
+							html = ``;
+							if (pluginData.commands && Object.keys(pluginData.commands).length > 0) {
+								html += `<div><p data-commandCategory="${plugin}">${plugin.toUpperCase()}</p>`;
+								for (const command in pluginData.commands) {
+									const commandText = pluginData.commands[command].text;
+									const commandName = pluginData.commands[command].name;
+									html += `
+										<div id="node-list-command" onclick="addNodeFromNodeList(this);" data-isPluginCommand="true" data-exclusivity="exec" data-commandCategory="${plugin}" data-command="${command}" data-commandText="${commandText}" data-commandName="${commandName}">
+											${commandText || commandName || ""}
+										</div>`;
+								}
+								html += `</div>`;
+								
+								console.log(`Successfully imported ${Object.keys(pluginData.commands).length} commands from ${plugin} !`); 
+							}
+							nodeList.innerHTML += html;
+							
+							pluginReady++;
+							if (pluginReady >= $.Drag.VisualEvent.getPluginList().length)
+								window._mzPluginCommandsLoaded = true;
+							
+						}, false, true);
+					}
+				}
+				
+				//import custom Nodes
+				console.log(`Importing custom nodes...`);
+				window._customNodes = {};
+				const filenames = $.Drag.VisualEvent.getFileList('html/custom_nodes').filter(file => file.startsWith("node_") && file.endsWith(".js"));
+				for (filename of filenames) {
+					const customNodes = require(`./html/custom_nodes/${filename.replace('.js', '')}`);
+					for (const customNode of Array.isArray(customNodes) ? customNodes : [customNodes]) {
+						if (!customNode.id || !customNode.engine)
+							continue;
+						
+						if (!Array.isArray(customNode.engine))
+							customNode.engine = [customNode.engine];
+						
+						if (!customNode.engine.map(item => item.toUpperCase().trim()).includes(RMName))
+							continue;
+						
+						window._customNodes[customNode.id] = customNode;
+						const exclusivity = `${customNode.exec_input && customNode.exec_input_params && customNode.exec_input_params.exclusive ? customNode.exec_input_params.exclusive : customNode.exec_input ? 'exec' : ''} ${customNode.exec_output && customNode.exec_output_params && customNode.exec_output_params.exclusive ? customNode.exec_output_params.exclusive : customNode.exec_input ? 'exec' : ''}`.trim().toLowerCase();
+						if (nodeList.querySelector(`p[data-commandCategory="${customNode.category}"]`))
+							nodeList.querySelector(`p[data-commandCategory="${customNode.category}"]`).parentElement.innerHTML += `
+								<div id="node-list-command" onclick="addNodeFromNodeList(this);" data-isCustom="true" data-exclusivity="${exclusivity}" data-commandCategory="${customNode.category}" data-command="${customNode.id}" data-commandName="${customNode.name}">
+									${customNode.name || ""}
+								</div>
+							`;
+						else
+							nodeList.innerHTML += `
+								<div>
+									<p data-commandCategory="${customNode.category}">${customNode.category.toUpperCase()}</p>
+									<div id="node-list-command" onclick="addNodeFromNodeList(this);" data-isCustom="true" data-exclusivity="${exclusivity}" data-commandCategory="${customNode.category}" data-command="${customNode.id}" data-commandName="${customNode.name}">
+										${customNode.name || ""}
+									</div>
+								</div>
+							`;
+							
+						if (customNode.exec_input_params && customNode.exec_input_params.symbol)
+							$.Drag.VisualEvent.addCSSStylesheet(document, $.Drag.VisualEvent.createCSSStylesheet(`.${customNode.id}_input::after { content: url(${$.Drag.VisualEvent.SVGtoURI(customNode.exec_input_params.symbol)}) !important; }`));
+						if (customNode.exec_output_params && customNode.exec_output_params.symbol)
+							$.Drag.VisualEvent.addCSSStylesheet(document, $.Drag.VisualEvent.createCSSStylesheet(`.${customNode.id}_output::after { content: url(${$.Drag.VisualEvent.SVGtoURI(customNode.exec_output_params.symbol)}) !important; }`));
+					}
+					console.log(`Imported ${filename} successfully !`);
+				}
+			};
+			
+			function searchNodeList(input) {
+				const search = input.value.trim().toLowerCase();
+				filterNodeList(search);
+			};
+			
+			function filterNodeList(search = "") {
+				const nodeList = document.querySelector('#nodeList');
+				const exclusivity = nodeList.getAttribute('data-exclusivity') || "";
+				const list = nodeList.querySelectorAll('div[data-commandName]');
+				for (const elem of list) {
+					const meetSearch = elem.getAttribute('data-commandName').toLowerCase().includes(search) || elem.getAttribute('data-commandCategory').toLowerCase().includes(search) || (elem.getAttribute('data-commandText') && elem.getAttribute('data-commandText').toLowerCase().includes(search));
+					const elemExclusivity = elem.getAttribute('data-exclusivity') || "";
+					const meetExclusivity = !exclusivity || $.Drag.VisualEvent.arrayIncludesAny(elemExclusivity.trim().toLowerCase().split(' '), exclusivity.split(' '));
+					if (meetSearch && meetExclusivity)
+						elem.classList.remove('hidden');
+					else
+						elem.classList.add('hidden');
+				}
+				
+				//hide category header if empty
+				const categories = nodeList.querySelectorAll('p[data-commandCategory]');
+				for (const category of categories) 
+					if (nodeList.querySelectorAll(`div[data-commandCategory="${category.getAttribute('data-commandCategory')}"]:not(.hidden)`).length > 0)
+						category.classList.remove('hidden');
+					else
+						category.classList.add('hidden');
+			};
+			
+			function showNodeListMenu(e, exclusivity = "") {
 				const graphEditorRect = document.querySelector('#graphEditor').getBoundingClientRect();
 				const bottomPanelRect = document.querySelector('#bottom-panel').getBoundingClientRect();
 				const nodeList = document.querySelector("#nodeList");
 				nodeList.style.display = "block";
 				
 				const nodeListRect = nodeList.getBoundingClientRect();
-				window._nodeListx = e.x + nodeListRect.width > graphEditorRect.right ? e.x - graphEditorRect.x - (e.x + nodeListRect.width - graphEditorRect.right): e.x - graphEditorRect.x;
-				window._nodeListy = e.y + nodeListRect.height > bottomPanelRect.top ? e.y - graphEditorRect.y - (e.y + nodeListRect.height - bottomPanelRect.top): e.y - graphEditorRect.y;
+				window._nodeListx = e.x + nodeListRect.width > graphEditorRect.right ? e.x - graphEditorRect.x - (e.x + nodeListRect.width - graphEditorRect.right) : e.x - graphEditorRect.x;
+				window._nodeListy = e.y + nodeListRect.height > bottomPanelRect.top ? e.y - graphEditorRect.y - (e.y + nodeListRect.height - bottomPanelRect.top) : e.y - graphEditorRect.y;
 				nodeList.style.left = `${window._nodeListx}px`;
 				nodeList.style.top = `${window._nodeListy}px`;
 				
@@ -4940,10 +5421,14 @@
 				const search = nodeList.querySelector('#node-list-search');
 				search.focus();
 				search.select();
+
+				nodeList.setAttribute('data-exclusivity', exclusivity || "");
+				filterNodeList();
 			};
 			
 			function closeNodeListMenu() {
 				const nodeList = document.querySelector("#nodeList");
+				nodeList.removeAttribute('data-exclusivity');
 				nodeList.style.display = "none";
 				window._nodeListDisplayed = false;
 				
@@ -5130,6 +5615,12 @@
 				if (to)
 					setConnectionConnected(to, true);
 				
+				if (to && to.getAttribute("data-curveColor"))
+					curve.style.stroke = to.getAttribute("data-curveColor");
+				
+				if (from && from.getAttribute("data-curveColor"))
+					curve.style.stroke = from.getAttribute("data-curveColor");
+				
 				// if (from && !from.classList.contains('exec'))
 					// curve.style.stroke = "cornflowerblue";
 				
@@ -5139,7 +5630,7 @@
 				curve.setAttribute('data-leftNodeId', from ? from.getAttribute('data-nodeId') : null);
 				curve.setAttribute('data-leftConnectionId', from ? from.getAttribute('data-connectionId') : null);
 				
-				curve.setAttribute('data-righNodeId', to ? to.getAttribute('data-nodeId') : null);
+				curve.setAttribute('data-rightNodeId', to ? to.getAttribute('data-nodeId') : null);
 				curve.setAttribute('data-rightConnectionId', to ? to.getAttribute('data-connectionId') : null); 
 			};
 			
@@ -5170,7 +5661,7 @@
 					const leftNodeId = parseInt(curve.getAttribute('data-leftNodeId'));
 					if (leftNodeId !== null)
 						updateCacheGraphNodeConnectionsMap(getNodeById(leftNodeId));
-					const rightNodeId = parseInt(curve.getAttribute('data-righNodeId'));
+					const rightNodeId = parseInt(curve.getAttribute('data-rightNodeId'));
 					if (rightNodeId !== null)
 						updateCacheGraphNodeConnectionsMap(getNodeById(rightNodeId));
 				}
@@ -5190,7 +5681,7 @@
 				const nodeId = parseInt(window.nodeMouseDown.getAttribute('data-nodeId'));
 				for (const input of window.nodeMouseDown.querySelectorAll('.inputConnection')) {
 					const inputId = parseInt(input.getAttribute('data-connectionId'));
-					for (const curve of document.querySelectorAll(`path[data-righNodeId="${nodeId}"][data-rightConnectionId="${inputId}"]`)) {
+					for (const curve of document.querySelectorAll(`path[data-rightNodeId="${nodeId}"][data-rightConnectionId="${inputId}"]`)) {
 						const fromId = parseInt(curve.getAttribute('data-leftNodeId'));
 						const outputId = parseInt(curve.getAttribute('data-leftConnectionId'));
 						const output = document.querySelector(`#graphNode[data-nodeId="${fromId}"] .outputConnection[data-connectionId="${outputId}"]`);
@@ -5201,7 +5692,7 @@
 				for (const output of window.nodeMouseDown.querySelectorAll('.outputConnection')) {
 					const outputId = parseInt(output.getAttribute('data-connectionId'));
 					for (const curve of document.querySelectorAll(`path[data-leftNodeId="${nodeId}"][data-leftConnectionId="${outputId}"]`)) {
-						const toId = parseInt(curve.getAttribute('data-righNodeId'));
+						const toId = parseInt(curve.getAttribute('data-rightNodeId'));
 						const inputId = parseInt(curve.getAttribute('data-rightConnectionId'));
 						const input = document.querySelector(`#graphNode[data-nodeId="${toId}"] .inputConnection[data-connectionId="${inputId}"]`);
 						
@@ -5233,7 +5724,7 @@
 				if (!curve)
 					return;
 				
-				const toId = parseInt(curve.getAttribute('data-righNodeId'));
+				const toId = parseInt(curve.getAttribute('data-rightNodeId'));
 				const inputId = parseInt(curve.getAttribute('data-rightConnectionId'));
 				const fromId = parseInt(curve.getAttribute('data-leftNodeId'));
 				const outputId = parseInt(curve.getAttribute('data-leftConnectionId'));
@@ -5291,11 +5782,28 @@
 				return document.querySelectorAll(`path`);
 			};
 			
+			function getCurveById(nodeId, connectionId, dir) {
+				if (dir === "left")
+					return document.querySelector(`#graphSVG #curve[data-leftNodeId="${nodeId}"][data-leftConnectionId="${connectionId}"]`);
+				else
+					return document.querySelector(`#graphSVG #curve[data-rightNodeId="${nodeId}"][data-rightConnectionId="${connectionId}"]`);
+			};
+			
+			function setCurveConnectionId(curve, id, dir) {
+				if (!curve)
+					return;
+				
+				if (dir === "left")
+					curve.setAttribute("data-leftConnectionId", id);
+				else
+					curve.setAttribute("data-rightConnectionId", id);
+			};
+			
 			//-------------------------------------------------------------------------------------------------------
 			// GRAPH CONNECTIONS
 			
 			function moveConnection(event) {
-				if (!window.connectionMouseDown || !window.connectionMouseDown.classList.contains('exec'))
+				if (!window.connectionMouseDown || !(window.connectionMouseDown.classList.contains('exec') || window.connectionMouseDown.classList.contains('connectable')))
 					return;
 				
 				let connectionType = getConnectionType(connectionMouseDown);
@@ -5363,11 +5871,13 @@
 			};	
 			
 			function onEndMoveConnection(event) {				
-				if (!window.connectionMouseDown || !connectionMouseDown.classList.contains('exec'))
+				if (!window.connectionMouseDown || !(window.connectionMouseDown.classList.contains('exec') || window.connectionMouseDown.classList.contains('connectable')))
 					return;
 				
 				const curves = getConnectionCurves(window.connectionMouseDown);
 				const curve = window._grabbedCurve ? window._grabbedCurve : curves[0];
+				if (!curve)
+					return;
 				
 				let connectionType = getConnectionType(window.connectionMouseDown);
 				if (curve.getAttribute('data-_temp') === 'true')
@@ -5384,10 +5894,13 @@
 				//target is valid
 				if (isConnection(target) && isConnectionTargetValid(target, window.connectionMouseDown, curve)) {
 					
-					//connection already have a curve, destroy it
-					// const currentCurve = getConnectionCurve(target);
-					// if (currentCurve && currentCurve !== curve)
-						// removeCurve(currentCurve, false);
+					//mono connection already have a curve, destroy it
+					if (target.classList.contains('mono')) {
+						const currentCurves = getConnectionCurves(target);
+						for (const currentCurve of currentCurves)
+							if (currentCurve !== curve)
+								removeCurve(currentCurve, false);
+					}
 					
 					// output connection already have a curve, destroy it
 					if (connectionType === "outputConnection") {
@@ -5407,7 +5920,7 @@
 						const connectionId = target.getAttribute('data-connectionId');
 						if (connectionType === "inputConnection") {
 							curve.setAttribute('data-rightConnectionId', connectionId); 
-							curve.setAttribute('data-righNodeId', nodeId);
+							curve.setAttribute('data-rightNodeId', nodeId);
 						} else {
 							curve.setAttribute('data-leftConnectionId', connectionId); 
 							curve.setAttribute('data-leftNodeId', nodeId);
@@ -5419,12 +5932,15 @@
 					
 					updateCacheGraphNodeConnectionsMap(getConnectionNode(target));
 					updateCacheGraphNodeConnectionsMap(getConnectionNode(window.connectionMouseDown));
+					updateCacheGraphNodeConnectionsMap(getConnectionNode(getCurveLeftConnection(curve)));
+					updateCacheGraphNodeConnectionsMap(getConnectionNode(getCurveRightConnection(curve)));
+					
 					setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
 				} else {
-					//target is not valid, destroy curve
-					// removeCurve(curve);
+					//target is not valid, set curve as pending, show node list
 					curve.setAttribute('data-_pending', 'true');
-					showNodeListMenu(event);
+					const exclusive = window.connectionMouseDown.getAttribute('data-exclusive') ? window.connectionMouseDown.getAttribute('data-exclusive') : window.connectionMouseDown.classList.contains('exec') ? 'exec' : '';
+					showNodeListMenu(event, exclusive);
 				}
 			};
 			
@@ -5448,6 +5964,7 @@
 			
 			function setConnectionConnected(connection, connected) {
 				connection.setAttribute('data-connected', connected === true || connected === "true");
+				triggerModsFunction("onNodeConnection", [getConnectionNode(connection), connection, connected]);
 			};
 			
 			function getConnectionType(connection) {
@@ -5472,6 +5989,8 @@
 			};
 			
 			function getNodeConnections(node) {
+				if (!node)
+					return {inputs: [], outputs: []};
 				const inputs = Array.from(node.querySelectorAll('#node-input > .inputConnection'));
 				const outputs = Array.from(node.querySelectorAll('.nodeOutput > .outputConnection'));
 				return {inputs: inputs, outputs : outputs};
@@ -5517,7 +6036,7 @@
 				const connectionId = parseInt(connection.getAttribute('data-connectionId'));
 				
 				if (connectionType === "inputConnection")
-					return Array.from(document.querySelectorAll(`path[data-righNodeId="${nodeId}"][data-rightConnectionId="${connectionId}"]`));
+					return Array.from(document.querySelectorAll(`path[data-rightNodeId="${nodeId}"][data-rightConnectionId="${connectionId}"]`));
 				else {
 					const curve = document.querySelector(`path[data-leftNodeId="${nodeId}"][data-leftConnectionId="${connectionId}"]`);
 					if (curve)
@@ -5542,7 +6061,7 @@
 					return null;
 				
 				const rightConnectionId = parseInt(curve.getAttribute('data-rightConnectionId'));
-				const righNodeId = parseInt(curve.getAttribute('data-righNodeId'));
+				const righNodeId = parseInt(curve.getAttribute('data-rightNodeId'));
 				const righNode = document.querySelector(`.inputConnection[data-nodeId="${righNodeId}"][data-connectionId="${rightConnectionId}"]`);
 				return righNode;
 			};
@@ -5610,6 +6129,31 @@
 				return connectionsMap;
 			};
 			
+			function rebuildListFromConnectionsMap(node, connectionsMap) {
+				if (!node || !connectionsMap)
+					return;
+				
+				const inputLength = getNodeConnections(node).inputs.length;
+				if (connectionsMap.inputs.length > inputLength) {
+					const list = node.querySelector('#input-container *[data-isList="true"]');
+					if (list) {
+						const button = list.parentElement.querySelector('#add-list-input-button');
+						for (let i = inputLength; i < connectionsMap.inputs.length; i++)
+							$.Drag.VisualEvent.addListInput(button);
+					}
+				}
+				
+				const outputLength = getNodeConnections(node).outputs.length;
+				if (connectionsMap.outputs.length > outputLength) {
+					const list = node.querySelector('#output-container *[data-isList="true"]');
+					if (list) {
+						const button = node.querySelector('#output-container *[data-isList="true"]').parentElement.querySelector('#add-list-input-button');
+						for (let i = outputLength; i < connectionsMap.outputs.length; i++)
+							$.Drag.VisualEvent.addListInput(button);
+					}
+				}
+			};
+			
 			function reconnectNodeFromConnectionsMap(node, connectionsMap, inputOnly = false, frag = document.createDocumentFragment(), append = true) {
 				if (!node || !connectionsMap)
 					return;
@@ -5629,7 +6173,6 @@
 						
 						const nodeTargets = target.nodeId.map(id => getNodeById(id));
 						const connectionTargets = nodeTargets.map((nodeTarget, index) => getNodeConnectionsById(nodeTarget, target.connectionId[index]).output);
-						
 						const existingCurves = getConnectionCurves(connection);
 						for (const existingCurve of existingCurves)
 							if (existingCurve)
@@ -5643,12 +6186,14 @@
 						
 						for (const connectionTarget of connectionTargets)
 							if (connectionTarget)
-								drawCurve(connectionTarget, connection, null, frag); //200ms
+								drawCurve(connectionTarget, connection, null, frag);
+							
 					} else if (isConnectionConnected(connection)) {
 						const existingCurves = getConnectionCurves(connection);
 						for (const existingCurve of existingCurves)
 							if (existingCurve)
 								removeCurve(existingCurve, false);
+						setConnectionConnected(connection, false);
 					}
 				}
 				
@@ -5691,6 +6236,7 @@
 						for (const existingCurve of existingCurves)
 							if (existingCurve)
 								removeCurve(existingCurve, false);
+						setConnectionConnected(connection, false);
 					}
 				}
 				
@@ -5705,7 +6251,14 @@
 				if (curve.getAttribute('data-_temp') === 'true')
 						connectionType = connectionType === "inputConnection" ? "outputConnection" : "inputConnection";
 				
-				if (target.classList.contains('exec') !== connection.classList.contains('exec'))
+				if (!(target.classList.contains('exec') || target.classList.contains('connectable')) && !(connection.classList.contains('exec') || connection.classList.contains('exec')))
+					return false;
+				
+				const connectionExclusive = connection.getAttribute('data-exclusive');
+				const targetExclusive = target.getAttribute('data-exclusive');
+				if (!!connectionExclusive !== !!targetExclusive)
+					return false;
+				if (connectionExclusive && targetExclusive && !$.Drag.VisualEvent.arrayIncludesAny(targetExclusive.split(' '), connectionExclusive.split(' ')))
 					return false;
 				
 				if (connectionType === "inputConnection") {
@@ -5715,7 +6268,7 @@
 					const rightConnection = getCurveRightConnection(curve);
 					return target.classList.contains(connectionType) && target.getAttribute('data-nodeId') !== rightConnection.getAttribute('data-nodeId');
 				}
-			}
+			};
 
 			//-------------------------------------------------------------------------------------------------------
 			// CACHE
@@ -6147,18 +6700,31 @@
 				
 				const [x, y] = getNodePosition(node);
 				const nodeId = getNodeId(node);
-				const commandCode = getNodeCommandCode(node);
+				const isCustom = node.getAttribute('data-isCustom') === "true";
+				const commandCode = isCustom ? node.getAttribute('data-commandCode') : getNodeCommandCode(node);
 				const commandName = node.getAttribute('data-pluginCommandName') || null;
 				const commandText = node.getAttribute('data-pluginCommandText') || null;
 				const commandCategory = node.getAttribute('data-pluginName') || null;
 				
 				const parameters = commandCode !== 357 ? parseNodeInputs(node, null, false, false, false) : parseNodeInputs(node, null, false, true, false);
 				const connectionsMap = getNodeConnectionsMap(node);
+				
+				const nodeInputs = getNodeInputs(node);
+				const lists = [];
+				for (const input of nodeInputs)
+					if (input.getAttribute('data-isList') === 'true')
+						if (!lists.includes(input.getAttribute('data-listId')))
+							lists.push(input.getAttribute('data-listId'));
+							
+				let listsLength = [];
+				for (const listId of lists)
+					listsLength.push(node.querySelectorAll(`*[data-listId='${listId}']`).length);
+				listsLength = listsLength.concat(Array.from(node.querySelectorAll('#list-wrapper')).map(list => list.children.length));
 
 				eventCache.nodes[nodeId] = {
 					x: x, y: y, nodeId: nodeId, 
 					commandCode: commandCode, commandName: commandName, commandText: commandText, commandCategory: commandCategory, 
-					parameters: parameters, connectionsMap: connectionsMap
+					parameters: parameters, connectionsMap: connectionsMap, listsLength: listsLength
 				};
 				
 				if (!commandName)
@@ -6400,6 +6966,37 @@
 			//-------------------------------------------------------------------------------------------------------
 			// GRAPH LISTENERS && OBSERVERS
 			
+			function getNodeAudioParameters(node) {
+				const inputsParameters = node.querySelectorAll('input[data-isCommandParameter="true"]');
+				const parameters = Array.from(inputsParameters).map(element => element.value);
+				
+				return {
+					type: inputsParameters[0].getAttribute('data-type') || "bgm",
+					name: parameters[0],
+					volume: parseInt(parameters[1]),
+					pitch: parseInt(parameters[2]),
+					pan: parseInt(parameters[3])
+				};
+			};
+			
+			function playAudio(button) {				
+				const node = $.Drag.VisualEvent.getAncestorById(button, "graphNode");
+				const parameters = getNodeAudioParameters(node);
+				$.Drag.VisualEvent.playAudio(button, parameters);
+			};
+			
+			function updateAudio(input) {				
+				const node = $.Drag.VisualEvent.getAncestorById(input, "graphNode");
+				const parameters = getNodeAudioParameters(node)
+				$.Drag.VisualEvent.updateAudio(input, parameters);
+			};
+			
+			function stopAudio(button) {
+				const node = $.Drag.VisualEvent.getAncestorById(button, "graphNode");
+				const type = node.querySelectorAll('input[data-isCommandParameter="true"]')[0].getAttribute('data-type') || "bgm";
+				$.Drag.VisualEvent.stopAudio(button, type);
+			};
+			
 			function onInputChange(input) {
 				if (!input || input.classList.contains('onReadyOnChange') || !window._registerInputChange)
 					return;
@@ -6573,9 +7170,11 @@
 						for (const node of nodes) {
 							const [xNode, yNode] = getNodePosition(node);
 							const [xOffset, yOffset] = getNodeOffset(node);
-							setNodePosition(node, xNode + xOffset, yNode + yOffset, true);
-							setNodeOffset(node, 0, 0);
-							setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
+							if (xOffset !== 0 || yOffset !== 0) {
+								setNodePosition(node, xNode + xOffset, yNode + yOffset, true);
+								setNodeOffset(node, 0, 0);
+								setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
+							}
 						}
 					}
 					

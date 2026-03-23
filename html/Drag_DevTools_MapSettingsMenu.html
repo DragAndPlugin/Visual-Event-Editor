@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="viewport" content="user-scalable=no">
+        <link rel="icon" href="../icon/icon.png" type="image/png">
+        <link rel="apple-touch-icon" href="../icon/icon.png">
+		<link href="../css/Drag_DevTools.css" rel="stylesheet">
+		<style>
+			html {
+				overflow-y: auto;
+			}
+
+			#content {
+				height: 100%;
+				margin: 0;
+				overflow: hidden;
+			}
+			
+			#properties-panel {
+				text-align: center;
+				position: relative;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				overflow-y: auto;
+				float: left;
+				width: 50%;
+				height: calc(100% - 3.125em);
+				box-sizing: border-box;
+				border-right: 0.125em solid rebeccapurple;
+			}
+			
+			#inputs-container {
+				width: 100%;
+			}
+			
+			#inputs-wrapper {
+				padding: 0.5em;
+				display: grid;
+				grid-column-gap: 0.5em;
+				grid-row-gap: 0.5em;
+			}
+			
+			#image-input-wrapper {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				flex-direction: column;
+			}
+			
+			#encounters-panel {
+				box-sizing: border-box;
+				display: flex;
+				flex-direction: column;
+				float: left;
+				width: 50%;
+				height: calc(100% - 3.125em);
+				overflow-y: auto;
+			}
+			
+			#encounters-panel > h3, #properties-panel h3 {
+				background: rgb(0 0 0 / 0.3);
+				margin: 0;
+				box-sizing: border-box;
+				border-bottom: 0.0625em solid rebeccapurple;
+				border-top: 0.0625em solid rebeccapurple;
+				text-align: center;
+				font-size: 1.75em;
+				padding: 0.75em 1.5em;
+			}
+			
+			#list-properties, #encounters-list > div {
+				display: grid;
+				grid-template-columns: 0.6fr 0.25fr 1fr;
+				grid-template-rows: 1fr;
+				line-height: 3em;
+			}
+			
+			#list-properties > span {
+				padding-left: 0.3125em;
+				font-weight: bold;
+				box-sizing: border-box;
+				border-right: 0.0625em solid lightgrey;
+			}
+			
+			#encounters-list > div {
+				line-height: 2em;
+			}
+			
+			#encounters-list > div > * {
+				padding-left: 0.625em;
+				box-sizing: border-box;
+				border-right: 0.0625em solid lightgrey;
+			}
+			
+			#list-properties > span:nth-child(3n), #encounters-list > div > *:nth-child(3n) {
+				border-right: 0em;
+			}
+			
+			#encounters-list > div:nth-child(odd) > * {
+				background: rgb(0 0 0 / .15);
+			}
+			
+			#encounters-list > div:nth-child(even) > * {
+				background: rgb(255 255 255 / 0.15);
+			}
+			
+			#encounters-list input[type="text"] {
+				min-width: unset !important;
+			}
+			
+			hr {
+				width: 100%;
+				border: 0;
+				height: 1px;
+				margin: 0.625em 0;
+				position: relative;
+				background: -webkit-linear-gradient(left, rgb(255 255 255 / 0%) 0%,rgb(255 255 255 / 0%) 10%,rgb(255 255 255 / 65%) 50%,rgb(255 255 255 / 0%) 90%,rgb(255 255 255 / 0%) 100%);
+			}
+			
+			button {
+				padding: 0.625em 1.5em;
+			}
+			
+			.columnGap05em {
+				margin-top: -0.5em;
+			}
+			
+			.search {
+				padding: 0.5em;
+				cursor: pointer;
+				border: 0.125em solid transparent;
+				display: flex;
+				align-items: center;
+				justify-content: flex-start;
+			}
+			
+			.search > * {
+				margin-right: 0.25em;
+			}
+			
+			.search > *:last-child {
+				margin-right: 0em;
+			}
+			
+			.search > svg {
+				min-width: 1.5625em;
+				min-height: 1.5625em;
+				width: 1.5em;
+				height: 1.5em;
+			}
+			
+			#bottom-container {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				padding: 0.5em 1em;
+				border-top: 0.125em solid rebeccapurple;
+				background-color: var(--background-color);
+				display: flex;
+				justify-content: flex-end;
+				height: 3.125em;
+				box-sizing: border-box;
+			}
+			
+			#bottom-container > * {
+				margin-right: 1.5em;
+			}
+			
+			#bottom-container > *:last-child {
+				margin-right: 0em;
+			}
+
+			#bottom-container > button {
+				cursor: pointer;
+				padding: 0.5em 2em;
+			}
+		</style>
+    </head>
+    <body style="height: 100%">
+		<div id="content">
+			<div id="properties-panel">
+				<div id="inputs-container"></div>
+			</div>
+			<div id="encounters-panel">
+				<h3>Encounter List </h3>
+				<div class="search">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="25px" height="25px">
+						<circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/>
+						<line x1="16.5" y1="16.5" x2="22" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+					</svg>
+					<input type="text" placeholder="Search by name, weight, range" onchange="searchEncounters(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</div>
+				<div id="list-properties">
+					<span>Encounter</span>
+					<span>Weight</span>
+					<span>Range</span>
+				</div>
+				<div id="encounters-list"></div>
+			</div>
+			<div id="bottom-container">
+				<button onclick="ok()">OK</button>
+				<button onclick="quit();">Cancel</button>
+			</div>
+		</div>
+		<!--<div onclick="toggleLightMode()" id="lightMode">
+			<span>&#9790;</span>
+			<span>&#9728;</span>
+		</div>-->
+		<script type="text/javascript">
+			function main() {
+				document.title = `Drag_DevTools_MapSettingsMenu`;
+				loadDataMainWindow();
+				$.Drag.VisualEvent.setLightMode(document);
+				
+				window.data.mapFileName = $.Drag.VisualEvent.getMapFileName(data.mapId);
+				$.Drag.VisualEvent.loadDataFile(window.data.mapFileName, onMapDataLoaded);
+				$.Drag.VisualEvent.loadDataFile("MapInfos", onMapInfosLoaded);
+			};
+
+			function loadDataMainWindow() {
+				$ = window.opener;
+			};
+			
+			function onMapDataLoaded(data) {
+				window.data.map = data;
+				
+				if (window.data.mapInfos)
+					makeContent();
+			};
+			
+			function onMapInfosLoaded(data) {
+				window.data.mapInfos = data;
+				
+				if (window.data.map)
+					makeContent();
+			};
+			
+			function makeContent() {
+				makeSettingsInputs();
+				makeEncountersList();
+				$.Drag.VisualEvent.triggerAllOnReadyOnChange(document);
+			};
+			
+			function makeSettingsInputs() {
+				const inputsContainer = document.querySelector('#inputs-container');
+				
+				const bgm = $.Drag.VisualEvent.getInputParameters("bgm");
+				bgm.value = window.data.map.bgm.name;
+				bgm.disabled = !window.data.map.autoplayBgm;
+				bgm.class = "bgm-input";
+				const bgmv = $.Drag.VisualEvent.getInputParameters("volume");
+				bgmv.value = window.data.map.bgm.volume;
+				bgmv.disabled = !window.data.map.autoplayBgm;
+				bgmv.class = "bgmv-input";
+				const bgmpi = $.Drag.VisualEvent.getInputParameters("pitch");
+				bgmpi.value = window.data.map.bgm.pitch;
+				bgmpi.disabled = !window.data.map.autoplayBgm;
+				bgmpi.class = "bgmpi-input";
+				const bgmpa = $.Drag.VisualEvent.getInputParameters("pan");
+				bgmpa.value = window.data.map.bgm.pan;
+				bgmpa.disabled = !window.data.map.autoplayBgm;
+				bgmpa.class = "bgmpa-input";
+				
+				const bgs = $.Drag.VisualEvent.getInputParameters("bgs");
+				bgs.value = window.data.map.bgs.name;
+				bgs.disabled = !window.data.map.autoplayBgs;
+				bgs.class = "bgs-input";
+				const bgsv = $.Drag.VisualEvent.getInputParameters("volume");
+				bgsv.value = window.data.map.bgs.volume;
+				bgsv.disabled = !window.data.map.autoplayBgs;
+				bgsv.class = "bgsv-input";
+				const bgspi = $.Drag.VisualEvent.getInputParameters("pitch");
+				bgspi.value = window.data.map.bgs.pitch;
+				bgspi.disabled = !window.data.map.autoplayBgs;
+				bgspi.class = "bgspi-input";
+				const bgspa = $.Drag.VisualEvent.getInputParameters("pan");
+				bgspa.value = window.data.map.bgs.pan;
+				bgspa.disabled = !window.data.map.autoplayBgs;
+				bgspa.class = "bgspa-input";
+				
+				const play = $.Drag.VisualEvent.getInputParameters("play");
+				const stop = $.Drag.VisualEvent.getInputParameters("stop");
+				
+				const battlebacks = $.Drag.VisualEvent.getInputParameters("battlebacks");
+				battlebacks.value = [window.data.map.battleback1Name || "", window.data.map.battleback2Name || ""];
+				battlebacks.disabled = !window.data.map.specifyBattleback;
+				battlebacks.class = "battlebacks-input";
+				
+				const parallax = $.Drag.VisualEvent.getInputParameters("parallax");
+				parallax.value = window.data.map.parallaxName;
+				parallax.class = "parallax-input";
+				
+				inputsContainer.innerHTML = `
+					<div>
+						<h3>General Settings</h3>
+						<div id="inputs-wrapper" style="grid-template-columns: 1fr 1fr;">
+							<div>
+								<label>Name :</label>
+								${$.Drag.VisualEvent.getInputField({type: "string", name: "Name", placeholder: "Enter name...", value: window.data.mapInfos[window.data.mapId].name || "", class: 'name-input'})}
+							</div>
+							<div>
+								<label>Display Name :</label>
+								${$.Drag.VisualEvent.getInputField({type: "string", name: "Display Name", placeholder: "Enter name...", value: window.data.map.displayName || "", class: 'display-name-input'})}
+							</div>
+						</div>
+						<hr>
+						<div id="inputs-wrapper" style="grid-template-columns: 1fr 0.5fr 0.5fr;">
+							<div>
+								<label>Tileset :</label>
+								${$.Drag.VisualEvent.getInputField({type: "tileset", name: "Tileset", value: window.data.map.tilesetId, class: 'tileset-input'})}
+							</div>
+							<div>
+								<label>Width :</label>
+								${$.Drag.VisualEvent.getInputField({type: "integer", name: "Width", value: window.data.map.width, class: 'width-input'})}
+							</div>
+							<div>
+								<label>Height :</label>
+								${$.Drag.VisualEvent.getInputField({type: "integer", name: "Height", value: window.data.map.height, class: 'height-input'})}
+							</div>
+						</div>
+						<hr>
+						<div id="inputs-wrapper" style="grid-template-columns: 1fr 0.5fr 0.5fr;">
+							<div>
+								<label>Scroll Type :</label>
+								${$.Drag.VisualEvent.getInputField({type: "select", name: "Scroll Type", options: ["No Loop", "Loop Vertically", "Loop Horizontally", "Loop Both"], value: window.data.map.scrollType || 0, class: 'scroll-type-input'})}
+							</div>
+							<div>
+								<label>Encounter Steps :</label>
+								${$.Drag.VisualEvent.getInputField({type: "integer", name: "Encounter Steps", value: window.data.map.encounterStep || 30, class: 'encounter-step-input'})}
+							</div>
+							<div class="flex" style="align-items: flex-end; padding-bottom: 0.4em;">
+								${$.Drag.VisualEvent.getInputField({type: "checkbox", name: "Disable Dashing", value: window.data.map.disableDashing || false, showName: true, class: 'disable-dashing-input'})}
+							</div>
+						</div>
+						<hr>
+						<div id="inputs-wrapper" style="grid-template-columns: 1fr 0.75fr;" data-type="bgm">
+							<div>
+								<div style="padding: 1em 0em;">
+									${$.Drag.VisualEvent.getInputField({type: "checkbox", name: "Autoplay BGM", class: "autoplay-bgm", value: window.data.map.autoplayBgm || false, showName: true, onchange: "toggleBgmOptions(this);"})}
+								</div>
+								${$.Drag.VisualEvent.getInputField(bgm)}
+								<div class="flex" style="margin-top: 1em; justify-content: space-around;">
+									${$.Drag.VisualEvent.getInputField(play)}
+									${$.Drag.VisualEvent.getInputField(stop)}
+								</div>
+							</div>
+							<div style="text-align: left;">
+								<label>Volume :</label>
+								${$.Drag.VisualEvent.getInputField(bgmv)}
+								<label>Pitch :</label>
+								${$.Drag.VisualEvent.getInputField(bgmpi)}
+								<label>Pan :</label>
+								${$.Drag.VisualEvent.getInputField(bgmpa)}
+							</div>
+						</div>
+						<hr>
+						<div id="inputs-wrapper" style="grid-template-columns: 1fr 0.75fr;" data-type="bgs">
+							<div>
+								<div style="padding: 1em 0em;">
+									${$.Drag.VisualEvent.getInputField({type: "checkbox", name: "Autoplay BGS", class: "autoplay-bgs", value: window.data.map.autoplayBgs || false, showName: true, onchange: "toggleBgsOptions(this);"})}
+								</div>
+								${$.Drag.VisualEvent.getInputField(bgs)}
+								<div class="flex" style="margin-top: 1em; justify-content: space-around;">
+									${$.Drag.VisualEvent.getInputField(play)}
+									${$.Drag.VisualEvent.getInputField(stop)}
+								</div>
+							</div>
+							<div style="text-align: left;">
+								<label>Volume :</label>
+								${$.Drag.VisualEvent.getInputField(bgsv)}
+								<label>Pitch :</label>
+								${$.Drag.VisualEvent.getInputField(bgspi)}
+								<label>Pan :</label>
+								${$.Drag.VisualEvent.getInputField(bgspa)}
+							</div>
+						</div>
+						<hr>
+						<div id="inputs-wrapper" style="grid-template-columns: 1fr 1fr;">
+							<div style="display: flex;">
+								${$.Drag.VisualEvent.getInputField({type: "checkbox", name: "Specify Battlebacks", value: window.data.map.specifyBattleback || false, showName: true, onchange: "toggleBattlebacksInput(this);", class: 'specify-battlebacks-input'})}
+							</div>
+							${$.Drag.VisualEvent.getInputField(battlebacks)}
+						</div>
+					</div>
+					<div>
+						<h3>Parallax Background</h3>
+						<div id="inputs-wrapper" style="grid-template-columns: 0.75fr 1fr;">
+							<div id="image-input-wrapper">
+								<label>Image :</label>
+								${$.Drag.VisualEvent.getInputField(parallax)}
+							</div>
+							<div id="inputs-wrapper" style="grid-template-columns: 1fr 0.75fr;">
+								${$.Drag.VisualEvent.getInputField({type: "checkbox", name: "Loop Horizontally", value: window.data.map.parallaxLoopX || false, showName: true, onchange: "toggleParallaxSxInput(this);", class: 'loopx-input'})}
+								<div>
+									<label>Scroll Speed :</label>
+									${$.Drag.VisualEvent.getInputField({type: "integer", name: "Scroll Speed", class: "parallaxSx-input", value: window.data.map.parallaxSx || 0, disabled: !window.data.map.parallaxLoopX})}
+								</div>
+								${$.Drag.VisualEvent.getInputField({type: "checkbox", name: "Loop Vertically", value: window.data.map.parallaxLoopY || false, showName: true, onchange: "toggleParallaxSyInput(this);", class: 'loopy-input'})}
+								<div>
+									<label>Scroll Speed :</label>
+									${$.Drag.VisualEvent.getInputField({type: "integer", name: "Scroll Speed", class: "parallaxSy-input", value: window.data.map.parallaxSy || 0, disabled: !window.data.map.parallaxLoopY})}
+								</div>
+							</div>
+						</div>
+					</div>
+					<div>
+						<h3>Note(tag)s</h3>
+						<div id="inputs-wrapper">
+							<div id="manage-notetag-container" onclick="openNotetagManager(this.lastElementChild);" onchange="updateEventNote(this);">
+								<label for="map-event-notes">Manage note(tag)s :</label>
+								${$.Drag.VisualEvent.getInputField({type: "string", id: "map-notes", class: "onReadyOnChange notetag-input", value: window.data.map.note, onchange: "$.Drag.VisualEvent.autoFitInput(this);"})}
+							</div>
+						</div>
+					</div>
+				`;
+			};
+			
+			function getAudioParameters(type) {
+				return {
+					name: type === "bgm" ? document.querySelector('.bgm-input').value : document.querySelector('.bgs-input').value,
+					volume: type === "bgm" ? parseInt(document.querySelector('.bgmv-input').value) : parseInt(document.querySelector('.bgsv-input').value),
+					pitch: type === "bgm" ? parseInt(document.querySelector('.bgmpi-input').value) : parseInt(document.querySelector('.bgspi-input').value),
+					pan: type === "bgm" ? parseInt(document.querySelector('.bgmpa-input').value) : parseInt(document.querySelector('.bgspa-input').value)
+				};
+			};
+			
+			function playAudio(button) {
+				const type = $.Drag.VisualEvent.getAncestorById(button, 'inputs-wrapper').getAttribute('data-type') || "bgm";
+				const parameters = getAudioParameters(type);
+				parameters.type = type;
+				$.Drag.VisualEvent.playAudio(button, parameters);
+			};
+			
+			function updateAudio(input) {
+				const type = $.Drag.VisualEvent.getAncestorById(input, 'inputs-wrapper').getAttribute('data-type') || "bgm";
+				const parameters = getAudioParameters(type);
+				parameters.type = type;
+				$.Drag.VisualEvent.updateAudio(input, parameters);
+			};
+			
+			function stopAudio(button) {
+				const type = $.Drag.VisualEvent.getAncestorById(button, 'inputs-wrapper').getAttribute('data-type') || "bgm";
+				$.Drag.VisualEvent.stopAudio(button, type);
+			};
+			
+			function toggleBgmOptions(checkbox) {
+				const inputs = [document.querySelector('.bgm-input')].concat(Array.from(document.querySelectorAll('.bgmv-input'))).concat(Array.from(document.querySelectorAll('.bgmpi-input'))).concat(Array.from(document.querySelectorAll('.bgmpa-input')));				
+				for (const input of inputs)
+					input.disabled = !checkbox.checked;
+			};
+			
+			function toggleBgsOptions(checkbox) {
+				const inputs = [document.querySelector('.bgs-input')].concat(Array.from(document.querySelectorAll('.bgsv-input'))).concat(Array.from(document.querySelectorAll('.bgspi-input'))).concat(Array.from(document.querySelectorAll('.bgspa-input')));				
+				for (const input of inputs)
+					input.disabled = !checkbox.checked;
+			};
+			
+			function toggleBattlebacksInput(checkbox) {
+				const battlebacks = document.querySelector('.battlebacks-input');
+				battlebacks.disabled = !checkbox.checked;
+			};
+			
+			function toggleParallaxSxInput(checkbox) {
+				const parallaxSx = document.querySelector('.parallaxSx-input');
+				parallaxSx.disabled = !checkbox.checked;
+			};
+			
+			function toggleParallaxSyInput(checkbox) {
+				const parallaxSy = document.querySelector('.parallaxSy-input');
+				parallaxSy.disabled = !checkbox.checked;
+			};
+			
+			function openNotetagManager(input) {
+				if (window.data && window.data.mapId)
+					$.Drag.VisualEvent.openNotetagManager(input);
+				input.blur();
+			};
+			
+			function makeEncountersList() {
+				const encounterList = document.querySelector('#encounters-list');
+				let listContent = "";
+				for (const encounter of window.data.map.encounterList) {
+					listContent += `
+						<div>
+							<div id="inputs-wrapper" style="align-items: center;">${$.Drag.VisualEvent.getInputField({type: "troop", value: encounter.troopId || 0, addOptions: ["None"], class: "troop-encounter", onchange: "toggleEncounterOptions"})}</div>
+							<div id="inputs-wrapper" style="align-items: center;">${$.Drag.VisualEvent.getInputField({type: "integer", value: encounter.weight, min: 0, class: "troop-encounter-weight"})}</div>
+							<div id="inputs-wrapper" style="line-height: 1em;; align-items: center; grid-template-columns: 0.6fr 1fr;">
+								<div style="display: flex; justify-content: left; align-items: center;">
+									${$.Drag.VisualEvent.getInputField({type: "select", options: ["Entire Map", "Region Ids"], value: encounter.regionSet.length > 0 ? 1 : 0, class: "troop-encounter-range", onchange: "toggleEncounterRegionIds(this);"})}
+								</div>
+								<div id="inputs-wrapper" class="troop-encounter-regionIds-container" style="grid-template-columns: 1fr 1fr 1fr; padding: 0.2em;">
+									${$.Drag.VisualEvent.getInputField({type: "integer", min: 0, max: 255, value: encounter.regionSet.length >= 1 ? encounter.regionSet[0] : 0, disabled: encounter.regionSet.length === 0})}
+									${$.Drag.VisualEvent.getInputField({type: "integer", min: 0, max: 255, value: encounter.regionSet.length >= 2 ? encounter.regionSet[1] : 0, disabled: encounter.regionSet.length === 0})}
+									${$.Drag.VisualEvent.getInputField({type: "integer", min: 0, max: 255, value: encounter.regionSet.length >= 3 ? encounter.regionSet[2] : 0, disabled: encounter.regionSet.length === 0})}
+								</div>
+							</div>
+						</div>
+					`;
+				}
+				encounterList.innerHTML = listContent;
+				addNewTroopEncounter();
+			};
+			
+			function addNewTroopEncounter() {
+				const encounterList = document.querySelector('#encounters-list');
+				const div = document.createElement('div');
+				div.innerHTML =`
+					<div id="inputs-wrapper" style="align-items: center;">${$.Drag.VisualEvent.getInputField({type: "troop", value: 0, addOptions: ["None"], class: "troop-encounter", onchange: "toggleEncounterOptions"})}</div>
+					<div id="inputs-wrapper" style="align-items: center;">${$.Drag.VisualEvent.getInputField({type: "integer", value: 1, min: 0, class: "troop-encounter-weight", disabled: true})}</div>
+					<div id="inputs-wrapper" style="line-height: 1em;; align-items: center; grid-template-columns: 0.6fr 1fr;">
+						<div style="display: flex; justify-content: left; align-items: center;">
+							${$.Drag.VisualEvent.getInputField({type: "select", options: ["Entire Map", "Region Ids"], value: 0, class: "troop-encounter-range", onchange: "toggleEncounterRegionIds(this);", disabled: true})}
+						</div>
+						<div id="inputs-wrapper" class="troop-encounter-regionIds-container" style="grid-template-columns: 1fr 1fr 1fr; padding: 0.2em;">
+							${$.Drag.VisualEvent.getInputField({type: "integer", min: 0, max: 255, value: 0, disabled: true})}
+							${$.Drag.VisualEvent.getInputField({type: "integer", min: 0, max: 255, value: 0, disabled: true})}
+							${$.Drag.VisualEvent.getInputField({type: "integer", min: 0, max: 255, value: 0, disabled: true})}
+						</div>
+					</div>
+				`;
+				encounterList.lastElementChild.after(div);
+			};
+			
+			function searchEncounters(input) {
+				const value = input.value.toLowerCase().trim();
+				const encounters = document.querySelectorAll('#encounters-list > div');
+				for (const encounter of encounters) {
+					const nameRes = encounter.querySelector('.troop-encounter').value.toLowerCase().includes(value);
+					const weightRes = encounter.querySelector('.troop-encounter-weight').value.toLowerCase().includes(value);
+					const regionIdsRes = Array.from(encounter.querySelectorAll('.troop-encounter-regionIds-container input')).map(input => input.value.toLowerCase().includes(value)).some(res => res);
+					if (nameRes || weightRes || regionIdsRes)
+						encounter.classList.remove('hidden');
+					else
+						encounter.classList.add('hidden');
+				};
+			};
+			
+			function toggleEncounterOptions(select) {
+				const container = select.parentElement.parentElement.parentElement;
+				container.querySelector('.troop-encounter-weight').disabled = select.value === "None";
+				
+				const rangeSelect = container.querySelector('.troop-encounter-range');
+				rangeSelect.disabled = select.value === "None";
+				toggleEncounterRegionIds(rangeSelect);
+				
+				const troopsEncounter = Array.from(document.querySelectorAll('.troop-encounter'));
+				const selectIndex = troopsEncounter.indexOf(select);
+				if (selectIndex === troopsEncounter.length - 1) {
+					if (select.value !== "None")
+						addNewTroopEncounter();
+				} else {
+					if (select.value === "None")
+						container.remove();
+				}
+			};
+			
+			function toggleEncounterRegionIds(select) {
+				for (const input of Array.from(select.parentElement.parentElement.parentElement.querySelectorAll('input')))
+					input.disabled = select.value === "0";
+			};
+			
+			function gatherSettings() {
+				window.data.mapInfos[window.data.mapId].name = document.querySelector('.name-input').value || "";
+				window.data.map.displayName = document.querySelector('.display-name-input').value || "";
+				
+				window.data.map.tilesetId = parseInt(document.querySelector('.tileset-input').value) || 1;
+				window.data.map.width = parseInt(document.querySelector('.width-input').value) || 0;
+				window.data.map.height = parseInt(document.querySelector('.height-input').value) || 0;
+				
+				window.data.map.scrollType = parseInt(document.querySelector('.scroll-type-input').value) || 0;
+				window.data.map.encounterStep = parseInt(document.querySelector('.encounter-step-input').value) || 0;
+				window.data.map.disableDashing = document.querySelector('.disable-dashing-input').checked;
+				
+				window.data.map.autoplayBgm = document.querySelector('.autoplay-bgm').checked;
+				window.data.map.bgm = {
+					name: document.querySelector('.bgm-input').value || "",
+					pan: parseInt(document.querySelector('.bgmpa-input').value) || 0,
+					pitch: parseInt(document.querySelector('.bgmpi-input').value) || 0,
+					volume: parseInt(document.querySelector('.bgmv-input').value) || 0
+				};
+				
+				window.data.map.autoplayBgs = document.querySelector('.autoplay-bgs').checked;
+				window.data.map.bgs = {
+					name: document.querySelector('.bgs-input').value || "",
+					pan: parseInt(document.querySelector('.bgspa-input').value) || 0,
+					pitch: parseInt(document.querySelector('.bgspi-input').value) || 0,
+					volume: parseInt(document.querySelector('.bgsv-input').value) || 0
+				};
+				
+				window.data.map.specifyBattleback = document.querySelector('.specify-battlebacks-input').checked;
+				window.data.map.battleback1Name = document.querySelector('.battlebacks-input').value.split(",")[0] || "";
+				window.data.map.battleback2Name = document.querySelector('.battlebacks-input').value.split(",")[1] || "";
+				
+				window.data.map.parallaxName = document.querySelector('.parallax-input').value || "";
+				window.data.map.parallaxLoopX = document.querySelector('.loopx-input').checked;
+				window.data.map.parallaxLoopY = document.querySelector('.loopy-input').checked;
+				window.data.map.parallaxSx = parseInt(document.querySelector('.parallaxSx-input').value) || 0;
+				window.data.map.parallaxSy = parseInt(document.querySelector('.parallaxSy-input').value) || 0;
+				
+				window.data.map.note = document.querySelector('.notetag-input').value || "";
+				
+				const encounterList = [];
+				for (const encounter of Array.from(document.querySelectorAll('#encounters-list > div'))) {
+					const troopId = parseInt(encounter.querySelector('.troop-encounter').getAttribute('data-value')) || 0;
+					if (!troopId)
+						continue;
+					
+					encounterList.push({
+						regionSet: encounter.querySelector('.troop-encounter-range').value === "0" ? [] : Array.from(encounter.querySelectorAll('.troop-encounter-regionIds-container input')).map(input => parseInt(input.value) || 0).filter(value => value),
+						troopId: troopId,
+						weight: parseInt(encounter.querySelector('.troop-encounter-weight').value) || 0
+					});
+				}
+				
+				window.data.map.encounterList = encounterList;
+			};
+
+			function ok() {
+				$.Drag.VisualEvent.requestBackup('data/', 'MapInfos', 'json', "", "", onMapInfosBackUp);
+				$.Drag.VisualEvent.requestBackup('data/', window.data.mapFileName, 'json', "", "", onMapBackUp);
+			};
+			
+			function onMapInfosBackUp() {
+				window._mapInfosBackUp = true;
+				if (window._mapBackUp)
+					save();
+			};
+			
+			function onMapBackUp() {
+				window._mapBackUp = true;
+				if (window._mapInfosBackUp)
+					save();
+			};
+			
+			function save() {
+				gatherSettings();
+				$.Drag.VisualEvent.writeJSON(`data/MapInfos.json`, window.data.mapInfos);
+				$.Drag.VisualEvent.writeJSON(`data/${window.data.mapFileName}.json`, window.data.map);
+				const editor = $.Drag.VisualEvent.getEditor();
+				if (editor) {
+					editor.data.$dataMapInfos = $.Drag.VisualEvent.deepCopyJSON(window.data.mapInfos);
+					if (editor.data.mapTargetId === window.data.mapId)
+						editor.data.loadedMap = $.Drag.VisualEvent.deepCopyJSON(window.data.map);
+				}
+				quit();
+			};
+
+			function quit() {
+				window.close();
+			};
+
+			main();
+		</script>
+	</body>
+</html>

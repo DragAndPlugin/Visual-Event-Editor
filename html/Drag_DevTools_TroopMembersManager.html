@@ -380,6 +380,8 @@
 						bg1.style.width = "100%";
 						backgroundObserver.observe(bg1);
 					}, 10);
+					
+					bg1.onload = null;
 				};
 				
 				const battlebacks2 = getFileList("img/battlebacks2/");

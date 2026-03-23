@@ -127,6 +127,7 @@
 			};
 			
 			function setup() {
+			console.log(data.src);
 				if (!data.src) 
 					data.src = [];
 				
@@ -134,6 +135,9 @@
 					data.src = data.src.split("/");
 				else 
 					data.src = data.src.map(src => src.split("/"));
+					
+				if (!data.exitFolder)
+					data.restrictedFolder = getFolder();
 				
 				if (data.allowSearch === undefined)
 					data.allowSearch = true;
@@ -148,16 +152,12 @@
 				} else {
 					data.value[0] = data.value[0].split("/");
 					if (data.value[0].length > 1)
-						// data.src = data.value[0].slice(0, -1);
 						data.src = data.src.concat(data.value[0].slice(0, -1));
 					
 					data.fileValue = [data.value[0][data.value[0].length - 1]];
 				}
 				
 				data.src = data.src.filter(item => item);
-				
-				if (!data.exitFolder)
-					data.restrictedFolder = getFolder();
 				
 				data.selectedFile = [];
 				
@@ -568,7 +568,7 @@
 						const src = selectedFile ? data.src.splice(data.src.indexOf(data.restrictedFolder) + 1).join("/") : "";
 					
 						if (hasSubSelection())
-							value += (src !== "" ? src + "/" : "") + selectedFile + "," + data.selectedIndex;
+							value += (src !== "" ? src + "/" : "") + selectedFile + "," + (selectedFile !== "" ? data.selectedIndex : "");
 						else 
 							value += (src !== "" ? src + "/" : "") + selectedFile;
 						
