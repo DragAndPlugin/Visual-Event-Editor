@@ -1,0 +1,37 @@
+﻿# RPG Maker gitignore
+
+# ignore project data
+audio
+data
+fonts
+icon
+img
+
+# ignore default scripts
+js/libs
+js/rpg_windows.js
+js/rpg_sprites.js
+js/rpg_scenes.js
+js/rpg_objects.js
+js/rpg_managers.js
+js/rpg_core.js
+js/plugins.js
+js/main.js
+
+#ignore other plugins
+js/plugins/AltMenuScreen.js
+js/plugins/AltSaveScreen.js
+js/plugins/Community_Basic.js
+js/plugins/CustomLogo.js
+js/plugins/EnemyBook.js
+js/plugins/ItemBook.js
+js/plugins/MadeWithMv.js
+js/plugins/SimpleMsgSideView.js
+js/plugins/TitleCommandPosition.js
+js/plugins/WeaponSkill.js
+
+# ignopre project .exe and framework
+Game.rpgproject
+index.html
+package.json
+
