@@ -26,56 +26,16 @@ Drag.VisualEvent = {};
 Drag.VisualEvent.alias = {};
 Drag.VisualEvent.version = "0.1.047";
 
-(function() {
-	
-	// TO DO LIST
-	//
-	// IMPORTANT
-	// ADD MORE EDITOR SHORTCUTS (BROADER UNDO, REDO)
-	// MAKE "SYNCHRONIZE EVENT WITH NATIVE EDITOR" BUTTON (CLEAR CACHE?)
-	// DECIDE OF SUB WINDOWS BEHAVIOR WHEN EVEN HAS CHANGED
-	// ADD INPUT CONTEXTMENU (CUT, COPY, PASTE, UNDO, REDO, EMOTICONS, RESTORE DEFAULT, SELECT ALL) 
-	
-	// FIXES
-	// FIX DISCARD EVENT REMOVE PAGE NAMES
-	// FIX LOADING ICON SOMETIMES NOT SHOWING
-	// FIX DUPLICATED TROOP MEMBERS WHEN CHANGING BACKGROUND
-	
-	// FIXES ++
-	// FIX CACHE SOMETIMES NOT SAVING CORRECTLY (fixed ?)
-	// FIX ALL WINDOW CLOSING WHEN CLOSING ONE (fixed?) 
-	// FIX BATTLE PROCESSING CAN LOSE CAN ESCAPE CHECKBOXS NOT SAVING CORRECTLY (fixed?)
-	// FIX FILE NOT FOUND MAKES PLAYTEST FREEZE
-	// IMPROVE LOCATION MAP PICKER PERFORMANCES
-	
-	// QOL
-	// QUICK ACCESS TO RECENTLY OPENED EVENTS
-	// MAKE MAP LOCATION PICKER HIGHLIGHT CURRENT EVENT POSITION
-	
-	// QOL ++
-	// MAKE SOME OF THE BIG NODES BE SHRUNKABLE
-	// MAKE GRAPH MOVE ON MOUSE POSITION ON ZOOM ?
-	// IMPROVE PLUGIN COMMANDS PARAMETERS INTERFACE
-	// PASTE NODE ON MOUSE POSITION INSTEAD OF CENTER OF SCREEN ?
-	// DOCK PLAYTEST IN EDITOR ?
-	
-	// FUTURE ADD ON
-	// MORE EVENTS CONDITIONS
-	// NATIVE COMMANDS EXPANSION
-	// IMPROVED NATIVE COMMANDS
-	// CUSTOM EVENT COLLISIONS ?
-	// INTEGRATED PLUGIN MANAGER ?
-	// INTEGRATED DATABASE ?
-	
-	// MISC
-	// CLEAN CODE (neverending task)
-	// IMPROVE GENERAL PERF & NODE CULLING
-	// BETTER RESPONSIVNESS
+// (function() {
 	
 	//------------------------------------------------------------------------------------------------------------
 	// global variables
+	if (typeof require === "function") {
+		Drag.VisualEvent.modules = {};
+		Drag.VisualEvent.modules.fs = require('fs');
+		Drag.VisualEvent.modules.path = require('path');
+	}
 	
-	const fs = require('fs');
 	Drag.VisualEvent.pluginName = "Drag_VisualEvent";
 	Drag.VisualEvent.pluginUrl = "https://drag-and-plug-in.itch.io/visual-event-editor";
 	Drag.VisualEvent.pluginVersionUrl = "https://raw.githubusercontent.com/DragAndPlugin/Visual-Event-Editor/refs/heads/main/version";
@@ -87,7 +47,7 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.nwFileExplorerWindowPath = "html/Drag_DevTools_FileExplorer.html";
 	Drag.VisualEvent.nwFileExplorerWindowName = "Drag's DevTools File Explorer";
 	
-	Drag.VisualEvent.databaseTypes = ["actor", "animation", "armor", "class", "common_event", "enemy", "item", "skill", "state", "tileset", "troop", "weapon", "switch", "variable", "map_event", "equipment_type"];
+	Drag.VisualEvent.databaseTypes = ["actor", "animation", "armor", "class", "common_event", "enemy", "item", "skill", "state", "tileset", "troop", "weapon", "switch", "variable", "map_event", "equipment_type", "element_type"];
 	Drag.VisualEvent.dataFiles = ["Actors", "Animations", "Armors", "Classes", "CommonEvents", "Enemies", "Items", "MapInfos", "Skills", "States", "System", "Tilesets", "Troops", "Weapons"];
 	Drag.VisualEvent.pluginJSDocData = {};
 	
@@ -107,8 +67,7 @@ Drag.VisualEvent.version = "0.1.047";
 		"System Settings": ["command132", "command133", "command139", "command140", "command134", "command135", "command136", "command137", "command138", "command322", "command323"],
 		"Map": ["command281", "command282", "command283", "command284", "command285"],
 		"Battle": ["command331", "command332", "command342", "command333", "command334", "command335", "command336", "command337", "command339", "command340"],
-		"Advanced": ["command355", "command356", "command357"],
-		"Custom": []
+		"Advanced": ["command355", "command356", "command357"]
 	};
 	
 	Drag.VisualEvent.commandsName = {
@@ -132,7 +91,7 @@ Drag.VisualEvent.version = "0.1.047";
 		command322: "Change Actor Images", command323: "Change Vehicle Image", command324: "Change Nickname", command325: "Change Profile", command331: "Change Enemy HP", command332: "Change Enemy MP",
 		command342: "Change Enemy TP", command333: "Change Enemy State", command334: "Enemy Recover All", command335: "Enemy Appear", command336: "Enemy Transform", command337: "Show Battle Animation",
 		command339: "Force Action", command340: "Abort Battle", command351: "Open Menu Screen", command352: "Open Save Screen", command353: "Game Over", command354: "Return to Title Screen", 
-		command355: "Script", command356: "Plugin Command (MV)", command357: "Plugin Command (MZ)"
+		command355: "Script", command356: "Plugin Command (MV)", command357: "Plugin Command (MZ)",
 	};
 	
 	Drag.VisualEvent.commandsEngine = {
@@ -218,6 +177,7 @@ Drag.VisualEvent.version = "0.1.047";
 		mapEvent: {type: "map_event", default: 1, name: "Map Event"},
 		mapEventWithThis: {type: "map_event", default: 0, name: "Map Event", addOptions: ["This Event"]},
 		mapEventWithThisAndPlayer: {type: "map_event", default: -1, name: "Map Event", addOptions: ["Player", "This Event"]},
+		mapEventWithPlayer: {type: "map_event", default: 0, name: "Map Event", addOptions: ["Player"]},
 		tileset: {type: "tileset", default: 1, name: "Tileset"},
 		tilesetNone: {type: "tileset", default: 0, name: "Tileset", addOptions: ["None"]},
 		troop: {type: "troop", default: 1, name: "Troop"},
@@ -225,6 +185,7 @@ Drag.VisualEvent.version = "0.1.047";
 		animation: {type: "animation", default: 1, name: "Animation"},
 		animationNone: {type: "animation", default: 0, name: "Animation", addOptions: ["None"]},
 		equipmentType: {type: "equipment_type", default: 1, name: "Equipment Type"},
+		elementType: {type: "element_type", default: 1, name: "Element Type"},
 		
 		//color
 		rgba: {type: "color", default: [0, 0, 0, 0], name: "Color"},
@@ -232,9 +193,9 @@ Drag.VisualEvent.version = "0.1.047";
 		rgbi: {type: "color", default: [255, 255, 255, 170], alphaAsIntensity: true, name: "Color"},
 		
 		//range
-		volume: {type: "range", name: "Volume", tooltip: "%", onchange: "$.Drag.VisualEvent.updateAudio(this);", default: 90, min: 0, max: 100, step: 5},
-		pitch: {type: "range", name: "Pitch", tooltip: "%", onchange: "$.Drag.VisualEvent.updateAudio(this);", default: 100, min: 50, max: 150, step: 5},
-		pan: {type: "range", name: "Pan", onchange: "$.Drag.VisualEvent.updateAudio(this);", default: 0, min: -100, max: 100, step: 5},
+		volume: {type: "range", name: "Volume", tooltip: "%", onchange: "updateAudio(this);", default: 90, min: 0, max: 100, step: 5},
+		pitch: {type: "range", name: "Pitch", tooltip: "%", onchange: "updateAudio(this);", default: 100, min: 50, max: 150, step: 5},
+		pan: {type: "range", name: "Pan", onchange: "updateAudio(this);", default: 0, min: -100, max: 100, step: 5},
 		red: {type: "range", name: "Red", onchange: "", default: 0, min: -255, max: 255, step: 5},
 		green: {type: "range", name: "Green", onchange: "", default: 0, min: -255, max: 255, step: 5},
 		blue: {type: "range", name: "Blue", onchange: "", default: 0, min: -255, max: 255, step: 5},
@@ -242,8 +203,8 @@ Drag.VisualEvent.version = "0.1.047";
 		rangePower: {type: "range", name: "Power", onchange: "", default: 5, min: 1, max: 9, step: 1},
 		
 		//buttons
-		play: {type: "button", name: "", notParam: true, value: "Play", onclick: "$.Drag.VisualEvent.playAudio(this);"},
-		stop: {type: "button", name: "", notParam: true, value: "Stop", onclick: "$.Drag.VisualEvent.stopAudio(this);"},
+		play: {type: "button", name: "", notParam: true, value: "Play", onclick: "playAudio(this);"},
+		stop: {type: "button", name: "", notParam: true, value: "Stop", onclick: "stopAudio(this);"},
 		normalTint: {type: "button", name: "", notParam: true, value: "Normal", data: "data-preset='normal'",onclick: "$.Drag.VisualEvent.setPresetTint(this);"},
 		darkTint: {type: "button", name: "", notParam: true, value: "Dark", data: "data-preset='dark'", onclick: "$.Drag.VisualEvent.setPresetTint(this);"},
 		sepiaTint: {type: "button", name: "", notParam: true, value: "Sepia", data: "data-preset='sepia'", onclick: "$.Drag.VisualEvent.setPresetTint(this);"},
@@ -265,6 +226,7 @@ Drag.VisualEvent.version = "0.1.047";
 		radioEnemyActor: {type: "radio", options: ["Enemy", "Actor"], name: "Subject", data: "data-dataType='number'", default: 0},
 		
 		//select
+		selectIsOnOff: {type: "select", options: ["OFF", "ON"], name: "Is", data: "data-dataType='number'", default: 1},
 		selectOperand: {type: "select", options: ["Constant", "Variable", "Random", "Game Data", "Script"], name: "", data: "data-dataType='number'", default: 0},
 		selectOperand2: {type: "select", options: ["Fixed", "Variable"], name: "", data: "data-dataType='number'", default: 0},
 		selectWindowBackground: {type: "select", options: ["Window", "Dim", "Transparent"], data: "data-dataType='number'", default: 0, name: "Background"},
@@ -299,7 +261,7 @@ Drag.VisualEvent.version = "0.1.047";
 		selectEnemyCondition: {type: "select", options: ["Appeared", "State"], name: "", data: "data-dataType='number'", default: 0},
 		selectDirection: {type: "select", options: ["Down", "Left", "Right", "Up"], values: [2, 4, 6, 8], name: "Direction", data: "data-dataType='number'", default: 0},
 		selectDirectionRetain: {type: "select", options: ["Retain", "Down", "Left", "Right", "Up"], values: [0, 2, 4, 6, 8], name: "Direction", data: "data-dataType='number'", default: 0},
-		selectButton: {type: "select", options: ["OK", "Cancel", "Shift", "Down", "Left", "Right", "Up", "Pageup", "Pagedown"], name: "", data: "data-dataType='number'", default: 0},
+		selectButton: {type: "select", options: ["OK", "Cancel", "Shift", "Down", "Left", "Right", "Up", "Pageup", "Pagedown"], values: ['ok', 'cancel', 'shift', 'down', 'left', 'right', 'up', 'pageup', 'pagedown'], name: "", data: "data-dataType='string'", default: 0},
 		selectButtonAction: {type: "select", options: ["is being pressed", "is being triggered", "is being repeated"], name: "", data: "data-dataType='number'", default: 0},
 		selectSpeed: {type: "select", options: ["1: x8 Slower", "2: x4 Slower", "3: x2 Slower", "4: Normal", "5: x2 Faster", "6: x4 Faster"], name: "Speed", startValue: 1, data: "data-dataType='number'", default: 4},
 		selectFrequency: {type: "select", options: ["1: Lowest", "2: Lower", "3: Normal", "4: Higher", "5: Highest"], name: "Frequency", startValue: 1, data: "data-dataType='number'", default: 3},
@@ -309,16 +271,19 @@ Drag.VisualEvent.version = "0.1.047";
 		selectMovementType: {type: "select", options: ["Fixed", "Random", "Approach", "Custom"], name: "Movement Type", data: "data-dataType='number'", default: 0},
 		selectSpan: {type: "select", options: ["Battle", "Turn", "Moment"], name: "Span", data: "data-dataType='number'", default: 0},
 		selectEquipmentFromType: {type: "select", options: [], evalOptions: '["None"].concat($dataArmors.concat($dataWeapons).filter(item => item && item.etypeId === index + 1).map(item => item.name))', name: "Equipment Item", data: "data-dataType='number'", default: 0},
-		selectMZGameDataType: {type: "select", options: ["Item", "Weapon", "Armor", "Actor", "Enemy", "Character", "Party", "Last", "Other"], name: "Game Data", data: "data-dataType='number'", default: 8},
-		selectMVGameDataType: {type: "select", options: ["Item", "Weapon", "Armor", "Actor", "Enemy", "Character", "Party", "Other"], name: "Game Data", data: "data-dataType='number'", default: 7},
+		selectMZGameDataType: {type: "select", options: ["Item", "Weapon", "Armor", "Actor", "Enemy", "Character", "Party", "Other", "Last"], name: "Game Data", data: "data-dataType='number'", default: 0},
+		selectMVGameDataType: {type: "select", options: ["Item", "Weapon", "Armor", "Actor", "Enemy", "Character", "Party", "Other"], name: "Game Data", data: "data-dataType='number'", default: 0},
 		selectActorParameter: {type: "select", options: ["Level", "EXP", "HP", "MP", "Max HP", "Max MP", "Attack", "Defense", "M. Attack", "M. Defense", "Agility", "Luck", "TP"], name: "Actor Parameter", data: "data-dataType='number'", default: 0},
 		selectTroopEnemyParameter: {type: "select", options: ["HP", "MP", "Max HP", "Max MP", "Attack", "Defense", "M. Attack", "M. Defense", "Agility", "Luck", "TP"], name: "Enemy Parameter", data: "data-dataType='number'", default: 0},
 		selectCharacterPositionDirection: {type: "select", options: ["Map X", "Map Y", "Direction", "Screen X", "Screen Y"], name: "Character Location/Direction", data: "data-dataType='number'", default: 0},
 		selectPartyMember: {type: "select", options: ["Member #1", "Member #2", "Member #3", "Member #4", "Member #5", "Member #6", "Member #7", "Member #8"], name: "Party Member", data: "data-dataType='number'", default: 0},
 		selectLastAction: {type: "select", options: ["Last Used Skill ID", "Last Used Item ID", "Last Actor ID to Act", "Last Enemy Index to Act", "Last Target Actor ID", "Last Target Enemy Index"], name: "Last Action", data: "data-dataType='number'", default: 0},
 		selectMiscData: {type: "select", options: ["Map ID", "Party Members", "Gold", "Steps", "Play Time", "Timer", "Save Count", "Battle Count", "Win Count", "Escape Count"], name: "Other", data: "data-dataType='number'", default: 0},
+		selectValueType: {type: "select", options: ["Flat", "Rate (%)"], name: "Type", data: "data-dataType='number'", default: 0},
+		selectDistanceCalcMode: {type: "select", options: ["Chebyshev (Square Shape)", "Manhattan (Diamond Shape)", "Euclidean (Circle Shape)"], name: "Calculation Mode", data: "data-dataType='number'", default: 0},
 		
 		//outputs
+		outputList: {type: "empty", name: "", isOutput: true, notParam: true, isList: true},
 		choicesOutput: {type: "stringArray", count: 6, name: "When", default: ["Yes", "No"], isOutput: true},
 		cancelOutput: {type: "empty", name: "When Cancel", isOutput: true, notParam: true, condition: "command && command.parameters[1] === -2"},
 		defaultChoice: {type: "select", options: ["None", "Choices #1", "Choices #2",  "Choices #3",  "Choices #4",  "Choices #5",  "Choices #6"], data: "data-dataType='number'", startValue: -1, default: 0, name: "Default"},
@@ -329,6 +294,7 @@ Drag.VisualEvent.version = "0.1.047";
 		winOutput: {type: "empty", name: "If Win", isOutput: true, notParam: true},
 		escapeOutput: {type: "empty", name: "If Escape", isOutput: true, notParam: true},
 		loseOutput: {type: "empty", name: "If Lose", isOutput: true, notParam: true},
+		outputStringList: {type: "string", isList: true, name: "", isOutput: true},
 		
 		//checkbox
 		checkbox: {type: "checkbox", name: "", default: false, showName: true},
@@ -349,6 +315,7 @@ Drag.VisualEvent.version = "0.1.047";
 		canLose: {type: "checkbox", name: "Can Lose", default: false, showName: false},
 		fastForward: {type: "checkbox", default: false, name: "No Fast Forward"},
 		targetAllEnemies: {type: "checkbox", default: false, name: "Target all enemies in the troop"},
+		resetVariable: {type: "checkbox", name: "Reset Variable", default: true, showName: true},
 		
 		//integer
 		int: {type: "integer", default: 0, name: ""},
@@ -370,14 +337,22 @@ Drag.VisualEvent.version = "0.1.047";
 		digits: {type: "integer", name: "Digits :", default: 1, min: 1, max: 8},
 		sec: {type: "integer", name: "", tooltip: "sec", evalValue: "value % 60", min: 0, max: 59, default: 0},
 		min: {type: "integer", name: "",  tooltip: "min", evalValue: "Math.floor(value / 60)", min: 0, default: 0},
-		percentage: {type: "integer", name: "",  tooltip: "%", default: 50, min: 0, max: 100},
+		percentage: {type: "integer", name: "", tooltip: "%", default: 50, min: 0, max: 100},
+		rate: {type: "integer", name: "Rate", tooltip: "%", default: 100, min: 0, max: 100},
+		valueInt: {type: "integer", default: 0, name: "Value"},
+		intList: {type: "integer", name: "", default: 1, isList: true},
 		
 		//string & textareas
 		label: {type: "string", name: "Label", default: ""},
 		string: {type: "string", name: "", default: ""},
+		stringList: {type: "string", name: "", default: "", isList: true},
 		name: {type: "string", name: "Name", default: ""},
 		text: {type: "text", name: "Text", default: ""},
 		script: {type: "text", name: "Script", default: ""},
+		notetagName: {type: "string", name: "Notetag", default: ""},
+		value: {type: "text", name: "Value", default: ""},
+		
+		stringIntList: {type: "list", name: "Values / Weights", inputs: ["value", "weight"]},
 		
 		empty: {type: "empty", name: "", default: ""},
 	};
@@ -397,7 +372,7 @@ Drag.VisualEvent.version = "0.1.047";
 			type: "interactive", name: "Operand", behavior: [0, 1, [2, 3], 4, 5], 
 			controller: Drag.VisualEvent.inputs.selectOperand, 
 			dependances: [
-				Drag.VisualEvent.inputs.int, 
+				Drag.VisualEvent.inputs.string, 
 				Drag.VisualEvent.inputs.variable, 
 				Drag.VisualEvent.inputs.int, Drag.VisualEvent.inputs.int, 
 				{
@@ -408,7 +383,7 @@ Drag.VisualEvent.version = "0.1.047";
 						Drag.VisualEvent.inputs.actor, Drag.VisualEvent.inputs.selectActorParameter,
 						Drag.VisualEvent.inputs.selectTroopEnemy2, Drag.VisualEvent.inputs.selectTroopEnemyParameter,
 						Drag.VisualEvent.inputs.mapEventWithThisAndPlayer, Drag.VisualEvent.inputs.selectCharacterPositionDirection,
-						Drag.VisualEvent.inputs.selectPartyMember, Drag.VisualEvent.inputs.selectLastAction, Drag.VisualEvent.inputs.selectMiscData
+						Drag.VisualEvent.inputs.selectPartyMember, Drag.VisualEvent.inputs.selectMiscData, Drag.VisualEvent.inputs.selectLastAction
 					] :
 					[
 						Drag.VisualEvent.inputs.item, Drag.VisualEvent.inputs.weapon, Drag.VisualEvent.inputs.armor,
@@ -438,7 +413,7 @@ Drag.VisualEvent.version = "0.1.047";
 				Drag.VisualEvent.inputs.variable, Drag.VisualEvent.inputs.selectComparison, {
 					type: "interactive", name: "", behavior: [0, 1], containerStyle: "align-items: center; margin-top: 1em;",
 					controller: Drag.VisualEvent.inputs.selectConstantVariable, 
-					dependances: [Drag.VisualEvent.inputs.int, Drag.VisualEvent.inputs.variable]
+					dependances: [Drag.VisualEvent.inputs.string, Drag.VisualEvent.inputs.variable]
 				},
 				Drag.VisualEvent.inputs.selectSelfSwitch, Drag.VisualEvent.inputs.selectOnOff,
 				Drag.VisualEvent.inputs.selectComparison2, Drag.VisualEvent.inputs.min, Drag.VisualEvent.inputs.sec,
@@ -471,7 +446,7 @@ Drag.VisualEvent.version = "0.1.047";
 				Drag.VisualEvent.inputs.variable, Drag.VisualEvent.inputs.selectComparison, {
 					type: "interactive", name: "", behavior: [0, 1], containerStyle: "align-items: center;",
 					controller: Drag.VisualEvent.inputs.selectConstantVariable, 
-					dependances: [Drag.VisualEvent.inputs.int, Drag.VisualEvent.inputs.variable]
+					dependances: [Drag.VisualEvent.inputs.string, Drag.VisualEvent.inputs.variable]
 				},
 				Drag.VisualEvent.inputs.selectSelfSwitch, Drag.VisualEvent.inputs.selectOnOff,
 				Drag.VisualEvent.inputs.selectComparison2, Drag.VisualEvent.inputs.min, Drag.VisualEvent.inputs.sec,
@@ -557,6 +532,12 @@ Drag.VisualEvent.version = "0.1.047";
 			controller: Drag.VisualEvent.inputs.selectMovementType,
 			dependances: [Drag.VisualEvent.inputs.empty, Drag.VisualEvent.inputs.empty, Drag.VisualEvent.inputs.empty, Drag.VisualEvent.inputs.moveRoute],
 			dependancesStyle: [1]
+		},
+		selectFlatRateValue: {
+			type: "interactive", name: "Value Type", behavior: [0, 1],
+			controller: Drag.VisualEvent.inputs.selectValueType,
+			dependances: [Drag.VisualEvent.inputs.valueInt, Drag.VisualEvent.inputs.percentage],
+			dependancesStyle: [1, 1]
 		}
 	};
 	
@@ -823,18 +804,6 @@ Drag.VisualEvent.version = "0.1.047";
 	//-----------------------------------------------------------------------------
 	// plugin parameters
 	
-    // Drag.VisualEvent.params = PluginManager.parameters(Drag.VisualEvent.pluginName) || null;
-	// if (Drag.VisualEvent.params) {
-		// Drag.VisualEvent.params.focusEditorOnOpen = Drag.VisualEvent.params.focusEditorOnOpen === "true";
-		
-		// Drag.VisualEvent.params.backupData = Drag.VisualEvent.params.backupData === "true";
-		// Drag.VisualEvent.params.backupDataSrc = Drag.VisualEvent.params.backupDataSrc || "data/data_backup";
-		// Drag.VisualEvent.params.backupDataFormat = Drag.VisualEvent.params.backupDataFormat || "$name_$year-$month-$day-$hours-$minutes-$seconds";
-		
-		// Drag.VisualEvent.params.autoSaveEnabled = Drag.VisualEvent.params.autoSaveEnabled === "true";
-		// Drag.VisualEvent.params.autoSaveTimeInterval = parseInt(Drag.VisualEvent.params.autoSaveTimeInterval) || 5;
-	// }
-	
 	//------------------------------------------------------------------------------------------------------------
 	// plugin command	
 	
@@ -903,10 +872,14 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	Drag.VisualEvent.getCommandParameters = function(code) {
-		if (typeof code === "number")
-			return JSON.parse(JSON.stringify(Drag.VisualEvent.commandsParameters[`command${code}`])); //deep copy
-		else {
-			return JSON.parse(JSON.stringify(Drag.VisualEvent.commandsParameters[code]));
+		try {
+			if (typeof code === "number")
+				return JSON.parse(JSON.stringify(Drag.VisualEvent.commandsParameters[`command${code}`])); //deep copy
+			else 
+				return JSON.parse(JSON.stringify(Drag.VisualEvent.commandsParameters[code]));
+		} catch (error) {
+			console.error(error);
+			return {};
 		}
 	};
 	
@@ -1175,6 +1148,16 @@ Drag.VisualEvent.version = "0.1.047";
 		return arr;
 	};
 	
+	//check if arr1 includes all values of arr2
+	Drag.VisualEvent.arrayIncludesArray = function(arr1, arr2) {
+		return arr2.every(item => arr1.includes(item));
+	};
+	
+	//check if arr1 includes any value of arr2
+	Drag.VisualEvent.arrayIncludesAny = function(arr1, arr2) {
+		return arr2.some(item => arr1.includes(item));
+	};
+	
 	Drag.VisualEvent.getChildIndex = function(element) {
 		return Array.from(element.parentElement.children).indexOf(element);
 	};
@@ -1306,6 +1289,18 @@ Drag.VisualEvent.version = "0.1.047";
 		}, {});
 	};
 	
+	Drag.VisualEvent.manhattanDistance = function (x1 = 0, y1 = 0, x2 = 0, y2 = 0) {
+		return Math.abs((x1 - x2) + (y1 - y2));
+	};
+	
+	Drag.VisualEvent.chebyshevDistance = function (x1 = 0, y1 = 0, x2 = 0, y2 = 0) {
+		return Math.abs(Math.max(y2 - y1, x2 - x1));
+	};
+	
+	Drag.VisualEvent.euclideanDistance = function (x1 = 0, y1 = 0, x2 = 0, y2 = 0) { //to round
+		return Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2));
+	};
+	
 	//------------------------------------------------------------------------------------------------------------
 	// Scene Manager
 	
@@ -1336,7 +1331,7 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.openEditor = function(id = 0, type = "") {
 		try {
 			if (!Drag.VisualEvent.graphWindowHandler) {
-				if (fs.existsSync(Drag.VisualEvent.nwVisualEventWindowPath)) {
+				if (Drag.VisualEvent.modules.fs && Drag.VisualEvent.modules.fs.existsSync(Drag.VisualEvent.nwVisualEventWindowPath)) {
 					console.log(Drag.VisualEvent.nwVisualEventWindowPath + " opened by : " + Drag.VisualEvent.pluginName);
 					const width = screen.width * 0.75;
 					const height = screen.height * 0.75;
@@ -1398,7 +1393,7 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.openWindow = function(path, commonDir, name, width, height, top, left, data = {}) {
 		try {
 			if (!Drag[`${name}WindowHandler`] || Drag[`${name}WindowHandler`].closed) {
-				if (fs.existsSync(path)) {
+				if (Drag.VisualEvent.modules.fs && Drag.VisualEvent.modules.fs.existsSync(path)) {
 					const screenWidth = window.screen.width;
 					const screenHeight = window.screen.height;
 					if (left + width + 20 > screenWidth)
@@ -1533,9 +1528,24 @@ Drag.VisualEvent.version = "0.1.047";
 		const allowMapChange = input.getAttribute('data-allowMapChange') === "true";
 		
 		Drag.VisualEvent.openWindow(
-			'html/Drag_DevTools_MapLocationPicker.html', 'html/', 'MapLocationPicker', 
+			'html/Drag_DevTools_MapLocationPicker.html', 'html/', 'Map Location Picker', 
 			window.screen.width * 0.5, window.screen.height * 0.625, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
 			{input: input, mapId: mapId, x: x, y: y, isMoveRoutePreview: isMoveRoutePreview, list: list, parameters: parameters, allowSearch: allowSearch, allowMapChange: allowMapChange}
+		);
+	};
+	
+	Drag.VisualEvent.openMapPropertiesMenu = function(input, mapId) {
+		if (!input || !mapId)
+			return;
+		
+		const x = parseInt(input.getAttribute('data-x')) || 0;
+		const y = parseInt(input.getAttribute('data-y')) || 0;
+		const rect = input.getBoundingClientRect();
+		
+		Drag.VisualEvent.openWindow(
+			'html/Drag_DevTools_MapSettingsMenu.html', 'html/', 'Map Settings Menu', 
+			window.screen.width * 0.5, window.screen.height * 0.625, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
+			{input: input, mapId: mapId, x: x, y: y}
 		);
 	};
 	
@@ -1569,7 +1579,7 @@ Drag.VisualEvent.version = "0.1.047";
 		
 		const rect = input.getBoundingClientRect();
 		Drag.VisualEvent.openWindow(
-			'html/Drag_DevTools_NotetagManager.html', 'html/', 'NotetagManager', 
+			'html/Drag_DevTools_NotetagManager.html', 'html/', 'Notetag Manager', 
 			window.screen.width * 0.225, window.screen.height * 0.6, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
 			{input: input}
 		);
@@ -1581,7 +1591,7 @@ Drag.VisualEvent.version = "0.1.047";
 		
 		const rect = input.getBoundingClientRect();
 		Drag.VisualEvent.openWindow(
-			'html/Drag_DevTools_TroopMembersManager.html', 'html/', 'TroopsMembersManager', 
+			'html/Drag_DevTools_TroopMembersManager.html', 'html/', 'Troops Members Manager', 
 			window.screen.width * 0.6, window.screen.height * 0.7, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
 			{input: input, troop: troop, enemies: enemies}
 		);	
@@ -2142,6 +2152,12 @@ Drag.VisualEvent.version = "0.1.047";
 		return $dataSystem.variables[varId] || '';
 	};
 	
+	Game_Variables.prototype.valueByName = function(name = '') {
+		if (!$dataSystem)
+			return ``;
+		return $gameVariables.value($dataSystem.variables.indexOf(name) || 0);
+	};
+	
 	
 	//------------------------------------------------------------------------------------------------------------
 	// XHR Read JSON
@@ -2198,13 +2214,12 @@ Drag.VisualEvent.version = "0.1.047";
 	// FS Write JSON
 	
 	Drag.VisualEvent.editJSON = function(filepath, filename, filetype, val) {
-		if (!filename || !filetype || val === null || val === undefined)
+		if (!Drag.VisualEvent.modules.fs || !filename || !filetype || val === null || val === undefined)
 			return;
 		
-		const fs = require('fs');
 		const file = filepath + filename + "." + filetype;
 		try {
-			fs.readFile(file, 'utf8', (err, data) => {
+			Drag.VisualEvent.modules.fs.readFile(file, 'utf8', (err, data) => {
 				if (err) {
 					console.error(err);
 				} else {
@@ -2236,11 +2251,13 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	Drag.VisualEvent.requestBackup = function(filepath, filename, filetype, backupPath, backupFormat, callback) {
-		const fs = require('fs');
+		if (!Drag.VisualEvent.modules.fs)
+			return;
+		
 		const file = filepath + filename + "." + filetype;
 		
 		try {
-			fs.readFile(file, 'utf8', (err, data) => {
+			Drag.VisualEvent.modules.fs.readFile(file, 'utf8', (err, data) => {
 				if (err)
 					console.error(err);
 				else
@@ -2302,16 +2319,14 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	Drag.VisualEvent.writeJSON = function(filename, obj, callback = null, space = 4) {
-		if (!obj || !filename)
+		if (!Drag.VisualEvent.modules.fs || !obj || !filename)
 			return;
 		
 		try {
-			Drag.VisualEvent.ensureDirectoryExistence(filename)
-			
-			const fs = require('fs');
+			Drag.VisualEvent.ensureDirectoryExistence(filename);
 			const data = JSON.stringify(obj, null, space);
 			
-			fs.writeFile(filename, data, function(err) {
+			Drag.VisualEvent.modules.fs.writeFile(filename, data, function(err) {
 				if (err)
 					console.error(err);
 				else {
@@ -2326,15 +2341,15 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	Drag.VisualEvent.ensureDirectoryExistence = function(filePath) {
-		const path = require('path');
-		const fs = require('fs');
+		if (!Drag.VisualEvent.modules.fs || !Drag.VisualEvent.modules.path)
+			return;
 		
-		const dirname = path.dirname(filePath);
-		if (fs.existsSync(dirname))
+		const dirname = Drag.VisualEvent.modules.path.dirname(filePath);
+		if (Drag.VisualEvent.modules.fs.existsSync(dirname))
 			return true;
 		
 		Drag.VisualEvent.ensureDirectoryExistence(dirname);
-		fs.mkdirSync(dirname);
+		Drag.VisualEvent.modules.fs.mkdirSync(dirname);
 	};
 	
 	//-----------------------------------------------------------------------------------------------------------
@@ -2365,13 +2380,56 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.openUrl = function(url) {
 		nw.Shell.openExternal(url);
 	};
+	
+	//-----------------------------------------------------------------------------------------------------------
+	// Style
+	
+	Drag.VisualEvent.createCSSStylesheet = function(body) {
+		const stylesheet = document.createElement('style');
+		stylesheet.type = 'text/css';
+		stylesheet.innerHTML = body;
+		return stylesheet;
+	};
+	
+	Drag.VisualEvent.addCSSStylesheet = function(document, stylesheet) {
+		if (!document || !(stylesheet instanceof HTMLElement))
+			return false;
+		
+		document.querySelector('head').appendChild(stylesheet);
+		return true;
+	};
+	
+	Drag.VisualEvent.SVGtoURI = function(svg) {
+		return "data:image/svg+xml;base64," + btoa(svg);
+	};
 
 	//-----------------------------------------------------------------------------------------------------------
 	// Input Fields
 	
+	Drag.VisualEvent.triggerAllOnReadyOnChange = function(container = document) {
+		const elements = container.querySelectorAll('.onReadyOnChange');
+		for (const element of elements) {
+			if (Drag.VisualEvent.isRadio(element) && !element.checked) {
+				element.classList.remove('onReadyOnChange');
+				continue;
+			}
+
+			if (element.onchange)
+				element.onchange();
+			
+			element.classList.remove('onReadyOnChange');
+		}
+	};
+	
+	Drag.VisualEvent.isRadio = function (element) {
+		return (element && element.nodeName && Drag.VisualEvent.isInput(element) && element.type.toLowerCase() === "radio");
+	};
+	
+	Drag.VisualEvent.isInput = function(element) {
+		return (element && element.nodeName && element.nodeName.toLowerCase() === "input");
+	};
+	
 	Drag.VisualEvent.areCommandsInSameBranch = function(commandsList = [], commandIndex1 = 0, commandIndex2 = 0) {
-		console.log(commandsList, commandIndex1, commandIndex2);
-		
 		const command1 = commandsList[commandIndex1];
 		const command2 = commandsList[commandIndex2];
 		
@@ -2495,7 +2553,7 @@ Drag.VisualEvent.version = "0.1.047";
 		const value = element.value;		
 		const filename = value.split(',');	
 		if (!filename[0])
-			return;
+			return element.style.backgroundImage = "unset";
 		
 		const isTile = element.getAttribute('data-allowTilesetSelection') === "true" && element.getAttribute('data-tilesetNames') && element.getAttribute('data-tilesetNames').split(',').includes(filename[0]);
 		let index = parseInt(value.split(',')[1]) || 0;
@@ -2546,6 +2604,9 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	Drag.VisualEvent.getLinearIndex = function(index) {
+		if (index > 255)
+			index -= 256;
+		
 		if (index < 128) {
 			const row = Math.floor(index / 8);
 			const col = index % 8;
@@ -2564,55 +2625,29 @@ Drag.VisualEvent.version = "0.1.047";
 		return col < 8 ? row * 16 + col : row * 16 + col + 128 - 8;
 	};
 		
-	Drag.VisualEvent.playAudio = function(input) {
-		const node = Drag.VisualEvent.getAncestorById(input, "graphNode");
-		const inputsParameters = node.querySelectorAll('input[data-isCommandParameter="true"]');
-		const parameters = Array.from(inputsParameters).map(element => element.value);
-		const type = inputsParameters[0].getAttribute('data-type') || "bgm";
-		if (parameters[0])
-			switch (type) {
+	Drag.VisualEvent.playAudio = function(input, parameters) {
+		if (parameters)
+			switch (parameters.type) {
 				case "bgm": 
-					AudioManager.playBgm({
-						name: parameters[0],
-						volume: parseInt(parameters[1]),
-						pitch: parseInt(parameters[2]),
-						pan: parseInt(parameters[3])
-					});
+					AudioManager.playBgm(parameters);
 					input.ownerDocument.defaultView._bgmPlaying = true;
 					break;
 				case "me": 
-					AudioManager.playMe({
-						name: parameters[0],
-						volume: parseInt(parameters[1]),
-						pitch: parseInt(parameters[2]),
-						pan: parseInt(parameters[3])
-					});
+					AudioManager.playMe(parameters);
 					input.ownerDocument.defaultView._mePlaying = true;
 					break;
 				case "bgs": 
-					AudioManager.playBgs({
-						name: parameters[0],
-						volume: parseInt(parameters[1]),
-						pitch: parseInt(parameters[2]),
-						pan: parseInt(parameters[3])
-					});
+					AudioManager.playBgs(parameters);
 					input.ownerDocument.defaultView._bgsPlaying = true;
 					break;
 				case "se": 
-					AudioManager.playSe({
-						name: parameters[0],
-						volume: parseInt(parameters[1]),
-						pitch: parseInt(parameters[2]),
-						pan: parseInt(parameters[3])
-					});
+					AudioManager.playSe(parameters);
 					input.ownerDocument.defaultView._sePlaying = true;
 					break;
 			}
 	};
 		
-	Drag.VisualEvent.stopAudio = function(input) {
-		const node = Drag.VisualEvent.getAncestorById(input, "graphNode");
-		const type = node.querySelectorAll('input[data-isCommandParameter="true"]')[0].getAttribute('data-type') || "bgm";
+	Drag.VisualEvent.stopAudio = function(input, type) {
 		switch (type) {
 			case "bgm":
 				AudioManager.stopBgm();
@@ -2633,25 +2668,23 @@ Drag.VisualEvent.version = "0.1.047";
 		}
 	};
 		
-	Drag.VisualEvent.updateAudio = function(input) {
-		const node = Drag.VisualEvent.getAncestorById(input, "graphNode");
-		const type = node.querySelectorAll('input[data-isCommandParameter="true"]')[0].getAttribute('data-type') || "bgm";
-		switch (type) {
+	Drag.VisualEvent.updateAudio = function(input, parameters) {
+		switch (parameters.type) {
 			case "bgm":
 				if (input.ownerDocument.defaultView._bgmPlaying)
-					Drag.VisualEvent.playAudio(input);
+					Drag.VisualEvent.playAudio(input, parameters);
 				break;
 			case "me":
 				if (input.ownerDocument.defaultView._mePlaying)
-					Drag.VisualEvent.playAudio(input);
+					Drag.VisualEvent.playAudio(input, parameters);
 				break;
 			case "bgs":
 				if (input.ownerDocument.defaultView._bgsPlaying)
-					Drag.VisualEvent.playAudio(input);
+					Drag.VisualEvent.playAudio(input, parameters);
 				break;
 			case "se":
 				if (input.ownerDocument.defaultView._sePlaying)
-					Drag.VisualEvent.playAudio(input);
+					Drag.VisualEvent.playAudio(input, parameters);
 				break;
 		}
 	};	
@@ -2664,15 +2697,52 @@ Drag.VisualEvent.version = "0.1.047";
 		return parent;
 	};
 	
+	Drag.VisualEvent.getFolderList = function(sPath) {
+		if (!Drag.VisualEvent.modules.fs || !Drag.VisualEvent.modules.path)
+			return;	
+		
+		const folders = sPath.map(dirPath => {
+			const filesAndFolders = Drag.VisualEvent.modules.fs.readdirSync(dirPath);
+			const folders = filesAndFolders.filter((item) => {
+				const itemPath = Drag.VisualEvent.modules.path.join(dirPath, item);
+				const stats = Drag.VisualEvent.modules.fs.statSync(itemPath);
+				return stats.isDirectory();
+			});
+			
+			return folders;
+		});
+		
+		return folders;
+	};
+	
+	Drag.VisualEvent.getFileList = function(sPath = '', types = '*') {
+		if (!Drag.VisualEvent.modules.fs || !Drag.VisualEvent.modules.path)
+			return;
+		
+		if (!Drag.VisualEvent.modules.fs.existsSync(sPath))
+			return [];
+		
+		const filesAndFolders = Drag.VisualEvent.modules.fs.readdirSync(sPath);
+		const files = filesAndFolders.filter((item) => {
+			const itemPath = Drag.VisualEvent.modules.path.join(sPath, item);
+			const extName = Drag.VisualEvent.modules.path.extname(itemPath);
+			const stats = Drag.VisualEvent.modules.fs.statSync(itemPath);
+			return stats.isFile() && (types.includes(extName) || types === '*');
+		});
+		
+		return files;
+	};
+	
 	Drag.VisualEvent.getMapList = function() {
-		const fs = require('fs');
-		const path = require('path');
-		const filesAndFolders = fs.readdirSync("data/");
+		if (!Drag.VisualEvent.modules.fs ||!Drag.VisualEvent.modules.path)
+			return;
+		
+		const filesAndFolders = Drag.VisualEvent.modules.fs.readdirSync("data/");
 
 		const files = filesAndFolders.filter((item) => {
-			const itemPath = path.join("data/", item);
-			const extName = path.extname(itemPath);
-			const stats = fs.statSync(itemPath);
+			const itemPath = Drag.VisualEvent.modules.path.join("data/", item);
+			const extName = Drag.VisualEvent.modules.path.extname(itemPath);
+			const stats = Drag.VisualEvent.modules.fs.statSync(itemPath);
 			const mapRegex = /^Map\d{3}\.json$/;
 			return stats.isFile() && extName === ".json" && mapRegex.test(item);
 		});
@@ -2680,8 +2750,15 @@ Drag.VisualEvent.version = "0.1.047";
 		return files;
 	};
 	
+	Drag.VisualEvent.getMapFileName = function(mapId) {
+		return `Map${String(mapId).padStart(3, "0")}`;	
+	};
+	
 	Drag.VisualEvent.getMapName = function(mapId) {
-		return $dataMapInfos[mapId].name;
+		if ($dataMapInfos && $dataMapInfos[mapId])
+			return $dataMapInfos[mapId].name;
+		else 
+			return "";
 	};
 	
 	Drag.VisualEvent.getCurrentMapId = function() {
@@ -2698,6 +2775,8 @@ Drag.VisualEvent.version = "0.1.047";
 			return editorData.$dataSystem[`${dataType}`] ? editorData.$dataSystem[`${dataType}`].filter((data, index) => index > 0).map((data, index) => ({id: index + 1, name: data})) : [];
 		} else if (type === "equipment_type")
 			return editorData.$dataSystem.equipTypes.slice(1).map((type, index) => ({name: type === "" ? `#${(index + 1).toString().padStart(2, "0")}` : type, id: index + 1}));
+		else if (type === "element_type")
+			return editorData.$dataSystem.elements.slice(1).map((type, index) => ({name: type === "" ? `#${(index + 1).toString().padStart(2, "0")}` : type, id: index + 1}));
 		else {
 			const dataType = Drag.VisualEvent.capitalizeAll(Drag.VisualEvent.replaceAll(Drag.VisualEvent.getDatabaseTypePlural(type), "_", " "), ""); 
 			return editorData[`$data${dataType}`] ? editorData[`$data${dataType}`].filter(data => data) : [];
@@ -2742,16 +2821,16 @@ Drag.VisualEvent.version = "0.1.047";
 		return string;
 	};
 	
-	Drag.VisualEvent.getListInputButtons = function() {
+	Drag.VisualEvent.getListInputButtons = function(minList = 0) {
 		return `
-			<span style="cursor: pointer; height: 1.5em;" id="add-list-input-button" onclick="$.Drag.VisualEvent.onAddListInput(this);">
+			<span style="display: inline-block; vertical-align: top; cursor: pointer; height: 1.5em;" id="add-list-input-button" onclick="$.Drag.VisualEvent.onAddListInput(this);">
 				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="height: 1.5em; width: 1.5em">
 					<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"></circle>
 					<line x1="12" y1="7" x2="12" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
 					<line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
 				</svg>
 			</span>
-			<span style="cursor: pointer; height: 1.5em;" id="remove-list-input-button" onclick="$.Drag.VisualEvent.onRemoveListInput(this);">
+			<span style="cursor: pointer; height: 1.5em;" id="remove-list-input-button" ${minList ? `data-minList="${minList}"` : ''} onclick="$.Drag.VisualEvent.onRemoveListInput(this);">
 				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" style="height: 1.5em; width: 1.5em"  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<circle cx="12" cy="12" r="10"></circle>
 					<line x1="8" y1="12" x2="16" y2="12"></line>
@@ -2763,10 +2842,25 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.onAddListInput = function(button) {
 		Drag.VisualEvent.addListInput(button);
 		Drag.VisualEvent.onInputChange(button);
+		
+		const editor = Drag.VisualEvent.getEditor();
+		if (button.ownerDocument.defaultView === editor) {
+			const node = Drag.VisualEvent.getAncestorById(button, 'graphNode');
+			if (node)
+				editor.cacheGraphNode(node);
+		}
 	};
 	
 	Drag.VisualEvent.addListInput = function(button) {
+		if (!button)
+			return;
+		
 		const clone = button.parentElement.cloneNode(true);
+		const node = Drag.VisualEvent.getAncestorById(button, 'graphNode');
+		const editor = Drag.VisualEvent.getEditor();
+		
+		if (!node || !editor)
+			return;
 		
 		//attribute unique id to radios
 		const radios = Array.from(clone.querySelectorAll('input[type="radio"]'));
@@ -2777,16 +2871,51 @@ Drag.VisualEvent.version = "0.1.047";
 			radio.previousElementSibling.setAttribute('for', id);
 		}
 		
+		//deconnect connections
+		const connections = Array.from(clone.querySelectorAll('.exec.inputConnection')).concat(Array.from(clone.querySelectorAll('.exec.outputConnection')));
+		for (const connection of connections)
+			editor.setConnectionConnected(connection, false);
+		
+		//add element
 		button.parentElement.after(clone);
+		
+		editor.refreshNodeConnections(node);
+		editor.refreshNode(node);
+		
 		return clone;
 	};
 	
 	Drag.VisualEvent.onRemoveListInput = function(button) {
+		if (!button)
+			return;
+		
+		const node = Drag.VisualEvent.getAncestorById(button, 'graphNode');
+		const editor = Drag.VisualEvent.getEditor();
+		
+		if (!node || !editor)
+			return;
+		
+		//prevent action if last list element or min list requires it
 		const parent = button.parentElement.parentElement; 
-		if (parent.childElementCount > 1) 
-			button.parentElement.remove(); 
+		const listElementCount = Array.from(parent.querySelectorAll('#add-list-input-button')).length;
+		const minList = parseInt(button.getAttribute('data-minList')) || 1;
+		if (listElementCount <= minList) 
+			return;
+		
+		//remove curve if contains connected connections
+		const connections = Array.from(button.parentElement.querySelectorAll('.exec.inputConnection')).concat(Array.from(button.parentElement.querySelectorAll('.exec.outputConnection')));
+		for (const connection of connections)
+			editor.removeConnectionCurves(connection);
+		
+		//remove element
+		// if (listElementCount > 1) 
+		button.parentElement.remove(); 
+		
+		editor.refreshNodeConnections(node);
+		editor.refreshNode(node);
 		
 		Drag.VisualEvent.onInputChange(parent);
+		editor.cacheGraphNode(node);
 	};
 	
 	Drag.VisualEvent.getDefaultValueButton = function() {
@@ -2954,6 +3083,7 @@ Drag.VisualEvent.version = "0.1.047";
 			// return JSON.parse(Drag.VisualEvent.unescapeQuotes(input.getAttribute('data-structValue'), true));
 			return input.getAttribute('data-structValue');
 		else
+			// return Drag.VisualEvent.getInputValue(input);
 			return input.getAttribute('data-value') !== null ? input.getAttribute('data-value') : input.value;
 		
 		return parameterValue;
@@ -3009,10 +3139,13 @@ Drag.VisualEvent.version = "0.1.047";
 		if (params.type === "boolean")
 			params.type = "radio";
 		
+		if (params.type === "note")
+			params.type = "text";
+		
 		params.onchange = `${params.onchange ? params.onchange : ''} $.Drag.VisualEvent.onInputChange(this);`;
 		
 		params.data = params.data || "";
-		params.data += `${params.valueCount ? `data-valueCount="${params.valueCount}"` : ""} data-inputType="${params.type}" ${params.isList ? 'data-isList="true"' : ''} data-defaultValue="${Drag.VisualEvent.escapeQuotes(params.default)}"`
+		params.data += `${params.valueCount ? `data-valueCount="${params.valueCount}"` : ""} data-inputType="${params.type}" ${params.isList ? `data-isList="true" data-listId="${Drag.VisualEvent.getUniqueId()}"` : ''} data-defaultValue="${Drag.VisualEvent.escapeQuotes(params.default)}"`
 
 		if (Array.isArray(params.value))
 			params.value = params.value.map(val => Drag.VisualEvent.escapeQuotes(val))
@@ -3063,6 +3196,24 @@ Drag.VisualEvent.version = "0.1.047";
 		/>`;
 	};
 	
+	Drag.VisualEvent.getListInputField = function(params) {
+		const inputs = []; 
+		const parameters = params.inputs.map(input => Drag.VisualEvent.getInputParameters(input));
+		for (const param of parameters)
+			inputs.push(`<div><label>${param.name || ''}</label>${Drag.VisualEvent.getInputField(param)}</div>`);
+		
+		return `
+			<div id="list-wrapper">
+				<div style="border-top: 0.0625em solid white; padding: 0.5em 0em 0.5em 0.5em; text-align: center;">
+					<div class="rowGap05em" style="display: flex; flex-direction: column; margin-bottom: 0.5em; text-align: left;">
+						${inputs.join('')}
+					</div>
+					${Drag.VisualEvent.getListInputButtons()}
+				</div>
+			</div>
+		`;
+	};
+	
 	Drag.VisualEvent.getTextInputField = function(params, index, controller = null) {
 		return `
 			<div style="display: flex; align-items: flex-start;">
@@ -3088,7 +3239,7 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.autoFitTextArea = function(textArea) {		
 		if (textArea.getAttribute('data-resizeWidth') !== "false") {
 			textArea.style.width = "";
-			textArea.style.width = (Math.max(...textArea.value.split('\n').map(text => text.length)) + 2) * 7.357142857142857 + "px";
+			textArea.style.width = (Math.max(...textArea.value.split('\n').map(text => text.length)) + 2) * 8 + "px";
 		}
 		
 		if (textArea.getAttribute('data-resizeHeight') !== "false") {
@@ -3118,11 +3269,14 @@ Drag.VisualEvent.version = "0.1.047";
 			input.style.flexGrow = "1";
 	};
 	
-	Drag.VisualEvent.getNumberInputField = function(params, index, controller = null) { //not used ?
-		const value = params.value !== undefined ? params.value : params.default !== undefined ? params.default : 0;
+	Drag.VisualEvent.getNumberInputField = function(params, index, controller = null) {
+		let value = params.value !== undefined ? params.value : params.default !== undefined ? params.default : 0;
+		if (isNaN(parseFloat(value)))
+			value = 0;
+		
 		return `
 			<div class="relative">
-				<input type="number" id="${params.id ? params.id : ''}" class="${params.class || ''}" 
+				<input type="number" id="${params.id ? params.id : ''}" class="${params.class || ''}"
 					value="${value}" ${params.max !== undefined ? `max="${params.max}"` : ''} ${params.min !== undefined ? `min="${params.min}"` : ''} placeholder="${params.placeholder || ''}" 
 					onchange="$.Drag.VisualEvent.sanitizeInput(this); ${params.onchange || ''}" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"
 					data-decimals="${params.decimals ? params.decimals : "0"}" ${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} ${params.disabled ? 'disabled' : ''} />
@@ -3132,7 +3286,10 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	Drag.VisualEvent.getIntegerInputField = function(params, index, controller = null) {
-		const value = params.value !== undefined ? params.value : params.default !== undefined ? params.default : 0;
+		let value = params.value !== undefined ? params.value : params.default !== undefined ? params.default : 0;
+		if (isNaN(parseInt(value)))
+			value = 0;
+		
 		return `
 			<div class="relative">
 				<input type="number" id="${params.id ? params.id : ''}" class="${params.class || ''}" 
@@ -3544,7 +3701,7 @@ Drag.VisualEvent.version = "0.1.047";
 				<input type="range" min="${params.min}" max="${params.max}" step="${params.step}" class="${params.class || ''}" value="${value}"
 					onchange="this.nextElementSibling.firstElementChild.value = this.value; this.nextElementSibling.firstElementChild.onchange(); ${params.onchange || ''}" oninput="this.onchange();"  ${params.data || ''} ${params.disabled ? 'disabled' : ''}/>
 				<div class="relative">
-					<input type="number" min="${params.min}" max="${params.max}" step="${params.step}" class="onReadyOnChange ${params.class || ''}" style="max-width: 4.6875em;" value="${value}" placeholder="${params.placeholder || ''}" 
+					<input type="number" min="${params.min}" max="${params.max}" step="${params.step}" class="onReadyOnChange ${params.class || ''}" style="min-width: 5em;" value="${value}" placeholder="${params.placeholder || ''}" 
 						onchange="$.Drag.VisualEvent.sanitizeInput(this); this.parentElement.previousElementSibling.value = this.value; ${params.onchange || ''}" oninput="this.onchange();" 
 						${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} ${params.disabled ? 'disabled' : ''} />
 					${params.tooltip ? `<span class="input-tooltip" data-tooltip="${params.tooltip}"></span>` : ''}
@@ -3663,7 +3820,7 @@ Drag.VisualEvent.version = "0.1.047";
 		const dirs = params.dir ? params.dir.split("/") : [""];
 		const dataType = dirs[dirs.length - 2];
 		return `
-			<input type="text" class=""
+			<input type="text" class="${params.class || ''}"
 				style="cursor: pointer;" 
 				onclick="$.Drag.VisualEvent.openFileExplorer(this);" onchange="${params.onchange || ''}" onfocus="this.blur()" onload=""
 				${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} value="${params.value || ''}"
@@ -3674,10 +3831,10 @@ Drag.VisualEvent.version = "0.1.047";
 	
 	Drag.VisualEvent.getAudioInputField = function(params, index, controller = null) {
 		return `
-			<input type="text" class=""
+			<input type="text" class="${params.class || ''}"
 				style="cursor: pointer;" 
 				onclick="$.Drag.VisualEvent.openFileExplorer(this); ${params.onclick || ''}" onchange="${params.onchange || ''}" onfocus="this.blur()" onload=""
-				${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} value="${params.value || ''}"
+				${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} value="${params.value || ''}" ${params.disabled ? "disabled" : ""}
 			/>`;
 	};
 	
@@ -3687,16 +3844,16 @@ Drag.VisualEvent.version = "0.1.047";
 		const height = params.height || 6.25; 
 		
 		return `
-			<input type="text" class="onReadyOnChange"
+			<input type="text" class="onReadyOnChange ${params.class || ''}"
 				style="font-size: 0; cursor: pointer; padding: 0; position: relative; overflow: hidden; width: ${width}rem; height: ${height}rem; background-size: cover;" 
 				onclick="$.Drag.VisualEvent.openFileExplorer(this); ${params.onclick || ''}" onchange="$.Drag.VisualEvent.updatePicture(this); ${params.onchange || ''}" onfocus="this.blur()" onload="$.Drag.VisualEvent.updatePicture(this)"
-				${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} value="${params.value}"
+				${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} value="${params.value}" ${params.disabled ? "disabled" : ""}
 			/>`;
 	};
 	
 	Drag.VisualEvent.getMovieInputField = function(params, index, controller = null) {
 		return `
-			<input type="text" class=""
+			<input type="text" class="${params.class || ''}"
 				style="cursor: pointer;" 
 				onclick="$.Drag.VisualEvent.openFileExplorer(this); ${params.onclick || ''}" onchange="${params.onchange || ''}" onfocus="this.blur()" onload=""
 				${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} value="${params.value}"
@@ -3731,7 +3888,7 @@ Drag.VisualEvent.version = "0.1.047";
 
 		const mapDisplayValue = `${params.value.length <= 2 ? "Current Map" : "Map" + String(mapId).padStart(3, '0')}: x: ${mapx}, y: ${mapy}`; 
 		return `
-			<input type="text" class="" style="cursor: pointer;" id="${params.id || ''}"
+			<input type="text" class="${params.class || ''}" style="cursor: pointer;" id="${params.id || ''}"
 				onclick="${params.onclick || ''} $.Drag.VisualEvent.openMapLocationPicker(this);" onchange="${params.onchange || ''}" onfocus="this.blur()" onload=""
 				${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} data-mapId="${mapId}" data-x="${mapx}" data-y="${mapy}" data-value="${params.value}" value="${mapDisplayValue}"
 			/>`;
@@ -3791,7 +3948,6 @@ Drag.VisualEvent.version = "0.1.047";
 			conditionsList = "<li>Don't run</li>";
 		else 
 			conditionsList = conditions.map(condition => `<li>${Drag.VisualEvent.translateConditions(condition)}</li>`).join('');
-		console.log(conditionsList);
 		return `
 			<div id="event-conditions-list"> 
 				<ul class="shrinkable">
@@ -3947,4 +4103,4 @@ Drag.VisualEvent.version = "0.1.047";
 		return ``;
 	};
 	
-})();
+// })();
