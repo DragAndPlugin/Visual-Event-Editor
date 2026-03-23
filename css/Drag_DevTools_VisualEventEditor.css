@@ -631,6 +631,11 @@ div#functionList {
     box-sizing: border-box;
 }
 
+#common-event-select, #map-event-select, #troop-event-select {
+	width: 90%;
+    margin: 0 auto 0.5em auto;
+}
+
 #common-event-list > div > .red, #map-event-list > div > .red, #troop-event-list > div > .red {
 	margin-left: 5px;
 }
@@ -660,15 +665,7 @@ div#functionList {
     height: 1.5625em;
 }
 
-#common-event-container[data-collapsed="true"] #common-event-search, #common-event-container[data-collapsed="true"] #common-event-list {
-    display: none;
-}
-
-#map-event-container[data-collapsed="true"] #map-event-search, #map-event-container[data-collapsed="true"] #map-event-list, #map-event-container[data-collapsed="true"] .select {
-    display: none;
-}
-
-#troop-event-container[data-collapsed="true"] #troop-event-search, #troop-event-container[data-collapsed="true"] #troop-event-list {
+#troop-event-container[data-collapsed="true"] > *:not(h2), #map-event-container[data-collapsed="true"] > *:not(h2), #common-event-container[data-collapsed="true"] > *:not(h2) {
     display: none;
 }
 
@@ -804,11 +801,11 @@ div#functionList {
     width: fit-content;
     cursor: auto;
     background: rgba(0, 0, 0, 0.4);
-    box-shadow: 7px 7px 20px 0px black;
     backdrop-filter: blur(1px);
     pointer-events: all;
 	-webkit-user-select: none;
     user-select: none;
+	box-shadow: 3px 3px 10px 0px black;
 }
 
 #graphNode.warning {
@@ -991,6 +988,10 @@ div#functionList {
 	background-color: rgba(112, 128, 144, 0.8);
 }
 
+.node-custom > #node-header {
+	background-color: grey;
+}
+
 #input-container, #output-container {
     display: inline-block;
     box-sizing: border-box;
@@ -1019,7 +1020,8 @@ div#functionList {
 #node-input {
 	display: block;
     position: relative;
-    min-height: 1.5625em;
+    /* min-height: 1.5625em; */
+	min-height: 2.35em;
     min-width: 9.375em;
     line-height: 1.5625em;
     margin-left: 1.25em;
@@ -1115,6 +1117,7 @@ div#functionList {
 	display: flex;
     justify-content: flex-end;
 	min-height: 1.5625em;
+	min-height: 2.2em;
     position: relative;
     line-height: 1.5625em;
     padding-right: 0.3125em;
@@ -1138,15 +1141,25 @@ div#functionList {
     left: -0.9375em;
 }
 
+b + .inputConnection.exec {
+    position: absolute;
+    left: -0.9375em;
+}
+
 .exec.outputConnection, .exec.inputConnection {
 	cursor: grab;
 	cursor: -webkit-grab;
-
 	position: relative;
     height: fit-content;
     min-height: 1.5625em;
     min-width: 1em;
     left: 0;
+	display: inline-block;
+    vertical-align: super;
+}
+
+.connectable {
+	cursor: -webkit-grab;
 }
 
 .nodeOutput > input {
@@ -1166,10 +1179,16 @@ div#functionList {
 
 .inputConnection::after, .outputConnection::after {
 	content: "\2688";
+	display: inline-block;
+    vertical-align: middle;
 }
 
 .inputConnection[data-connected="false"]::after, .outputConnection[data-connected="false"]::after {
     content: "\2686";
+}
+
+.noDefaultSymbol::after {
+	content: "" !important;
 }
 
 .exec[data-connected="true"]::after, .exec[data-connected="true"]::after {
@@ -1299,6 +1318,7 @@ img.noBrokenIcon::after {
 
 #autosave-notification > button {
     font-size: 0.75em;
+	display: inline-block;
 }
 
 #autosave-now-button {
@@ -1393,4 +1413,6 @@ img.noBrokenIcon::after {
     background-size: 15px 4px, 15px 4px, 4px 15px, 4px 15px;
     background-position: left top, right bottom, left bottom, right top;
     animation: border-dance 1s infinite linear;
+    border: 2px solid darkorange !important;
+    box-shadow: 3px 3px 10px 0px rgb(255 140 0 / 0.8);
 }

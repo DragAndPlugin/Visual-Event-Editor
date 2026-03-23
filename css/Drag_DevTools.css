@@ -605,6 +605,11 @@ input[type="range"]::-webkit-slider-thumb {
     width: 1px;
 }
 
+input[type="range" i]:disabled {
+    border-color: dimgrey;
+    color: dimgray;
+}
+
 input[type="color"] {
 	width: 2.5em;
     height: 2.5em;
