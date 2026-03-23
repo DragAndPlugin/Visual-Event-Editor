@@ -1118,12 +1118,26 @@ Drag.VisualEvent.version = "0.1.047";
 		}
 	};
 	
+	// Insert item at index in this array
 	Drag.VisualEvent.insert = function(arr, index, item) {
 		if (!Array.isArray(arr))
 			return;
 		
 		arr.splice(index, 0, item);
 		return arr;
+	};
+
+	// Add array 2 to the end of array 1
+	Drag.VisualEvent.append = function(arr1, arr2) {
+		if (!Array.isArray(arr1) || !Array.isArray(arr2))
+			return;
+		
+		for (let i = 0; i < arr2.length; i++)
+		{
+			arr1.push(arr2[i]);
+		}
+
+		return arr1;
 	};
 	
 	Drag.VisualEvent.fill = function(arr, item, nb) {
