@@ -129,7 +129,7 @@ module.exports = [
 		id: "custom_node_add_item_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
 		exec_input: true, //boolean, default true, define if node have input execution connection
 		exec_output: true, //boolean, default true, define if node have output execution connection
-		inputs: ['arrayVariable', 'arrayIndex', 'selectArrayItem'], //array of string, list of inputs of the node
+		inputs: ['arrayVariable', 'arrayIndex', 'selectArrayItem', 'noDuplicateArrayItems'], //array of string, list of inputs of the node
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => {
 			behaviors.push({code: "_add_item_variable_array", indent: command.indent, parameters: command.parameters});
@@ -143,10 +143,24 @@ module.exports = [
 		id: "custom_node_get_item_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
 		exec_input: true, //boolean, default true, define if node have input execution connection
 		exec_output: true, //boolean, default true, define if node have output execution connection
-		inputs: ['arrayVariable', 'selectArrayGetMode', 'variable', 'removeArrayItem'], //array of string, list of inputs of the node
+		inputs: ['arrayVariable', 'arrayIndex', 'variable', 'removeArrayItem'], //array of string, list of inputs of the node
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => {
-			behaviors.push({code: "_custom_node_get_item_variable_array", indent: command.indent, parameters: command.parameters});
+			behaviors.push({code: "_get_item_variable_array", indent: command.indent, parameters: command.parameters});
+		}
+	}, 
+	{
+		category: "Game Progression", //string, category in node list 
+		name: "Get Random Item In Variable Array", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_get_random_item_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['arrayVariable', 'variable', 'removeArrayItem'], //array of string, list of inputs of the node
+		outputs: [], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => {
+			behaviors.push({code: "_get_random_item_variable_array", indent: command.indent, parameters: command.parameters});
 		}
 	}, 
 	{
@@ -160,7 +174,7 @@ module.exports = [
 		inputs: ['arrayVariable'], //array of string, list of inputs of the node
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => {
-			behaviors.push({code: "_custom_node_shuffle_items_variable_array", indent: command.indent, parameters: command.parameters});
+			behaviors.push({code: "_shuffle_items_variable_array", indent: command.indent, parameters: command.parameters});
 		}
 	}, 
 	{
@@ -174,7 +188,7 @@ module.exports = [
 		inputs: ['arrayVariable'], //array of string, list of inputs of the node
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => {
-			behaviors.push({code: "_custom_node_sort_items_variable_array", indent: command.indent, parameters: command.parameters});
+			behaviors.push({code: "_sort_items_variable_array", indent: command.indent, parameters: command.parameters});
 		}
 	}, 
 	{
@@ -185,10 +199,10 @@ module.exports = [
 		id: "custom_node_merge_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
 		exec_input: true, //boolean, default true, define if node have input execution connection
 		exec_output: true, //boolean, default true, define if node have output execution connection
-		inputs: ['arrayVariable', 'arrayVariable'], //array of string, list of inputs of the node
+		inputs: ['arrayVariable', 'arrayVariable', 'noDuplicateArrayItems'], //array of string, list of inputs of the node
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => {
-			behaviors.push({code: "_custom_node_merge_variable_array", indent: command.indent, parameters: command.parameters});
+			behaviors.push({code: "_merge_variable_array", indent: command.indent, parameters: command.parameters});
 		}
 	}, 
 	{
@@ -202,7 +216,7 @@ module.exports = [
 		inputs: ['arrayVariable'], //array of string, list of inputs of the node
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => {
-			behaviors.push({code: "_custom_node_reverse_items_variable_array", indent: command.indent, parameters: command.parameters});
+			behaviors.push({code: "_reverse_items_variable_array", indent: command.indent, parameters: command.parameters});
 		}
 	}, 
 	{
@@ -216,7 +230,33 @@ module.exports = [
 		inputs: ['arrayVariable', 'selectArrayItem', 'switch'], //array of string, list of inputs of the node
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => {
-			behaviors.push({code: "_custom_node_variable_array_includes_item", indent: command.indent, parameters: command.parameters});
+			behaviors.push({code: "_variable_array_includes_item", indent: command.indent, parameters: command.parameters});
+		}
+	}, 
+	{
+		category: "Flow Control", //string, category in node list 
+		name: "Variable Array Includes Item (Exec)", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_variable_array_includes_item_exec", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['arrayVariable', 'selectArrayItem'], //array of string, list of inputs of the node
+		outputs: ['ifOutput', 'elseOutput'], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => {
+			const ifConnection = editor.getNodeConnectionsById(node, 0).output; 
+			if (editor.isConnectionConnected(ifConnection)) {
+				const connectionConnectedNode = editor.getConnectionConnectedNodes(ifConnection)[0];
+				behaviors.push({code: "_variable_array_includes_item_exec", indent: command.indent, parameters: command.parameters});
+				behaviors.push(...editor.parseNodesBehavior(connectionConnectedNode, command.indent + 1, sequence[0]));
+			}
+				
+			const elseConnection = editor.getNodeConnectionsById(node, 1).output; 
+			if (editor.isConnectionConnected(elseConnection)) {
+				const connectionConnectedNode = editor.getConnectionConnectedNodes(elseConnection)[0];
+				behaviors.push({code: "_variable_array_not_includes_item_exec", indent: command.indent, parameters: command.parameters});
+				behaviors.push(...editor.parseNodesBehavior(connectionConnectedNode, command.indent + 1, sequence[1]));
+			}
 		}
 	}, 
 	{
@@ -230,7 +270,7 @@ module.exports = [
 		inputs: ['arrayVariable', 'selectArrayItem', 'selectArrayItem'], //array of string, list of inputs of the node
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => {
-			behaviors.push({code: "_custom_node_replace_item_variable_array", indent: command.indent, parameters: command.parameters});
+			behaviors.push({code: "_replace_item_variable_array", indent: command.indent, parameters: command.parameters});
 		}
 	}, 
 	{
@@ -244,7 +284,7 @@ module.exports = [
 		inputs: ['arrayVariable', 'arrayLength', 'fillArrayItem'], //array of string, list of inputs of the node
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => {
-			behaviors.push({code: "_custom_node_set_variable_array_length", indent: command.indent, parameters: command.parameters});
+			behaviors.push({code: "_set_variable_array_length", indent: command.indent, parameters: command.parameters});
 		}
 	}, 
 	{
@@ -258,7 +298,35 @@ module.exports = [
 		inputs: ['arrayVariable', 'selectArrayItem'], //array of string, list of inputs of the node
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => {
-			behaviors.push({code: "_custom_node_remove_item_variable_array", indent: command.indent, parameters: command.parameters});
+			behaviors.push({code: "_remove_item_variable_array", indent: command.indent, parameters: command.parameters});
+		}
+	}, 
+	{
+		category: "Game Progression", //string, category in node list 
+		name: "Remove Index From Variable Array", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_remove_index_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['arrayVariable', 'arrayIndex'], //array of string, list of inputs of the node
+		outputs: [], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => {
+			behaviors.push({code: "_remove_index_variable_array", indent: command.indent, parameters: command.parameters});
+		}
+	}, 
+	{
+		category: "Game Progression", //string, category in node list 
+		name: "Join Items From Variable Array", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_join_items_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['arrayVariable', 'separator', 'variable'], //array of string, list of inputs of the node
+		outputs: [], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => {
+			behaviors.push({code: "_join_items_variable_array", indent: command.indent, parameters: command.parameters});
 		}
 	}
 ];
