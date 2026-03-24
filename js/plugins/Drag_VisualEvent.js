@@ -53,6 +53,7 @@ Drag.VisualEvent.version = "0.1.047";
 	
 	require("./js/data/Drag/Drag_VisualEvent_InputData.js")(Drag, Utils.RPGMAKER_NAME);
 	
+	//TODO: split to ./js/data/Drag/Drag_VisualEvent_CommandData
 	Drag.VisualEvent.commandsCategories = {
 		"Message": ["command101", "command102", "command103", "command104", "command105"],
 		"Game Progression": ["command121", "command122", "command123", "command124"],
@@ -276,6 +277,7 @@ Drag.VisualEvent.version = "0.1.047";
 		45: [Drag.VisualEvent.inputs.script],
 	};
 	
+	//TODO: split to ./js/data/Drag/Drag_VisualEvent_EventData
 	Drag.VisualEvent.emptyList = {
 		code: 0, 
 		indent: 0, 
@@ -983,6 +985,9 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	Drag.VisualEvent.openWindow = function(path, commonDir, name, width, height, top, left, data = {}) {
+		if (Utils.RPGMAKER_NAME === "MV")
+			top += 30;
+		
 		try {
 			if (!Drag[`${name}WindowHandler`] || Drag[`${name}WindowHandler`].closed) {
 				if (Drag.VisualEvent.modules.fs && Drag.VisualEvent.modules.fs.existsSync(path)) {
@@ -1079,7 +1084,7 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.openSwitchVariableMenu = function(input) {
 		const rect = input.getBoundingClientRect();
 		const type = input.getAttribute('data-inputType') || input.getAttribute('data-type');
-		
+		console.log(rect, input.ownerDocument.defaultView.screenTop, input.ownerDocument.defaultView.screenLeft)
 		Drag.VisualEvent.openWindow(
 			'html/Drag_DevTools_SwitchVariableMenu.html', 'html/', 'Switch & Variable Menu', 
 			window.screen.width * 0.4, window.screen.height * 0.75, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
