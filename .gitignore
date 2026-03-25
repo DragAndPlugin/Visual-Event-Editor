@@ -30,8 +30,10 @@ js/plugins/SimpleMsgSideView.js
 js/plugins/TitleCommandPosition.js
 js/plugins/WeaponSkill.js
 
-# ignopre project .exe and framework
+# ignore project .exe and framework
 Game.rpgproject
 index.html
 package.json
 
+# ignore editor cache
+html/data/cache.json
