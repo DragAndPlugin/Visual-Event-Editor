@@ -51,7 +51,29 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.dataFiles = ["Actors", "Animations", "Armors", "Classes", "CommonEvents", "Enemies", "Items", "MapInfos", "Skills", "States", "System", "Tilesets", "Troops", "Weapons"];
 	Drag.VisualEvent.pluginJSDocData = {};
 	
-	require("./js/data/Drag/Drag_VisualEvent_InputData.js")(Drag, Utils.RPGMAKER_NAME);
+	
+	//loader functions for inputs data
+	Drag.VisualEvent.loadInputData = function(filename) {
+		if (!Drag.VisualEvent.inputs)
+			Drag.VisualEvent.inputs = {};
+		
+		const data = require(`./js/data/Drag/${filename}.js`)(Utils.RPGMAKER_NAME);
+		for (const key in data)
+			if (!Drag.VisualEvent.inputs[key])
+				Drag.VisualEvent.inputs[key] = data[key];
+	};
+	Drag.VisualEvent.loadInputData('Drag_VisualEvent_InputData');
+	
+	Drag.VisualEvent.loadInteractiveInputData = function(filename) {
+		if (!Drag.VisualEvent.interactiveInputs)
+			Drag.VisualEvent.interactiveInputs = {};
+		
+		const data = require(`./js/data/Drag/${filename}.js`)(Drag, Utils.RPGMAKER_NAME);
+		for (const key in data)
+			if (!Drag.VisualEvent.interactiveInputs[key])
+				Drag.VisualEvent.interactiveInputs[key] = data[key];
+	};
+	Drag.VisualEvent.loadInteractiveInputData('Drag_VisualEvent_InteractiveInputData');
 	
 	//TODO: split to ./js/data/Drag/Drag_VisualEvent_CommandData
 	Drag.VisualEvent.commandsCategories = {
@@ -380,12 +402,6 @@ Drag.VisualEvent.version = "0.1.047";
 		x: 0,
 		y: 0
 	};
-	
-	//-----------------------------------------------------------------------------
-	// plugin parameters
-	
-	//------------------------------------------------------------------------------------------------------------
-	// plugin command	
 	
 	//------------------------------------------------------------------------------------------------------------
 	// plugin functions
