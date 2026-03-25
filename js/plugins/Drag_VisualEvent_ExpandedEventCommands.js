@@ -24,50 +24,27 @@ Drag.VisualEvent_ExpandedEventCommands.version = "1.0.0";
 
 (function() {
 	
-	Object.assign(Drag.VisualEvent.inputs, {
-		arrayVariable: {type: "variable", default: 1, name: "Variable Array"},
-		weight: {type: "integer", default: 1, name: "Weight"},
-		arrayIndex: {type: "integer", default: 0, name: "Index"},
-		arrayLength: {type: "integer", default: 1, min: 0, name: "Length"},
-		itemList: {type: "text", name: "Items", default: "", isList: true},
-		arrayItem: {type: "text", name: "Item", default: ""},
-		fillArrayItem: {type: "text", name: "Fill Item", default: ""},
-		separator: {type: "text", name: "Separator", default: ""},
-		arrayGetMode: {type: "select", options: ["Specify Index", "Random"], name: "Get Mode", data: "data-dataType='number'", default: 0},
-		arrayItemVariable: {type: "select", options: ["Specify", "Variable"], name: "Item", data: "data-dataType='number'", default: 0},
-		removeArrayItem: {type: "checkbox", name: "Remove Item From Array", default: false, showName: true},
-		noDuplicateArrayItems: {type: "checkbox", name: "No Duplicate Items", default: false, showName: true},
-	});
-	
-	Object.assign(Drag.VisualEvent.interactiveInputs, {
-		selectArrayItem: {
-			type: "interactive", name: "Item", behavior: [0, 1], 
-			controller: Drag.VisualEvent.inputs.arrayItemVariable, 
-			dependances: [Drag.VisualEvent.inputs.arrayItem, Drag.VisualEvent.inputs.variable]
-		},
-		selectArrayGetMode: {
-			type: "interactive", name: "Index", behavior: [0, -1], 
-			controller: Drag.VisualEvent.inputs.arrayGetMode, 
-			dependances: [Drag.VisualEvent.inputs.arrayIndex]
-		},
-	});
+	if (Imported.Drag_VisualEvent) {
+		Drag.VisualEvent.loadInputData('Drag_VisualEvent_ExpandedEventCommands_InputData');
+		Drag.VisualEvent.loadInteractiveInputData('Drag_VisualEvent_ExpandedEventCommands_InteractiveInputData');
+	}
 	
 	// Wait Variable
-	Game_Interpreter.prototype.command1001 = function(params) {
+	Game_Interpreter.prototype.command_wait_variable = function(params) {
 		if (params[0] > 0)
 			this.wait($gameVariables.value(params[0]));
 		return true;
 	};
 	
 	// Wait Script
-	Game_Interpreter.prototype.command1004 = function(params) {
+	Game_Interpreter.prototype.command_wait_script = function(params) {
 		if (params[0])
 			this.wait(eval(params[0]));
 		return true;
 	};
 	
 	// Replace Picture
-	Game_Interpreter.prototype.command1002 = function(params) {
+	Game_Interpreter.prototype.command_replace_picture = function(params) {
 		$gameScreen.replacePicture(params[0], params[1]);
 		return true;
 	};
@@ -78,8 +55,12 @@ Drag.VisualEvent_ExpandedEventCommands.version = "1.0.0";
 			this.showPicture(pictureId, name, picture._origin, picture._x, picture._y, picture._scaleX, picture._scaleY, picture._opacity, picture._blendMode);
 	};
 	
+	// Rotate Picture (deg)
+	
+	
+	
 	// Common Event (variable)
-	Game_Interpreter.prototype.command1003 = function(params) {
+	Game_Interpreter.prototype.command_common_event_variable = function(params) {
 		const varId = params[0];
 		if (varId > 0) {
 			const varValue = $gameVariables.value(varId);
@@ -101,8 +82,17 @@ Drag.VisualEvent_ExpandedEventCommands.version = "1.0.0";
 		return true;
 	};
 	
+	// Control Event Self Switch
+	Game_Interpreter.prototype.command_control_event_self_switch = function(params) {
+		if (params[0] > 0 && params[1] > 0 && params.length > 3) {
+			const key = [params[0], params[1], params[2]];
+			$gameSelfSwitches.setValue(key, params[3]);
+		}
+		return true;
+	};
+	
 	// Set Variable Random With Weight
-	Game_Interpreter.prototype.command_custom_node_set_variable_random_with_weight = function(params) {
+	Game_Interpreter.prototype.command_set_variable_random_with_weight = function(params) {
 		if (params[0]) {
 			const varId = params.shift();
 			const values = params.filter((param, i) => i % 2 === 0);
@@ -123,6 +113,10 @@ Drag.VisualEvent_ExpandedEventCommands.version = "1.0.0";
 		
 		return weightedValues[roll];
 	};
+	
+	// Set Gold 
+	
+	
 	
 	// --------------------------------------------------------------------------------------------------------------------------------
 	// Variable Array
