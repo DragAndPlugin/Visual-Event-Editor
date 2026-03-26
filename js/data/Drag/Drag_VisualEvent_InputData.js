@@ -201,11 +201,11 @@ module.exports = function(RPGMAKER_NAME) {
 		
 		//integer
 		int: {type: "integer", default: 0, name: ""},
-		speed: {type: "integer", default: 2, name: "Speed"},
+		speed: {type: "integer", default: 2, name: "Speed", min: 0},
 		scrollingSpeed: {type: "integer", default: 2, name: "Speed", min: 1, max: 8},
-		distance: {type: "integer", default: 1, name: "Distance"},
-		pictureID: {type: "integer", default: 0, name: "Picture ID"},
-		durationFrame: {type: "integer", default: 60, name: "Duration in frames (1/60 sec)"},
+		distance: {type: "integer", default: 1, name: "Distance", min: 0},
+		pictureID: {type: "integer", default: 0, name: "Picture ID", min: 0},
+		durationFrame: {type: "integer", default: 60, name: "Duration in frames (1/60 sec)", min: 0},
 		durationSeconds: {type: "integer", default: 10, name: "Duration in seconds", min: 1},
 		maximumCharacters: {type: "integer", default: 8, name: "Max characters", min: 1, max: 16},
 		horizontalScroll: {type: "integer", default: 0, name: "Horizontal Scroll", min: -32, max: 32},
