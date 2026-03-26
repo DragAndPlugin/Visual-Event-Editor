@@ -1139,7 +1139,8 @@
 			
 			function getCommonEventSelect() {
 				const commonEventCount = getCommonEventCount();
-				return $.Drag.VisualEvent.getInputField({type: "select", options: getCommonEventSelectOptions(), value: Math.floor(commonEventCount / 100), onchange: "onCommonEventSelectChange(this);"});
+				const value = window.data.targetId && window.data.targetType === "Common Event" ? Math.floor(window.data.targetId / 100) : Math.floor(commonEventCount / 100);
+				return $.Drag.VisualEvent.getInputField({type: "select", options: getCommonEventSelectOptions(), value: value, onchange: "onCommonEventSelectChange(this);"});
 			};
 			
 			function getCommonEventCount() {
@@ -1166,8 +1167,10 @@
 			
 			function getCommonEventList() {			
 				const commonEventCount = getCommonEventCount();
-				const min = Math.floor(data.targetId / 100) * 100;
+				const min = Math.floor(window.data.targetId / 100) * 100;
 				const max = Math.min(min + 100, commonEventCount);
+				console.log(window.data.targetId, commonEventCount);
+				console.log(min, max);
 				return getRangedCommonEventList(min, max);
 			};
 			
@@ -1185,6 +1188,7 @@
 			};
 			
 			function refreshCommonEventList() {
+				document.querySelector('#common-event-select').innerHTML = getCommonEventSelect();
 				document.querySelector('#common-event-list').innerHTML = getCommonEventList();
 			};
 			
@@ -1447,6 +1451,11 @@
 						clearCommonEvent(i);
 				
 				window._cache.graph["Common Event"].ceCount = maximum;
+				
+				if (window.data.targetId > maximum && window.data.targetType === "Common Event") {
+					window.data.targetId = maximum;
+					reloadGraphEditor(window.data.targetId, window.data.targetType);
+				}
 				refreshCommonEventList();
 				hideCommonEventContextMenu();
 			};
@@ -2178,7 +2187,7 @@
 				}
 			};
 			
-			function reloadGraphEditor(id, type, pageId = null, refreshTopPanel = true) {
+			function reloadGraphEditor(id, type, pageId = null, refreshTopPanel = true, refreshLeftPanel = true) {
 				showLoading();
 				setTimeout(() => {
 					window._registerInputChange = false;
@@ -2206,6 +2215,16 @@
 					
 					if (refreshTopPanel)
 						setupTopPanel();
+					
+					if (refreshLeftPanel)
+						switch (type) {
+							case "Common Event":
+								refreshCommonEventList();
+								break;
+							case "Troop Event":
+								refreshTroopEventList();
+								break;
+						}
 					
 					document.querySelector('#playtest-button').classList.remove('hidden');
 					document.querySelector('#save-changes-button').classList.remove('hidden');
@@ -3109,7 +3128,7 @@
 					for (const input of inputs) {
 						if (input.getAttribute('data-isList') === 'true' && listsLength[listId]) {
 							const wrapper = input.parentElement;							
-							const addListInputButton = wrapper.querySelector('#add-list-input-button');
+							const addListInputButton = findInputAssociatedAddListInputButton(input);
 							for (let i = 1; i < listsLength[listId]; i++)
 								$.Drag.VisualEvent.addListInput(addListInputButton);
 							listId++;
@@ -3122,6 +3141,15 @@
 						listId++;
 					}
 				}
+			};
+			
+			function findInputAssociatedAddListInputButton(input) {
+				let button;
+				while (!button && input) {
+					input = input.parentElement;
+					button = input.querySelector('#add-list-input-button');
+				}
+				return button;
 			};
 			
 			// function addGraphNode2(params = {}, saveInHistory = false, cache = false, frag = null) {
@@ -3169,7 +3197,7 @@
 					for (let l = 0; l < inputListLength; l++)
 						nodeContent += `
 							<span id="node-input" class="node-input-exec">
-								<span data-connected="false" data-nodeId=${nodeId} data-connectionId="${l}" ${isCustom && customInputExecParams.is_list ? `data-isList="true"` : ''} ${isCustom && customInputExecParams.exclusive ? `data-exclusive="${customInputExecParams.exclusive}"` : ''} ${isCustom && customInputExecParams.curve_color ? `data-curveColor="${customInputExecParams.curve_color}"` : ''} class="exec inputConnection ${isCustom && customInputExecParams.symbol ? `noDefaultSymbol ${customNodeData.id}_input` : ''} ${isCustom && customInputExecParams.mono ? `mono` : ''}"></span> 
+								<span data-connected="false" data-nodeId=${nodeId} data-connectionId="${l}" ${isCustom && customInputExecParams.is_list ? `data-isList="true"` : ''} ${isCustom && customInputExecParams.exclusive ? `data-exclusive="${customInputExecParams.exclusive}"` : 'data-exclusive="exec"'} ${isCustom && customInputExecParams.curve_color ? `data-curveColor="${customInputExecParams.curve_color}"` : ''} class="exec inputConnection ${isCustom && customInputExecParams.symbol ? `noDefaultSymbol ${customNodeData.id}_input` : ''} ${isCustom && customInputExecParams.mono ? `mono` : ''}"></span> 
 								${isCustom && customInputExecParams.is_list ? $.Drag.VisualEvent.getListInputButtons(customInputExecParams.min_list) : ''}
 							</span>`;
 				}
@@ -3246,7 +3274,7 @@
 							<span class="nodeOutput" id="main-exec-output"> 
 								${params.outputLabel || ''}
 								${isCustom && customOutputExecParams.is_list ? $.Drag.VisualEvent.getListInputButtons(customOutputExecParams.min_list) : ''}
-								<span data-connected="false" data-nodeId="${nodeId}" data-connectionId="${outputConnectionId++}" data-indent="${params.indent || 0}" ${isCustom && customOutputExecParams.is_list ? `data-isList="true"` : ''} ${isCustom && customOutputExecParams.exclusive ? `data-exclusive="${customOutputExecParams.exclusive}"` : ''} ${isCustom && customOutputExecParams.curve_color ? `data-curveColor="${customOutputExecParams.curve_color}"` : ''} class="exec outputConnection ${isCustom && customOutputExecParams.symbol ? `noDefaultSymbol ${customNodeData.id}_output` : ''}"></span>
+								<span data-connected="false" data-nodeId="${nodeId}" data-connectionId="${outputConnectionId++}" data-indent="${params.indent || 0}" ${isCustom && customOutputExecParams.is_list ? `data-isList="true"` : ''} ${isCustom && customOutputExecParams.exclusive ? `data-exclusive="${customOutputExecParams.exclusive}"` : 'data-exclusive="exec"'} ${isCustom && customOutputExecParams.curve_color ? `data-curveColor="${customOutputExecParams.curve_color}"` : ''} class="exec outputConnection ${isCustom && customOutputExecParams.symbol ? `noDefaultSymbol ${customNodeData.id}_output` : ''}"></span>
 							</span>`;
 					
 				}
