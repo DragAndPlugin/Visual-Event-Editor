@@ -10,7 +10,7 @@ module.exports = [
 		inputs: ['variable'], //array of string, list of inputs of the node
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
-			behaviors.push({code: 1001, indent: command.indent, parameters: command.parameters});
+			behaviors.push({code: '_wait_variable', indent: command.indent, parameters: command.parameters});
 		}
 	}, 
 	{
@@ -24,7 +24,7 @@ module.exports = [
 		inputs: ['text'], //array of string, list of inputs of the node
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
-			behaviors.push({code: 1004, indent: command.indent, parameters: command.parameters});
+			behaviors.push({code: '_wait_script', indent: command.indent, parameters: command.parameters});
 		}
 	}, 
 	{
@@ -35,10 +35,128 @@ module.exports = [
 		id: "custom_node_replace_picture", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
 		exec_input: true, //boolean, default true, define if node have input execution connection
 		exec_output: true, //boolean, default true, define if node have output execution connection
-		inputs: ['pictureNumber', 'picture'], //array of string, list of inputs of the node
+		inputs: ['selectPictureId', 'picture'], //array of string, list of inputs of the node
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
-			behaviors.push({code: 1002, indent: command.indent, parameters: command.parameters});
+			behaviors.push({code: '_replace_picture', indent: command.indent, parameters: command.parameters});
+		}
+	}, 
+	{
+		category: "Picture", //string, category in node list 
+		name: "Rotate Picture (Angle)", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_rotate_picture_angle", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['selectPictureId', 'anglePicture', 'durationFrame', 'waitForCompletion'], //array of string, list of inputs of the node
+		outputs: [], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
+			behaviors.push({code: '_rotate_picture_angle', indent: command.indent, parameters: command.parameters});
+		}
+	}, 
+	{
+		category: "Picture", //string, category in node list 
+		name: "Move Picture (Position)", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_move_picture_position", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['selectPictureId', 'xPicturePosition', 'yPicturePosition', 'durationFrame', 'waitForCompletion', 'selectEasingType'], //array of string, list of inputs of the node
+		outputs: [], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
+			if (command.parameters[2] === 0)
+				command.parameters.splice(3, 0, 0);
+			if (command.parameters[4] === 0)
+				command.parameters.splice(5, 0, 0);
+			behaviors.push({code: '_move_picture_position', indent: command.indent, parameters: command.parameters});
+		}
+	}, 
+	{
+		category: "Picture", //string, category in node list 
+		name: "Get Picture Data", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_get_picture_data", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['selectPictureId', 'selectPictureData', 'variable'], //array of string, list of inputs of the node
+		outputs: [], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
+			behaviors.push({code: '_get_picture_data', indent: command.indent, parameters: command.parameters});
+		}
+	}, 
+	{
+		category: "Picture", //string, category in node list 
+		name: "Resize Picture", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_resize_picture", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['selectPictureId', 'widthPicture', 'heightPicture', 'durationFrame', 'waitForCompletion', 'selectEasingType'], //array of string, list of inputs of the node
+		outputs: [], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
+			if (command.parameters[2] === 0)
+				command.parameters.splice(3, 0, 0, 0);
+			if (command.parameters[5] === 0)
+				command.parameters.splice(6, 0, 0, 0);
+			behaviors.push({code: '_resize_picture', indent: command.indent, parameters: command.parameters});
+		}
+	}, 
+	{
+		category: "Picture", //string, category in node list 
+		name: "Change Picture Opacity", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_change_opacity_picture", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['selectPictureId', 'opacityPicture', 'durationFrame', 'waitForCompletion', 'selectEasingType'], //array of string, list of inputs of the node
+		outputs: [], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
+			behaviors.push({code: '_change_opacity_picture', indent: command.indent, parameters: command.parameters});
+		}
+	}, 
+	{
+		category: "Picture", //string, category in node list 
+		name: "Change Picture Blend Mode", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_change_picture_blend_mode", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['selectPictureId', 'selectBlendMode'], //array of string, list of inputs of the node
+		outputs: [], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
+			behaviors.push({code: '_change_picture_blend_mode', indent: command.indent, parameters: command.parameters});
+		}
+	}, 
+	{
+		category: "Flow Control", //string, category in node list 
+		name: "Is Picture Shown", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_is_picture_shown", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['selectPictureId'], //array of string, list of inputs of the node
+		outputs: ['ifOutput', 'elseOutput'], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => {
+			const ifConnection = editor.getNodeConnectionsById(node, 0).output; 
+			if (editor.isConnectionConnected(ifConnection)) {
+				const connectionConnectedNode = editor.getConnectionConnectedNodes(ifConnection)[0];
+				behaviors.push({code: "_picture_shown", indent: command.indent, parameters: command.parameters});
+				behaviors.push(...editor.parseNodesBehavior(connectionConnectedNode, command.indent + 1, sequence[0]));
+			}
+				
+			const elseConnection = editor.getNodeConnectionsById(node, 1).output; 
+			if (editor.isConnectionConnected(elseConnection)) {
+				const connectionConnectedNode = editor.getConnectionConnectedNodes(elseConnection)[0];
+				behaviors.push({code: "_picture_not_shown", indent: command.indent, parameters: command.parameters});
+				behaviors.push(...editor.parseNodesBehavior(connectionConnectedNode, command.indent + 1, sequence[1]));
+			}
 		}
 	}, 
 	{
@@ -52,7 +170,7 @@ module.exports = [
 		inputs: ['variable', 'resetVariable'], //array of string, list of inputs of the node
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
-			behaviors.push({code: 1003, indent: command.indent, parameters: command.parameters});
+			behaviors.push({code: '_common_event_variable', indent: command.indent, parameters: command.parameters});
 		}
 	}, 
 	{
@@ -68,7 +186,6 @@ module.exports = [
 		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
 			const list = command.parameters.splice(1, command.parameters.length);
 			const parameters = [command.parameters[0], list];
-			
 			for (const [i, branch] of list.entries()) {
 				const branchConnection = editor.getNodeConnectionsById(node, i).output; 
 				if (editor.isConnectionConnected(branchConnection)) {
@@ -77,6 +194,20 @@ module.exports = [
 					behaviors.push(...editor.parseNodesBehavior(connectionConnectedNode, command.indent + 1, sequence[i]));
 				} 
 			}
+		}
+	}, 
+	{
+		category: "Game Progression", //string, category in node list 
+		name: "Control Event Self Switch", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_control_event_self_switch", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['mapId', 'eventId', 'selectSelfSwitch', 'radioOnOff'], //array of string, list of inputs of the node
+		outputs: [], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
+			behaviors.push({code: "_control_event_self_switch", indent: command.indent, parameters: command.parameters});
 		}
 	}, 
 	{
@@ -90,12 +221,27 @@ module.exports = [
 		inputs: ['variable', 'stringIntList'], //array of string, list of inputs of the node
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
-			behaviors.push({code: "_custom_node_set_variable_random_with_weight", indent: command.indent, parameters: command.parameters});
+			behaviors.push({code: "_set_variable_random_with_weight", indent: command.indent, parameters: command.parameters});
 		}
 	}, 
 	{
-		category: "Game Progression", //string, category in node list 
+		category: "Party", //string, category in node list 
+		name: "Set Gold", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_set_gold", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['selectOperand'], //array of string, list of inputs of the node
+		outputs: [], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
+			behaviors.push({code: "_set_gold", indent: command.indent, parameters: command.parameters});
+		}
+	},
+	{
+		category: "Variable Array", //string, category in node list 
 		name: "Create Variable Array", //string, name of the node
+		color: "dodgerblue",
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
 		id: "custom_node_create_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
@@ -108,8 +254,9 @@ module.exports = [
 		}
 	}, 
 	{
-		category: "Game Progression", //string, category in node list 
+		category: "Variable Array", //string, category in node list 
 		name: "Set Item In Variable Array", //string, name of the node
+		color: "dodgerblue",
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
 		id: "custom_node_set_item_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
@@ -122,8 +269,9 @@ module.exports = [
 		}
 	}, 
 	{
-		category: "Game Progression", //string, category in node list 
+		category: "Variable Array", //string, category in node list 
 		name: "Add Item In Variable Array", //string, name of the node
+		color: "dodgerblue",
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
 		id: "custom_node_add_item_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
@@ -136,8 +284,9 @@ module.exports = [
 		}
 	}, 
 	{
-		category: "Game Progression", //string, category in node list 
+		category: "Variable Array", //string, category in node list 
 		name: "Get Item In Variable Array", //string, name of the node
+		color: "dodgerblue",
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
 		id: "custom_node_get_item_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
@@ -150,8 +299,9 @@ module.exports = [
 		}
 	}, 
 	{
-		category: "Game Progression", //string, category in node list 
+		category: "Variable Array", //string, category in node list 
 		name: "Get Random Item In Variable Array", //string, name of the node
+		color: "dodgerblue",
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
 		id: "custom_node_get_random_item_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
@@ -164,8 +314,9 @@ module.exports = [
 		}
 	}, 
 	{
-		category: "Game Progression", //string, category in node list 
+		category: "Variable Array", //string, category in node list 
 		name: "Shuffle Items Variable Array", //string, name of the node
+		color: "dodgerblue",
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
 		id: "custom_node_shuffle_items_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
@@ -178,8 +329,9 @@ module.exports = [
 		}
 	}, 
 	{
-		category: "Game Progression", //string, category in node list 
+		category: "Variable Array", //string, category in node list 
 		name: "Sort Items Variable Array", //string, name of the node
+		color: "dodgerblue",
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
 		id: "custom_node_sort_items_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
@@ -192,8 +344,9 @@ module.exports = [
 		}
 	}, 
 	{
-		category: "Game Progression", //string, category in node list 
+		category: "Variable Array", //string, category in node list 
 		name: "Merge Variables Array", //string, name of the node
+		color: "dodgerblue",
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
 		id: "custom_node_merge_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
@@ -206,8 +359,9 @@ module.exports = [
 		}
 	}, 
 	{
-		category: "Game Progression", //string, category in node list 
+		category: "Variable Array", //string, category in node list 
 		name: "Reverse Items Variable Array", //string, name of the node
+		color: "dodgerblue",
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
 		id: "custom_node_reverse_items_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
@@ -220,8 +374,9 @@ module.exports = [
 		}
 	}, 
 	{
-		category: "Game Progression", //string, category in node list 
+		category: "Variable Array", //string, category in node list 
 		name: "Variable Array Includes Item", //string, name of the node
+		color: "dodgerblue",
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
 		id: "custom_node_variable_array_includes_item", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
@@ -260,8 +415,9 @@ module.exports = [
 		}
 	}, 
 	{
-		category: "Game Progression", //string, category in node list 
+		category: "Variable Array", //string, category in node list 
 		name: "Replace Item In Variable Array", //string, name of the node
+		color: "dodgerblue",
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
 		id: "custom_node_replace_item_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
@@ -274,8 +430,9 @@ module.exports = [
 		}
 	}, 
 	{
-		category: "Game Progression", //string, category in node list 
+		category: "Variable Array", //string, category in node list 
 		name: "Set Variable Array Length", //string, name of the node
+		color: "dodgerblue",
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
 		id: "custom_node_set_variable_array_length", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
@@ -288,8 +445,9 @@ module.exports = [
 		}
 	}, 
 	{
-		category: "Game Progression", //string, category in node list 
+		category: "Variable Array", //string, category in node list 
 		name: "Remove Item From Variable Array", //string, name of the node
+		color: "dodgerblue",
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
 		id: "custom_node_remove_item_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
@@ -302,8 +460,9 @@ module.exports = [
 		}
 	}, 
 	{
-		category: "Game Progression", //string, category in node list 
+		category: "Variable Array", //string, category in node list 
 		name: "Remove Index From Variable Array", //string, name of the node
+		color: "dodgerblue",
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
 		id: "custom_node_remove_index_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
@@ -316,8 +475,9 @@ module.exports = [
 		}
 	}, 
 	{
-		category: "Game Progression", //string, category in node list 
+		category: "Variable Array", //string, category in node list 
 		name: "Join Items From Variable Array", //string, name of the node
+		color: "dodgerblue",
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
 		id: "custom_node_join_items_variable_array", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
