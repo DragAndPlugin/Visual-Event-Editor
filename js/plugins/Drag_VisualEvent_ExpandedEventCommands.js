@@ -45,19 +45,155 @@ Drag.VisualEvent_ExpandedEventCommands.version = "1.0.0";
 	
 	// Replace Picture
 	Game_Interpreter.prototype.command_replace_picture = function(params) {
-		$gameScreen.replacePicture(params[0], params[1]);
+		const pictureId = params[0] === 0 ? params[1] : $gameVariables.value(params[1]);
+		$gameScreen.replacePicture(pictureId, params[2]);
 		return true;
 	};
 	
 	Game_Screen.prototype.replacePicture = function(pictureId, name = "") {
-		const picture = $gameScreen._pictures[pictureId];
+		const picture = $gameScreen.picture(pictureId);
 		if (picture)
 			this.showPicture(pictureId, name, picture._origin, picture._x, picture._y, picture._scaleX, picture._scaleY, picture._opacity, picture._blendMode);
 	};
 	
 	// Rotate Picture (deg)
+	Game_Interpreter.prototype.command_rotate_picture_deg = function(params) {
+		const pictureId = params[0] === 0 ? params[1] : $gameVariables.value(params[1]);
+		const picture = $gameScreen.picture(pictureId);
+		if (picture) {
+			if (params[4] > 0) {
+				picture._rotationDegreeSteps = params[4];
+				picture._rotationDegreeAngle = params[2] === 0 ? (params[3] - picture._angle) / params[4] : ($gameVariables.value(params[3]) - picture._angle) / params[4];
+			} else
+				picture._angle = params[2] === 0 ? params[3] : $gameVariables.value(params[3]);
+			
+			if (params[5] && params[4])
+				this.wait(params[4]);
+		}
+		
+		return true;
+	};
 	
+	Drag.VisualEvent_ExpandedEventCommands.alias._GamePicture_update = Game_Picture.prototype.update;
+	Game_Picture.prototype.update = function() {
+		Drag.VisualEvent_ExpandedEventCommands.alias._GamePicture_update.apply(this, arguments);
+		this.updateDegreeRotation();
+	};
 	
+	Game_Picture.prototype.updateDegreeRotation = function() {
+		if (!this._rotationDegreeSteps || !this._rotationDegreeAngle)
+			return;
+			
+		this._angle += this._rotationDegreeAngle;
+		this._rotationDegreeSteps--;
+	};
+	
+	// Move Picture (Position)
+	Game_Interpreter.prototype.command_move_picture_position = function(params) {
+		const pictureId = params[0] === 0 ? params[1] : $gameVariables.value(params[1]);
+		const picture = $gameScreen.picture(pictureId);
+		if (picture) {
+			const x = params[2] === 0 ? picture._x : params[2] === 1 ? params[3] : $gameVariables.value(params[3]);
+			const y = params[4] === 0 ? picture._y : params[4] === 1 ? params[5] : $gameVariables.value(params[5]);
+			const duration = params[6] !== 0 ? params[6] : 1;
+			picture.move(picture._origin, x, y, picture._scaleX, picture._scaleY, picture._opacity, picture._blendMode, duration, params[8]);
+			if (params[7] && params[6])
+				this.wait(params[6]);
+		}
+		return true;
+	};
+	
+	// Get Picture Data 
+	Game_Interpreter.prototype.command_get_picture_data = function(params) {
+		if (params[2]) {
+			const pictureId = params[0] === 0 ? params[1] : $gameVariables.value(params[1]);
+			const picture = $gameScreen.picture(pictureId);
+			if (picture && picture.hasOwnProperty(params[2]))
+				$gameVariables.setValue(params[3], picture[params[2]]);
+		}
+		return true;
+	};
+	
+	// Resize Picture
+	Game_Interpreter.prototype.command_resize_picture = function(params) {
+		const pictureId = params[0] === 0 ? params[1] : $gameVariables.value(params[1]);
+		const picture = $gameScreen.picture(pictureId);
+		if (picture) {
+			const width = params[2] === 0 ? picture._scaleX : params[2] === 1 ? params[3] : $gameVariables.value(params[3]);
+			const height = params[5] === 0 ? picture._scaleY : params[5] === 1 ? params[6] : $gameVariables.value(params[6]);
+			const [initialWidth, initialHeight] = Drag.VisualEvent_ExpandedEventCommands.getPictureSize(pictureId, false);
+			const scaleX = params[4] === 0 ? width : width / initialWidth * 100;
+			const scaleY = params[7] === 0 ? height : height / initialHeight * 100;
+			const duration = params[8] !== 0 ? params[8] : 1;
+			picture.move(picture._origin, picture._x, picture._y, scaleX, scaleY, picture._opacity, picture._blendMode, duration, params[10]);
+			if (params[9] && params[8])
+				this.wait(params[8]);
+		}
+		return true;
+	};	
+	
+	Drag.VisualEvent_ExpandedEventCommands.getPictureSize = function(pictureId = 0, scaled = true) {
+		const scene = SceneManager._scene;
+		if (!scene)
+			return [0, 0];
+		
+		const spriteset = scene._spriteset;
+		if (!spriteset)
+			return [0, 0];
+		
+		const pictureContainer = spriteset._pictureContainer;
+		if (!pictureContainer)
+			return [0, 0];
+		
+		const picture = pictureContainer.children[pictureId - 1];
+		if (!picture)
+			return [0, 0];
+		
+		return scaled ? [picture.width * picture.scale.x, picture.height * picture.scale.y] : [picture.width, picture.height];
+	};
+	
+	// Change Picture Opacity
+	Game_Interpreter.prototype.command_change_opacity_picture = function(params) {
+		const pictureId = params[0] === 0 ? params[1] : $gameVariables.value(params[1]);
+		const picture = $gameScreen.picture(pictureId);
+		if (picture) {
+			const opacity = params[2] === 0 ? params[3] : $gameVariables.value(params[3]);
+			const duration = params[4] !== 0 ? params[4] : 1;
+			picture.move(picture._origin, picture._x, picture._y, picture._scaleX, picture._scaleY, opacity, picture._blendMode, duration, params[6]);
+			if (params[5] && params[4])
+				this.wait(params[4]);
+		}
+		return true;
+	};	
+	
+	// Change Picture Blend Mode
+	Game_Interpreter.prototype.command_change_picture_blend_mode = function(params) {
+		const pictureId = params[0] === 0 ? params[1] : $gameVariables.value(params[1]);
+		const picture = $gameScreen.picture(pictureId);
+		if (picture)
+			picture.move(picture._origin, picture._x, picture._y, picture._scaleX, picture._scaleY, picture._opacity, params[2], picture._duration, picture._easingType);
+		return true;
+	};	
+	
+	// Is Picture Shown
+	Game_Interpreter.prototype.command_picture_shown = function(params) {
+		const pictureId = params[0] === 0 ? params[1] : $gameVariables.value(params[1]);
+		const picture = $gameScreen.picture(pictureId);
+		
+		const result = !!picture;
+		this._branch[this._indent] = result;
+		if (this._branch[this._indent] === false)
+			this.skipBranch();
+			
+		return true;
+	};
+	
+	Game_Interpreter.prototype.command_picture_not_shown = function(params) {
+		if (this._branch[this._indent] !== false) {
+			this.skipBranch();
+		}
+		return true;
+	};
 	
 	// Common Event (variable)
 	Game_Interpreter.prototype.command_common_event_variable = function(params) {
@@ -115,8 +251,11 @@ Drag.VisualEvent_ExpandedEventCommands.version = "1.0.0";
 	};
 	
 	// Set Gold 
-	
-	
+	Game_Interpreter.prototype.command_set_gold = function(params) {
+		const value = params[0] === 0 ? params[1] : $gameVariables.value(params[1]);
+		$gameParty._gold = Math.min(Math.max(value, 0), $gameParty.maxGold());
+		return true;
+	};
 	
 	// --------------------------------------------------------------------------------------------------------------------------------
 	// Variable Array
