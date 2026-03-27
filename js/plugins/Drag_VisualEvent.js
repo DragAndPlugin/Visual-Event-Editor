@@ -95,6 +95,29 @@ Drag.VisualEvent.version = "0.1.047";
 		"Advanced": ["command355", "command356", "command357"]
 	};
 	
+	Drag.VisualEvent.flatCommandsName = [
+		"Show Text", "Show Choices", "Input Number", "Select Item", "Show Scrolling Text", "Comment", 
+		"Conditional Branch", "Loop", "Break Loop",
+		"Exit Event Processing", "Common Event", "Label", "Jump to Label",
+		"Control Switches", "Control Variables", "Control Self Switch", "Control Timer",
+		"Change Gold", "Change Items", "Change Weapons", "Change Armors", "Change Party Member",
+		"Change Battle BGM", "Change Victory ME", "Change Save Access", "Change Menu Access",
+		"Change Encounter", "Change Formation Access", "Change Window Color", "Change Defeat ME", "Change Vehicle BGM",
+		"Transfer Player", "Set Vehicle Location", "Set Event Location", "Scroll Map", "Set Movement Route", "Get On/Off Vehicle",
+		"Change Transparency", "Show Animation", "Show Balloon Icon", "Erase Event", "Change Player Followers", "Gather Followers",
+		"Fade Out Screen", "Fade In Screen", "Tint Screen", "Flash Screen", "Shake Screen",
+		"Wait", "Show Picture", "Move Picture", "Rotate Picture", "Tint Picture", "Erase Picture",
+		"Set Weather Effect", "Play BGM", "Fadeout BGM", "Save BGM", "Replay BGM", "Play BGS", "Fadeout BGS",
+		"Play ME", "Play SE", "Stop SE", "Play Movie", "Change Map Name Display", "Change Tileset",
+		"Change Battle Background", "Change Parallax", "Get Location Info", "Battle Processing",
+		"Shop Processing", "Name Input Processing", "Change HP", "Change MP", "Change TP", "Change State", "Recover All",
+		"Change EXP", "Change Level", "Change Parameter", "Change Skill", "Change Equipment", "Change Name", "Change Class",
+		"Change Actor Images", "Change Vehicle Image", "Change Nickname", "Change Profile", "Change Enemy HP", "Change Enemy MP",
+		"Change Enemy TP", "Change Enemy State", "Enemy Recover All", "Enemy Appear", "Enemy Transform", "Show Battle Animation",
+		"Force Action", "Abort Battle", "Open Menu Screen", "Open Save Screen", "Game Over", "Return to Title Screen", 
+		"Script",
+	];
+	
 	Drag.VisualEvent.commandsName = {
 		command0: "End",
 		command101: "Show Text", command102: "<span class='symbolHeader'>&#10100;</span><span> Show Choices</span>", command103: "Input Number", command104: "Select Item", command105: "Show Scrolling Text", command108: "Comment", command408: "Comment",
@@ -1073,6 +1096,15 @@ Drag.VisualEvent.version = "0.1.047";
 	
 	Drag.VisualEvent.getDocumentFontSize = function(doc) {
 		return parseInt(doc.documentElement.style.fontSize) || 16;
+	};
+	
+	Drag.VisualEvent.openAdvancedSearchWindow = function(input) {
+		const rect = input.getBoundingClientRect();
+		Drag.VisualEvent.openWindow(
+			'html/Drag_DevTools_AdvancedSearch.html', 'html/', 'Advanced Search', 
+			window.screen.width * 0.35, window.screen.height * 0.625, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
+			{input: input}
+		);
 	};
 	
 	Drag.VisualEvent.openShopProcessingMenu = function(input) {
@@ -2472,9 +2504,6 @@ Drag.VisualEvent.version = "0.1.047";
 		const node = Drag.VisualEvent.getAncestorById(button, 'graphNode');
 		const editor = Drag.VisualEvent.getEditor();
 		
-		if (!node || !editor)
-			return;
-		
 		//attribute unique id to radios
 		const radios = Array.from(clone.querySelectorAll('input[type="radio"]'));
 		const id = `nodeRadioInput${Drag.VisualEvent.getUniqueId()}`;
@@ -2484,16 +2513,20 @@ Drag.VisualEvent.version = "0.1.047";
 			radio.previousElementSibling.setAttribute('for', id);
 		}
 		
-		//deconnect connections
-		const connections = Array.from(clone.querySelectorAll('.exec.inputConnection')).concat(Array.from(clone.querySelectorAll('.exec.outputConnection')));
-		for (const connection of connections)
-			editor.setConnectionConnected(connection, false);
+		if (node && editor) {
+			//deconnect connections
+			const connections = Array.from(clone.querySelectorAll('.exec.inputConnection')).concat(Array.from(clone.querySelectorAll('.exec.outputConnection')));
+			for (const connection of connections)
+				editor.setConnectionConnected(connection, false);
+		}
 		
 		//add element
 		button.parentElement.after(clone);
 		
-		editor.refreshNodeConnections(node);
-		editor.refreshNode(node);
+		if (node && editor) {
+			editor.refreshNodeConnections(node);
+			editor.refreshNode(node);
+		}
 		
 		return clone;
 	};
@@ -2505,9 +2538,6 @@ Drag.VisualEvent.version = "0.1.047";
 		const node = Drag.VisualEvent.getAncestorById(button, 'graphNode');
 		const editor = Drag.VisualEvent.getEditor();
 		
-		if (!node || !editor)
-			return;
-		
 		//prevent action if last list element or min list requires it
 		const parent = button.parentElement.parentElement; 
 		const listElementCount = Array.from(parent.querySelectorAll('#add-list-input-button')).length;
@@ -2515,20 +2545,24 @@ Drag.VisualEvent.version = "0.1.047";
 		if (listElementCount <= minList) 
 			return;
 		
-		//remove curve if contains connected connections
-		const connections = Array.from(button.parentElement.querySelectorAll('.exec.inputConnection')).concat(Array.from(button.parentElement.querySelectorAll('.exec.outputConnection')));
-		for (const connection of connections)
-			editor.removeConnectionCurves(connection);
+		if (node && editor) {
+			//remove curve if contains connected connections
+			const connections = Array.from(button.parentElement.querySelectorAll('.exec.inputConnection')).concat(Array.from(button.parentElement.querySelectorAll('.exec.outputConnection')));
+			for (const connection of connections)
+				editor.removeConnectionCurves(connection);
+		}
 		
 		//remove element
-		// if (listElementCount > 1) 
 		button.parentElement.remove(); 
 		
-		editor.refreshNodeConnections(node);
-		editor.refreshNode(node);
+		if (node && editor) {
+			editor.refreshNodeConnections(node);
+			editor.refreshNode(node);
+		}
 		
 		Drag.VisualEvent.onInputChange(parent);
-		editor.cacheGraphNode(node);
+		if (node && editor)
+			editor.cacheGraphNode(node);
 	};
 	
 	Drag.VisualEvent.getDefaultValueButton = function() {
@@ -3004,7 +3038,7 @@ Drag.VisualEvent.version = "0.1.047";
 					${literalsOptions.join("")}			
 				</select>
 				${params.type === "switch" || params.type === "variable" ? `
-					<div title="Rename ${params.type === 'switch' ? 'Switches' : 'Variables'}" class="flex">
+					<div id="rename-switch-variable-container" title="Rename ${params.type === 'switch' ? 'Switches' : 'Variables'}" class="flex">
 						<svg style="margin-left: 5px; cursor: pointer;" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
 							width="1.5em" height="1.5em" viewBox="0 0 20 20" enable-background="new 0 0 20 20" xml:space="preserve" data-type="${params.type}" onclick="$.Drag.VisualEvent.openSwitchVariableMenu(this.parentElement.previousElementSibling.previousElementSibling);">
 							<path style="stroke-width: 1px; fill: white;" d="M18,20H2c-0.6,0-1-0.4-1-1s0.4-1,1-1h16c0.6,0,1,0.4,1,1S18.6,20,18,20z"></path>
@@ -3014,6 +3048,59 @@ Drag.VisualEvent.version = "0.1.047";
 				` : ''}
 			</div>`;
 	}; 
+	
+	Drag.VisualEvent.getCommandInputField = function(params, index, controller = null) {
+		if (!params.addOptions || !Array.isArray(params.addOptions))
+			params.addOptions = [];
+		
+		const commandOptions = Drag.VisualEvent.flatCommandsName;
+		if (Utils.RPGMAKER_NAME === 'MV')
+			commandOptions.push('Plugin Command (MV)');
+		
+		params.options = params.addOptions.concat(commandOptions);
+		
+		const defaultId = params.default !== undefined ? params.default : 0;	
+		const literalsOptions = params.options.map((option, optionId) => `<option ${optionId === defaultId ? 'selected' : ''} value="${optionId}">${option || ''}</option>`);
+		
+		for (const plugin in Drag.VisualEvent.pluginJSDocData) {
+			const pluginData = Drag.VisualEvent.pluginJSDocData[plugin];
+			if (pluginData.commands && Object.keys(pluginData.commands).length > 0)
+				for (const pluginCommand in pluginData.commands) {
+					const pluginCommandData = pluginData.commands[pluginCommand];
+					literalsOptions.push(`<option data-pluginCommand="true" data-plugin="${plugin}" value="${pluginCommand}">${plugin}: ${pluginCommandData.text || pluginCommandData.name || ''}</option>`);
+				}
+		};
+		
+		const editor = Drag.VisualEvent.getEditor();
+		if (editor)
+			for (const customNode in editor._customNodes) 
+				literalsOptions.push(`<option data-customNode="true" value="${customNode}">${editor._customNodes[customNode].name || ''}</option>`);	
+		
+		if (params.isInteractiveController === true)
+			params.data = `data-behavior="${JSON.stringify([-1].concat(params.options.map((option, index) => index)))}" ${params.data || ''}`;
+		
+		if (params.onchange)
+			params.onchange = params.onchange.replace('$.Drag.VisualEvent.onInputChange(this);', '').replace('handleInteractiveInput(this, this.parentElement.parentElement);', '').trim();
+		
+		return `
+			<div class="relative flex" style="align-items: center">
+				<input
+					type="text" class="${params.class ? params.class : ''}" id="${params.id ? params.id : ''}" value="Show Text" placeholder="${params.placeholder || ''}"
+					${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} data-value="${defaultId}"
+					onchange="$.Drag.VisualEvent.onInputComboChange(this); ${params.isInteractiveController ? 'handleInteractiveInput(this, this.parentElement.parentElement);' : ''}" 
+					oninput="this.onchange();" onfocus="$.Drag.VisualEvent.onInputComboFocus(this);"
+					onblur="$.Drag.VisualEvent.onInputComboBlur(this);" ${params.onchange ? `data-onchange="${params.onchange}"` : ''}
+					${params.disabled ? 'disabled' : ''} style="min-width: 12.5em;"
+				>
+				<select 
+					onmouseover="$.Drag.VisualEvent.onSelectMouseOver(this);" onmouseout="$.Drag.VisualEvent.onSelectMouseOut(this);"
+					onchange="$.Drag.VisualEvent.onSelectComboChange(this);" onclick="this.onchange();" onblur="$.Drag.VisualEvent.hideSelect(this);"
+					class="hidden" style="display: list-item; position: absolute; top: calc(100% - 2px); padding-top: 0px; padding-bottom: 0px; padding-left: 7px; overflow-y: scroll; background-color: var(--background-color); border: 1px solid var(--color); z-index: 2;"
+				>
+					${literalsOptions.join("")}			
+				</select>
+			</div>`;
+	};
 	
 	Drag.VisualEvent.refreshDatabaseInputOptions = function(input) {
 		const select = input.nextElementSibling;
@@ -3710,6 +3797,32 @@ Drag.VisualEvent.version = "0.1.047";
 		res += "</div></div>";
 		
 		return res;
+	};
+	
+	Drag.VisualEvent.handleInteractiveInput = function(input) {
+		const parsedBehaviors = JSON.parse(input.getAttribute('data-behavior'));
+		const value = Drag.VisualEvent.getInputValue(input);
+		const behaviors = Array.isArray(parsedBehaviors[value]) ? parsedBehaviors[value] : [parsedBehaviors[value] !== undefined ? parsedBehaviors[value] : value];
+		const dependanceLevel = parseInt(input.getAttribute('data-dependancelevel'));
+
+		const container = Drag.VisualEvent.getAncestorById(input, 'interactive-container');
+		const targetedDependances = Drag.VisualEvent.flattenArray(behaviors.map(item => Array.from(container.querySelectorAll(`[data-dependance="true"][data-dependanceLevel="${dependanceLevel}"][data-dependanceId="${item}"]`)))).filter(dependance => dependance !== input);
+		for (const [i, dependance] of targetedDependances.entries()) {
+			if (Drag.VisualEvent.isRadio(input))
+				dependance.disabled = false;
+			else //if (isSelect(input))
+				Drag.VisualEvent.getAncestorById(dependance, "dependance-style-container").classList.remove("hidden");
+		}
+		
+		const untargetedDependances = Array.from(container.querySelectorAll(`[data-dependance="true"][data-dependanceLevel="${dependanceLevel}"]`)).filter(dependance => dependance !== input);
+		for (const [i, dependance] of untargetedDependances.entries()) {
+			if (targetedDependances.includes(dependance))
+				continue;
+			if (Drag.VisualEvent.isRadio(input))
+				dependance.disabled = true;
+			else //if (isSelect(input))
+				Drag.VisualEvent.getAncestorById(dependance, "dependance-style-container").classList.add("hidden");
+		}
 	};
 	
 	Drag.VisualEvent.getEmptyInputField = function(params, index, controller = null) {
