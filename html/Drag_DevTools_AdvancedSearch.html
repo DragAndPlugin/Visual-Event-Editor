@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="viewport" content="user-scalable=no">
+        <link rel="icon" href="../icon/icon.png" type="image/png">
+        <link rel="apple-touch-icon" href="../icon/icon.png">
+		<link href="../css/Drag_DevTools.css" rel="stylesheet">
+		<style>
+			#content {
+				display: grid;
+				height: fit-content;
+				margin: 0;
+			}
+			
+			#search-in-container, #search-for-container, #result-container {
+				    height: fit-content;
+					background: rgb(0 0 0 / 0.25);
+					margin-left: 0.9375em;
+					margin-top: 0;
+			}
+			
+			#search-for-container, #result-container {
+				border-top: 1px solid black;
+			}
+			
+			#search-in-container > p, #search-for-container > p, #result-container > p {
+				font-size: 1.25em;
+				text-align: center;
+				font-weight: bold;
+				padding: 0.25em;
+				width: 25%;
+				min-width: fit-content;
+				margin: 0.75em auto;
+				border-bottom: 1px solid rebeccapurple;
+			}
+			
+			#event-type-container {
+				display: flex;
+				flex-direction: row;
+				justify-content: space-between;
+				position: relative;
+			}
+			
+			#event-type-container > div {
+				width: 33.3%;
+				text-align: center;
+				background: rgb(0 0 0 / 0.25);
+				padding: 0.5em;
+			}
+			
+			#event-type-container > div:nth-child(even) {
+				background: transparent;
+			}
+			
+			#common-event-checkbox-container, #map-event-checkbox-container, #troop-event-checkbox-container, #map-event-page-checkbox-container, #troop-event-page-checkbox-container {
+				align-items: center;
+				justify-content: center;
+				margin-bottom: 0.5em;
+			}
+			
+			#common-event-id-container {
+				display: flex;
+				margin-top: 5.45em;
+			}
+			
+			#troop-event-id-container {
+				display: flex;
+				margin-bottom: 2em;
+				margin-top: 5.45em;
+			}
+			
+			#troop-event-page-id-container {
+				display: flex;
+				margin-bottom: 1em;
+			}
+			
+			#map-id-container, #map-event-id-container, #map-event-page-id-container {
+				display: flex;
+				margin-bottom: 2em;
+			}
+			
+			#common-event-id-container > div, #troop-event-id-container > div, #troop-event-page-id-container > div, #map-id-container > div, #map-event-id-container > div, #map-event-page-id-container > div {
+				margin-right: 0.5em;
+			}
+			
+			#select-search-for-type {
+				max-width: fit-content;
+				margin-bottom: 1em;
+				margin-left: 0.5em;
+			}
+			
+			#search-for-items-container, #search-for-container > label {
+				margin-bottom: 1em;
+				margin-left: 0.5em;
+			}
+			
+			#search-for-items-container {
+				display: flex;
+				align-items: center;
+			}
+			
+			#bottom-container {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				padding: 0.5em;
+				max-height: 3.125em;
+				border-top: 0.125em solid rebeccapurple;
+				background-color: var(--background-color);
+				display: flex;
+				justify-content: flex-end;
+				box-sizing: border-box;
+			}
+			
+			#bottom-container > * {
+				margin-right: 1.5em;
+			}
+			
+			#bottom-container > *:last-child {
+				margin-right: 0em;
+			}
+			
+			#bottom-container > button {
+				cursor: pointer;
+				padding: 0.5em 2em;
+			}
+			
+			input[type="text"], input[type="number"] {
+				min-width: unset !important
+			}
+			
+			#dependances-container {
+				margin-left: 0.5em;
+			}
+			
+			#rename-switch-variable-container {
+				display: none;
+			}
+		</style>
+    </head>
+    <body style="height: 100%">
+		<div id="content">
+			<div id="search-in-container">
+				<p>Search In :</p>
+				<div id="event-type-container">
+					<div>
+						<div id="common-event-checkbox-container" class="flex">
+							<input type="checkbox" id="common-event-checkbox" onchange="toggleSearchInInputs(this);">
+							<span style="margin-left: 0.5em;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">Common Events</span>
+						</div>
+						<div id="common-event-id-container">
+							<div>
+								<label>From ID :</label>
+								<div id="common-event-id-from-container"></div>
+							</div>
+							<div>
+								<label>To ID :</label>
+								<div id="common-event-id-to-container"></div>
+							</div>
+						</div>
+					</div>
+					<div>
+						<div id="map-event-checkbox-container" class="flex">
+							<input type="checkbox" id="map-event-checkbox" onchange="toggleSearchInInputs(this);">
+							<span style="margin-left: 0.5em;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">Map Events</span>
+						</div>
+						<div id="map-id-container">
+							<div>
+								<label>From Map ID :</label>
+								<div id="map-id-from-container"></div>
+							</div>
+							<div>
+								<label>To Map ID :</label>
+								<div id="map-id-to-container"></div>
+							</div>
+						</div>
+						<div id="map-event-id-container">
+							<div>
+								<label>From ID :</label>
+								<div id="map-event-id-from-container"></div>
+							</div>
+							<div>
+								<label>To ID :</label>
+								<div id="map-event-id-to-container"></div>
+							</div>
+						</div>
+						<div id="map-event-page-checkbox-container" class="flex">
+							<input type="checkbox" id="map-event-page-checkbox">
+							<span style="margin-left: 0.5em;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">All Event Pages</span>
+						</div>
+						<div id="map-event-page-id-container">
+							<div>
+								<label>From Page ID :</label>
+								<div id="map-event-page-id-from-container"></div>
+							</div>
+							<div>
+								<label>To Page ID :</label>
+								<div id="map-event-page-id-to-container"></div>
+							</div>
+						</div>
+					</div>
+					<div>
+						<div id="troop-event-checkbox-container" class="flex">
+							<input type="checkbox" id="troop-event-checkbox" onchange="toggleSearchInInputs(this);">
+							<span style="margin-left: 0.5em;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">Troop Events</span>
+						</div>
+						<div id="troop-event-id-container">
+							<div>
+								<label>From ID :</label>
+								<div id="troop-event-id-from-container"></div>
+							</div>
+							<div>
+								<label>To ID :</label>
+								<div id="troop-event-id-to-container"></div>
+							</div>
+						</div>
+						<div id="troop-event-page-checkbox-container" class="flex">
+							<input type="checkbox" id="troop-event-page-checkbox">
+							<span style="margin-left: 0.5em;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">All Event Pages</span>
+						</div>
+						<div id="troop-event-page-id-container">
+							<div>
+								<label>From Page ID :</label>
+								<div id="troop-event-page-id-from-container"></div>
+							</div>
+							<div>
+								<label>To Page ID :</label>
+								<div id="troop-event-page-id-to-container"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div id="search-for-container">
+				<p>Search For :</p>
+				<div id="select-search-for-type">
+					<label>Has :</label>
+					<div class="select">
+						<select data-inputtype="select" data-iscommandparameter="true" onchange=" $.Drag.VisualEvent.onInputChange(this);">
+							<option value="0">At least one item</option>
+							<option value="1">All items</option>
+						</select>
+						<span class="focus"></span>
+					</div>
+				</div>
+				<label>Items :</label>
+				<div id="search-for-items-container"></div>
+			</div>
+			<div id="result-container">
+				<p>Results :</p>
+				<div></div>
+			</div>
+			<div id="bottom-container">
+				<button onclick="search()">Search</button>
+				<button onclick="quit();">Quit</button>
+			</div>
+		</div>
+		<script type="text/javascript">
+			function main() {
+				document.title = "Drag_DevTools_AdvancedSearch";
+				loadDataMainWindow();
+				$.Drag.VisualEvent.setLightMode(document);
+			};
+			
+			function loadDataMainWindow() {
+				$ = window.opener;
+				setup();
+			};
+			
+			function setup() {
+				const commentEventIdFromContainer = document.querySelector('#common-event-id-from-container');
+				commentEventIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField($.Drag.VisualEvent.getInputParameters('commonEvent'));
+				const commentEventIdToContainer = document.querySelector('#common-event-id-to-container');
+				commentEventIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField($.Drag.VisualEvent.getInputParameters('commonEventNone'));
+				
+				
+				const mapIdFromContainer = document.querySelector('#map-id-from-container');
+				mapIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 1, default: 1});
+				const mapIdToContainer = document.querySelector('#map-id-to-container');
+				mapIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 1, default: 1});
+				
+				const mapEventIdFromContainer = document.querySelector('#map-event-id-from-container');
+				mapEventIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 1, default: 1});
+				const mapEventIdToContainer = document.querySelector('#map-event-id-to-container');
+				mapEventIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 1, default: 1});
+				
+				const mapEventPageIdFromContainer = document.querySelector('#map-event-page-id-from-container');
+				mapEventPageIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 0, default: 0});
+				const mapEventPageIdToContainer = document.querySelector('#map-event-page-id-to-container');
+				mapEventPageIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 0, default: 0});
+				
+				
+				const troopEventIdFromContainer = document.querySelector('#troop-event-id-from-container');
+				troopEventIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField($.Drag.VisualEvent.getInputParameters('troop'));
+				const troopEventIdToContainer = document.querySelector('#troop-event-id-to-container');
+				troopEventIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField($.Drag.VisualEvent.getInputParameters('troopNone'));
+				
+				const troopEventPageIdFromContainer = document.querySelector('#troop-event-page-id-from-container');
+				troopEventPageIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 0, default: 0});
+				const troopEventPageIdToContainer = document.querySelector('#troop-event-page-id-to-container');
+				troopEventPageIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 0, default: 0});
+				
+				for (const input of document.querySelectorAll('#event-type-container input'))
+					if (input.id !== "common-event-checkbox" && input.id !== "map-event-checkbox" && input.id !== "troop-event-checkbox")
+						input.setAttribute('disabled', 'true')
+				
+				const searchForItemsContainer = document.querySelector('#search-for-items-container');
+				searchForItemsContainer.innerHTML = `
+					${$.Drag.VisualEvent.getInputField($.Drag.VisualEvent.getInteractiveInputParameters('selectAdvancedSearchItem'))}
+					<span style="display: inline-block; vertical-align: top; cursor: pointer; height: 1.5em; margin-left: 1em;" id="add-list-input-button" onclick="addSearchForItem(this);">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="height: 1.5em; width: 1.5em">
+							<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"></circle>
+							<line x1="12" y1="7" x2="12" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
+							<line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
+						</svg>
+					</span>
+					<span style="cursor: pointer; height: 1.5em; margin-left: 0.5em;" id="remove-list-input-button" onclick="removeSearchForItem(this);">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" style="height: 1.5em; width: 1.5em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="10"></circle>
+							<line x1="8" y1="12" x2="16" y2="12"></line>
+						</svg>
+					</span>
+				`;
+			};
+			
+			function toggleSearchInInputs(checkbox) {
+				const container = checkbox.parentElement.parentElement;
+				for (const input of container.querySelectorAll('input'))
+					if (input !== checkbox)
+						if (checkbox.checked)
+							input.removeAttribute('disabled');
+						else
+							input.setAttribute('disabled', 'true');
+			};
+			
+			function addSearchForItem(button) {
+				$.Drag.VisualEvent.onAddListInput(button);
+			};
+			
+			function removeSearchForItem(button) {
+				$.Drag.VisualEvent.onRemoveListInput(button);
+			};
+			
+			function handleInteractiveInput(input) {
+				$.Drag.VisualEvent.handleInteractiveInput(input);
+			};
+			
+			function ok() {
+				quit();
+			};
+			
+			function quit() {
+				window.close();
+			};
+			
+			main();
+			$.Drag.VisualEvent.triggerAllOnReadyOnChange(document);
+			
+		</script>
+	</body>
+</html>
