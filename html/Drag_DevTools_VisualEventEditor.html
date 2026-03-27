@@ -37,6 +37,7 @@
 			<p>General</p>
 			<div>
 				<span id="common-event-maximum">Set Maximum Events</span>
+				<span id="common-event-advanced-search" onclick="openAdvancedSearch(this);">Advanced Search...</span>
 			</div>
 			<p id="common-event-actions">Common Event Actions</p>
 			<div>
@@ -1169,8 +1170,6 @@
 				const commonEventCount = getCommonEventCount();
 				const min = Math.floor(window.data.targetId / 100) * 100;
 				const max = Math.min(min + 100, commonEventCount);
-				console.log(window.data.targetId, commonEventCount);
-				console.log(min, max);
 				return getRangedCommonEventList(min, max);
 			};
 			
@@ -3306,6 +3305,24 @@
 				return node;
 			};
 			
+			// function addRerouteNode() {
+				// <div id="graphNode">
+					// <p id="node-header" class="" style="background: none; min-height: 1em; margin: 0; padding: 0;"></p>
+					// <div class="mBottom05 relative " style="margin-bottom: 0; display: flex; height: 2em;">
+						// <div id="input-container" style="max-width: 2em;">
+							// <span id="node-input" class="node-input-exec" style="margin-left: 0.3em;">
+								// <span data-connected="false" data-nodeid="19" data-connectionid="0" data-exclusive="exec" class="exec inputConnection"></span>
+							// </span>
+						// </div>
+						// <div id="output-container">
+							// <span class="nodeOutput" id="main-exec-output" style="margin-right: 0.3em;"> 
+								// <span data-connected="false" data-nodeid="19" data-connectionid="0" data-indent="0" data-exclusive="exec" class="exec outputConnection "></span>
+							// </span>
+						// </div>
+					// </div>
+				// </div>
+			// };
+			
 			function onNodeInputsReady(node, onNodeReady) {
 				if (onNodeReady)
 					onNodeReady();
@@ -5290,6 +5307,78 @@
 				closeNodeContextMenu();
 				closeNodeListMenu();
 			};
+			
+			//--------------------------------------------------------------------------------------------------------
+			// SEARCH REFERENCES
+			
+			function openAdvancedSearch(input) {
+				$.Drag.VisualEvent.openAdvancedSearchWindow(input);
+				hideCommonEventContextMenu();
+				hideMapEventContextMenu();
+				hideTroopEventContextMenu();
+			};
+			
+			function searchReferences(searchIn = {}, searchFor = {}) {
+				const events = [];
+				if (searchIn.eventType.includes('c')) {
+					const maxEventCount = getCommonEventCount();
+					for (let i = 1; i <= maxEventCount; i++) {
+						let event;
+						const eventKey = getEventKey('Common Event', null, i);
+						if (hasEventInCache("Common Event", eventKey))
+							event = getEventCache("Common Event", eventKey).data;
+						else
+							event = data.$dataCommonEvents[i];
+						
+						if (event)
+							events.push(event);
+					}
+				}
+				
+				const refs = {events: [], command: []};
+				for (const event of events)
+					for (const command of event.list) {
+						if (commandMeetSearch(command, searchFor)) {
+							let index = refs.events.indexOf(event);
+							if (index === -1)
+								index = refs.events.push(event);
+							
+							if (!Array.isArray(refs.command[index]))
+								refs.command[index] = [];
+							refs.command[index].push(command);
+						}
+					}
+				
+				return refs;
+			};
+			
+			function commandMeetSearch(command, search) {
+				let commandParameters = $.Drag.VisualEvent.getCommandParameters(command.code);
+				if (!Array.isArray(commandParameters))
+					return false;
+				
+				const flatCommandParameters = $.Drag.VisualEvent.flattenArray(commandParameters.map(commandParameter => commandParameter.type === "interactive" ? getFlatInteractiveInputParameters(commandParameter) : commandParameter));
+				console.log(flatCommandParameters);
+				// console.log(search);
+				for (let commandParameter of flatCommandParameters) {
+					if (search.inputsType.includes(commandParameter.type))
+						return true;	
+				}
+
+				return false;
+			};
+			
+			function getFlatInteractiveInputParameters(commandParameter) {
+				const parameters = [commandParameter.controller];
+				
+				for (const dependance of commandParameter.dependances)
+					if (dependance.type === "interactive")
+						parameters.concat(getFlatInteractiveInputParameters(dependance));
+					else
+						parameters.push(dependance);
+					
+				return parameters;
+			};
 
 			//--------------------------------------------------------------------------------------------------------
 			// NODE LIST MENU
@@ -5487,29 +5576,7 @@
 			// NODES INPUTS
 			
 			function handleInteractiveInput(input) {
-				const parsedBehaviors = JSON.parse(input.getAttribute('data-behavior'));
-				const value = $.Drag.VisualEvent.getInputValue(input);
-				const behaviors = Array.isArray(parsedBehaviors[value]) ? parsedBehaviors[value] : [parsedBehaviors[value] !== undefined ? parsedBehaviors[value] : value];
-				const dependanceLevel = parseInt(input.getAttribute('data-dependancelevel'));
-
-				const container = $.Drag.VisualEvent.getAncestorById(input, 'interactive-container');
-				const targetedDependances = $.Drag.VisualEvent.flattenArray(behaviors.map(item => Array.from(container.querySelectorAll(`[data-dependance="true"][data-dependanceLevel="${dependanceLevel}"][data-dependanceId="${item}"]`)))).filter(dependance => dependance !== input);
-				for (const [i, dependance] of targetedDependances.entries()) {
-					if (isRadio(input))
-						dependance.disabled = false;
-					else //if (isSelect(input))
-						$.Drag.VisualEvent.getAncestorById(dependance, "dependance-style-container").classList.remove("hidden");
-				}
-				
-				const untargetedDependances = Array.from(container.querySelectorAll(`[data-dependance="true"][data-dependanceLevel="${dependanceLevel}"]`)).filter(dependance => dependance !== input);
-				for (const [i, dependance] of untargetedDependances.entries()) {
-					if (targetedDependances.includes(dependance))
-						continue;
-					if (isRadio(input))
-						dependance.disabled = true;
-					else //if (isSelect(input))
-						$.Drag.VisualEvent.getAncestorById(dependance, "dependance-style-container").classList.add("hidden");
-				}
+				$.Drag.VisualEvent.handleInteractiveInput(input);
 				
 				// redrawNodeCurves($.Drag.VisualEvent.getAncestorById(container, "graphNode"));
 			};
