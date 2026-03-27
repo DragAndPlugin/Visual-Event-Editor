@@ -69,6 +69,10 @@ module.exports = function(RPGMAKER_NAME) {
 		equipmentType: {type: "equipment_type", default: 1, name: "Equipment Type"},
 		elementType: {type: "element_type", default: 1, name: "Element Type"},
 		
+		//command
+		command: {type: "command", default: 0, name: "Command"},
+		commandNone: {type: "command", default: 0, name: "Command", addOptions: ["None"]},
+		
 		//color
 		rgba: {type: "color", default: [0, 0, 0, 0], name: "Color"},
 		rgbg: {type: "color", default: [0, 0, 0, 0], alphaAsGrey: true, name: "Color"},
@@ -163,6 +167,7 @@ module.exports = function(RPGMAKER_NAME) {
 		selectMiscData: {type: "select", options: ["Map ID", "Party Members", "Gold", "Steps", "Play Time", "Timer", "Save Count", "Battle Count", "Win Count", "Escape Count"], name: "Other", data: "data-dataType='number'", default: 0},
 		selectValueType: {type: "select", options: ["Flat", "Rate (%)"], name: "Type", data: "data-dataType='number'", default: 0},
 		selectDistanceCalcMode: {type: "select", options: ["Chebyshev (Square Shape)", "Manhattan (Diamond Shape)", "Euclidean (Circle Shape)"], name: "Calculation Mode", data: "data-dataType='number'", default: 0},
+		selectAdvancedSearchItemType: {type: 'select', name: '', options: ["Switch", "Variable", "Actor", "Animation", "Armor", "Class", "Common Event", "Enemy", "Item", "Skill", "State", "Tileset", "Troop", "Weapon", "Command"], value: ["switch", "variable", "actor", "animation", "armor", "class", "common_event", "enemy", "item", "skill", "state", "tileset", "troop", "weapon", "command"]},
 		
 		//outputs
 		outputList: {type: "empty", name: "", isOutput: true, notParam: true, isList: true},

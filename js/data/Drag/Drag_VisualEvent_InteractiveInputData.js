@@ -180,6 +180,14 @@ module.exports = function(Drag, RPGMAKER_NAME) {
 			controller: Drag.VisualEvent.inputs.selectValueType,
 			dependances: [Drag.VisualEvent.inputs.valueInt, Drag.VisualEvent.inputs.percentage],
 			dependancesStyle: [1, 1]
+		},
+		selectAdvancedSearchItem: {
+			type: "interactive", name: "", behavior: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+			controller: Drag.VisualEvent.inputs.selectAdvancedSearchItemType,
+			dependances: [
+				Drag.VisualEvent.inputs.switch, Drag.VisualEvent.inputs.variable, Drag.VisualEvent.inputs.actor, Drag.VisualEvent.inputs.animation, Drag.VisualEvent.inputs.armor,
+				Drag.VisualEvent.inputs.class, Drag.VisualEvent.inputs.commonEvent, Drag.VisualEvent.inputs.enemy, Drag.VisualEvent.inputs.item, Drag.VisualEvent.inputs.skill,
+				Drag.VisualEvent.inputs.state, Drag.VisualEvent.inputs.tileset, Drag.VisualEvent.inputs.troop, Drag.VisualEvent.inputs.weapon, Drag.VisualEvent.inputs.command],
 		}
 	};
 };
