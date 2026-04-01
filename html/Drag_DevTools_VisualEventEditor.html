@@ -5148,8 +5148,9 @@
 				const nodeList = document.querySelector("#nodeList");
 				const graphEditorRect = document.querySelector('#graphEditor').getBoundingClientRect();
 				
-				const x = useNodeListPosition ? window._nodeListx : graphEditorRect.width / 2 - graphEditorRect.x;
-				const y = useNodeListPosition ? window._nodeListy : graphEditorRect.height / 2 - graphEditorRect.y - document.querySelector('#bottom-panel').getBoundingClientRect().height;
+				const cursorPosition = getCursorPosition();
+				const x = useNodeListPosition ? window._nodeListx : cursorPosition[0]; //graphEditorRect.width / 2 - graphEditorRect.x;
+				const y = useNodeListPosition ? window._nodeListy : cursorPosition[1]; //graphEditorRect.height / 2 - graphEditorRect.y - document.querySelector('#bottom-panel').getBoundingClientRect().height;
 				let [graphx, graphy] = getGraphCoordinatesFromAbsolute(x, y);
 				// graphx = parseInt(graphx / nodeSnap.x) * nodeSnap.x;
 				// graphy = parseInt(graphy / nodeSnap.y) * nodeSnap.y;
@@ -7731,6 +7732,12 @@
 					event.preventDefault();
 					moveConnection(event);
 				}
+				
+				window._cursorPosition = [event.x, event.y];
+			};
+			
+			function getCursorPosition() {
+				return window._cursorPosition || [0, 0];
 			};
 			
 			function handleSelectionBox(event) {
