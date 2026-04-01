@@ -7006,7 +7006,7 @@
 			};
 			
 			function getGraphPositionFromCache() {
-				return getEventCacheItem("position", window.data.targetType, window.data.mapTargetId, window.data.targetId, window.data.pageId || 0) || [0, 0];
+				return getEventCacheItem("position", window.data.targetType, window.data.mapTargetId, window.data.targetId, window.data.pageId || 0) || [500, 200];
 			};
 			
 			//page name
@@ -7954,6 +7954,13 @@
 				
 				const scale = parseFloat(Math.min(Math.max(scaleGraphEditor + delta, minScale), maxScale).toFixed(1));
 				setGraphEditorScale(scale, true, false, true, true);
+				
+				const cursorPosition = getCursorPosition();
+				const graphPosition = getGraphPosition();
+				const x = cursorPosition[0];
+				const y = cursorPosition[1];
+				// let [graphx, graphy] = getGraphCoordinatesFromAbsolute(x, y);
+				// setGraphPosition(-x, -y);
 			};
 			
 			function getGraphEditorScale() {
