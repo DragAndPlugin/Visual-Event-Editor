@@ -13,6 +13,7 @@
 				display: grid;
 				height: fit-content;
 				margin: 0;
+				padding-bottom: 50px;
 			}
 			
 			#search-in-container, #search-for-container, #result-container {
@@ -24,6 +25,10 @@
 			
 			#search-for-container, #result-container {
 				border-top: 1px solid black;
+			}
+			
+			#result-container {
+				display: none;
 			}
 			
 			#search-in-container > p, #search-for-container > p, #result-container > p {
@@ -55,7 +60,11 @@
 				background: transparent;
 			}
 			
-			#common-event-checkbox-container, #map-event-checkbox-container, #troop-event-checkbox-container, #map-event-page-checkbox-container, #troop-event-page-checkbox-container {
+			#map-event-checkbox-container {
+				margin-bottom: 2em !important;
+			}
+			
+			#common-event-checkbox-container, #map-event-checkbox-container, #troop-event-checkbox-container, #map-event-page-checkbox-container, #troop-event-page-checkbox-container, #all-map-checkbox-container, #all-map-event-checkbox-container {
 				align-items: center;
 				justify-content: center;
 				margin-bottom: 0.5em;
@@ -63,23 +72,36 @@
 			
 			#common-event-id-container {
 				display: flex;
-				margin-top: 5.45em;
+				align-items: center;
+				justify-content: center;
+			}
+			
+			#all-common-event-checkbox-container, #all-troop-event-checkbox-container {
+				align-items: center;
+				justify-content: center;
+				margin-bottom: 0.5em;
+				margin-top: 8.65em;
 			}
 			
 			#troop-event-id-container {
 				display: flex;
 				margin-bottom: 2em;
-				margin-top: 5.45em;
+				align-items: center;
+				justify-content: center;
 			}
 			
 			#troop-event-page-id-container {
 				display: flex;
 				margin-bottom: 1em;
+				align-items: center;
+				justify-content: center;
 			}
 			
 			#map-id-container, #map-event-id-container, #map-event-page-id-container {
 				display: flex;
 				margin-bottom: 2em;
+				align-items: center;
+				justify-content: center;
 			}
 			
 			#common-event-id-container > div, #troop-event-id-container > div, #troop-event-page-id-container > div, #map-id-container > div, #map-event-id-container > div, #map-event-page-id-container > div {
@@ -140,6 +162,77 @@
 			#rename-switch-variable-container {
 				display: none;
 			}
+			
+			#autofit-textarea-checkbox {
+				opacity: 0;
+			}
+			
+			#interactive-container > .select {
+				height: fit-content;
+			}
+			
+			#refs-count {
+				text-align: center;
+				font-style: italic;
+			}
+			
+			#refs-detail-container {
+				padding-left: 1em;
+				padding-bottom: 1em;
+			}
+			
+			#refs-detail-container > p {
+				font-size: 18px;
+			}
+			
+			#ref-detail {
+				display: grid;
+				grid-template-columns: 0.75fr 0.75fr 1.25fr;
+				margin-left: 1em;
+				cursor: pointer;
+				border: 1px solid black;
+			}
+			
+			#ref-detail:hover {
+				border: 1px solid white;
+			}
+			
+			#ref-detail > div {
+				padding: 0.5em;
+				overflow: auto;
+				display: flex;
+				align-content: center;
+				line-height: 24px;
+			}
+			
+			#ref-detail > div > svg {
+				fill: white;
+			}
+			
+			#ref-detail:hover > div > svg {
+				fill: rebeccapurple !important;
+			}
+			
+			#ref-detail > div > span {
+				margin-left: 0.5em;
+			}
+			
+			#ref-titles {
+				display: grid;
+				grid-template-columns: 0.75fr 0.75fr 1.25fr;
+				margin-left: 1em;
+				margin-bottom: 0.5em;
+				text-align: center;
+				font-style: italic;
+			}
+			
+			#ref-detail > div:nth-child(odd) {
+				background: rgb(0 0 0 / 0.25);
+			}
+			
+			.symbolHeader {
+				display: none;
+			}
 		</style>
     </head>
     <body style="height: 100%">
@@ -150,7 +243,11 @@
 					<div>
 						<div id="common-event-checkbox-container" class="flex">
 							<input type="checkbox" id="common-event-checkbox" onchange="toggleSearchInInputs(this);">
-							<span style="margin-left: 0.5em;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">Common Events</span>
+							<span style="margin-left: 0.5em; cursor: pointer;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">Common Events</span>
+						</div>
+						<div id="all-common-event-checkbox-container" class="flex">
+							<input type="checkbox" id="all-common-event-checkbox" checked="checked" onchange="toggleSearchInCommonEventInputs(this);">
+							<span style="margin-left: 0.5em; cursor: pointer;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">All Common Events</span>
 						</div>
 						<div id="common-event-id-container">
 							<div>
@@ -166,7 +263,11 @@
 					<div>
 						<div id="map-event-checkbox-container" class="flex">
 							<input type="checkbox" id="map-event-checkbox" onchange="toggleSearchInInputs(this);">
-							<span style="margin-left: 0.5em;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">Map Events</span>
+							<span style="margin-left: 0.5em; cursor: pointer;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">Map Events</span>
+						</div>
+						<div id="all-map-checkbox-container" class="flex">
+							<input type="checkbox" id="all-map-checkbox" checked="checked" onchange="toggleSearchInMapInputs(this);">
+							<span style="margin-left: 0.5em; cursor: pointer;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">All Maps</span>
 						</div>
 						<div id="map-id-container">
 							<div>
@@ -177,6 +278,10 @@
 								<label>To Map ID :</label>
 								<div id="map-id-to-container"></div>
 							</div>
+						</div>
+						<div id="all-map-event-checkbox-container" class="flex">
+							<input type="checkbox" id="all-map-event-checkbox" checked="checked" onchange="toggleSearchInMapEventInputs(this);">
+							<span style="margin-left: 0.5em; cursor: pointer;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">All Map Events</span>
 						</div>
 						<div id="map-event-id-container">
 							<div>
@@ -189,8 +294,8 @@
 							</div>
 						</div>
 						<div id="map-event-page-checkbox-container" class="flex">
-							<input type="checkbox" id="map-event-page-checkbox">
-							<span style="margin-left: 0.5em;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">All Event Pages</span>
+							<input type="checkbox" id="map-event-page-checkbox" checked="checked" onchange="toggleSearchInPageInputs(this);">
+							<span style="margin-left: 0.5em; cursor: pointer;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">All Event Pages</span>
 						</div>
 						<div id="map-event-page-id-container">
 							<div>
@@ -206,7 +311,11 @@
 					<div>
 						<div id="troop-event-checkbox-container" class="flex">
 							<input type="checkbox" id="troop-event-checkbox" onchange="toggleSearchInInputs(this);">
-							<span style="margin-left: 0.5em;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">Troop Events</span>
+							<span style="margin-left: 0.5em; cursor: pointer;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">Troop Events</span>
+						</div>
+						<div id="all-troop-event-checkbox-container" class="flex">
+							<input type="checkbox" id="all-troop-event-checkbox" checked="checked" onchange="toggleSearchInTroopEventInputs(this);">
+							<span style="margin-left: 0.5em; cursor: pointer;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">All Troop Events</span>
 						</div>
 						<div id="troop-event-id-container">
 							<div>
@@ -219,8 +328,8 @@
 							</div>
 						</div>
 						<div id="troop-event-page-checkbox-container" class="flex">
-							<input type="checkbox" id="troop-event-page-checkbox">
-							<span style="margin-left: 0.5em;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">All Event Pages</span>
+							<input type="checkbox" id="troop-event-page-checkbox" checked="checked" onchange="toggleSearchInPageInputs(this);">
+							<span style="margin-left: 0.5em; cursor: pointer;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">All Event Pages</span>
 						</div>
 						<div id="troop-event-page-id-container">
 							<div>
@@ -240,7 +349,7 @@
 				<div id="select-search-for-type">
 					<label>Has :</label>
 					<div class="select">
-						<select data-inputtype="select" data-iscommandparameter="true" onchange=" $.Drag.VisualEvent.onInputChange(this);">
+						<select data-inputtype="select" id="search-for-type" onchange=" $.Drag.VisualEvent.onInputChange(this);">
 							<option value="0">At least one item</option>
 							<option value="1">All items</option>
 						</select>
@@ -252,7 +361,8 @@
 			</div>
 			<div id="result-container">
 				<p>Results :</p>
-				<div></div>
+				<div id="refs-count"></div>
+				<div id="refs-detail-container"></div>
 			</div>
 			<div id="bottom-container">
 				<button onclick="search()">Search</button>
@@ -260,6 +370,13 @@
 			</div>
 		</div>
 		<script type="text/javascript">
+			const jumpToSvg = `
+				<svg fill="#000000" width="24px" height="24px" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+					<path d="M38.288 10.297l1.414 1.415-14.99 14.99-1.414-1.414z"></path>
+					<path d="M40 20h-2v-8h-8v-2h10z"></path>
+					<path d="M35 38H15c-1.7 0-3-1.3-3-3V15c0-1.7 1.3-3 3-3h11v2H15c-.6 0-1 .4-1 1v20c0 .6.4 1 1 1h20c.6 0 1-.4 1-1V24h2v11c0 1.7-1.3 3-3 3z"></path>
+				</svg>`;
+			
 			function main() {
 				document.title = "Drag_DevTools_AdvancedSearch";
 				loadDataMainWindow();
@@ -273,36 +390,42 @@
 			
 			function setup() {
 				const commentEventIdFromContainer = document.querySelector('#common-event-id-from-container');
-				commentEventIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField($.Drag.VisualEvent.getInputParameters('commonEvent'));
+				const commonEventInputParameters = $.Drag.VisualEvent.getInputParameters('commonEvent');
+				commonEventInputParameters.id = 'common-event-id-from';
+				commentEventIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField(commonEventInputParameters);
 				const commentEventIdToContainer = document.querySelector('#common-event-id-to-container');
-				commentEventIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField($.Drag.VisualEvent.getInputParameters('commonEventNone'));
+				commonEventInputParameters.id = 'common-event-id-to';
+				commentEventIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField(commonEventInputParameters);
 				
 				
 				const mapIdFromContainer = document.querySelector('#map-id-from-container');
-				mapIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 1, default: 1});
+				mapIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'map-id-from', min: 1, default: 1});
 				const mapIdToContainer = document.querySelector('#map-id-to-container');
-				mapIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 1, default: 1});
+				mapIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'map-id-to', min: 1, default: 1});
 				
 				const mapEventIdFromContainer = document.querySelector('#map-event-id-from-container');
-				mapEventIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 1, default: 1});
+				mapEventIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'map-event-id-from', min: 1, default: 1});
 				const mapEventIdToContainer = document.querySelector('#map-event-id-to-container');
-				mapEventIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 1, default: 1});
+				mapEventIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'map-event-id-to', min: 1, default: 1});
 				
 				const mapEventPageIdFromContainer = document.querySelector('#map-event-page-id-from-container');
-				mapEventPageIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 0, default: 0});
+				mapEventPageIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'map-event-page-id-from', min: 0, default: 0});
 				const mapEventPageIdToContainer = document.querySelector('#map-event-page-id-to-container');
-				mapEventPageIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 0, default: 0});
+				mapEventPageIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'map-event-page-id-to', min: 0, default: 0});
 				
 				
 				const troopEventIdFromContainer = document.querySelector('#troop-event-id-from-container');
-				troopEventIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField($.Drag.VisualEvent.getInputParameters('troop'));
+				const troopEventInputParameters = $.Drag.VisualEvent.getInputParameters('troop');
+				troopEventInputParameters.id = 'troop-event-id-from';
+				troopEventIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField(troopEventInputParameters);
 				const troopEventIdToContainer = document.querySelector('#troop-event-id-to-container');
-				troopEventIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField($.Drag.VisualEvent.getInputParameters('troopNone'));
+				troopEventInputParameters.id = 'troop-event-id-to';
+				troopEventIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField(troopEventInputParameters);
 				
 				const troopEventPageIdFromContainer = document.querySelector('#troop-event-page-id-from-container');
-				troopEventPageIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 0, default: 0});
+				troopEventPageIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'troop-event-page-id-from', min: 0, default: 0});
 				const troopEventPageIdToContainer = document.querySelector('#troop-event-page-id-to-container');
-				troopEventPageIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", min: 0, default: 0});
+				troopEventPageIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'troop-event-page-id-to', min: 0, default: 0});
 				
 				for (const input of document.querySelectorAll('#event-type-container input'))
 					if (input.id !== "common-event-checkbox" && input.id !== "map-event-checkbox" && input.id !== "troop-event-checkbox")
@@ -330,15 +453,83 @@
 			function toggleSearchInInputs(checkbox) {
 				const container = checkbox.parentElement.parentElement;
 				for (const input of container.querySelectorAll('input'))
-					if (input !== checkbox)
-						if (checkbox.checked)
-							input.removeAttribute('disabled');
-						else
+					if (input !== checkbox) {
+						let disabled = !checkbox.checked;
+						
+						if (!disabled) {
+							if (input.id === 'common-event-id-from' || input.id === 'common-event-id-to')
+								disabled = document.querySelector('#all-common-event-checkbox').checked;
+							
+							else if (input.id === 'troop-event-id-from' || input.id === 'troop-event-id-to')
+								disabled = document.querySelector('#all-troop-event-checkbox').checked;
+							else if (input.id === 'troop-event-page-id-from' || input.id === 'troop-event-page-id-to')
+								disabled = document.querySelector('#troop-event-page-checkbox').checked;
+							
+							else if (input.id === 'map-id-from' || input.id === 'map-id-to')
+								disabled = document.querySelector('#all-map-checkbox').checked;
+							else if (input.id === 'map-event-id-from' || input.id === 'map-event-id-to')
+								disabled = document.querySelector('#all-map-event-checkbox').checked;
+							else if (input.id === 'map-event-page-id-from' || input.id === 'map-event-page-id-to')
+								disabled = document.querySelector('#map-event-page-checkbox').checked;
+						}
+						
+						if (disabled)
 							input.setAttribute('disabled', 'true');
+						else
+							input.removeAttribute('disabled');
+					}
+			};
+			
+			function toggleSearchInCommonEventInputs(checkbox) {
+				const disabled = checkbox.checked;
+				for (const input of document.querySelectorAll('#common-event-id-container input'))
+					if (disabled)
+						input.setAttribute('disabled', 'true');
+					else
+						input.removeAttribute('disabled');
+			};
+			
+			function toggleSearchInMapInputs(checkbox) {
+				const disabled = checkbox.checked;
+				for (const input of document.querySelectorAll('#map-id-container input'))
+					if (disabled)
+						input.setAttribute('disabled', 'true');
+					else
+						input.removeAttribute('disabled');
+			};
+			
+			function toggleSearchInMapEventInputs(checkbox) {
+				const disabled = checkbox.checked;
+				for (const input of document.querySelectorAll('#map-event-id-container input'))
+					if (disabled)
+						input.setAttribute('disabled', 'true');
+					else
+						input.removeAttribute('disabled');
+			};
+			
+			function toggleSearchInTroopEventInputs(checkbox) {
+				const disabled = checkbox.checked;
+				for (const input of document.querySelectorAll('#troop-event-id-container input'))
+					if (disabled)
+						input.setAttribute('disabled', 'true');
+					else
+						input.removeAttribute('disabled');
+			};
+			
+			function toggleSearchInPageInputs(checkbox) {
+				const container = checkbox.parentElement.nextElementSibling;
+				const disabled = checkbox.checked;
+				for (const input of container.querySelectorAll('input'))
+					if (disabled)
+						input.setAttribute('disabled', 'true');
+					else
+						input.removeAttribute('disabled');
+					
 			};
 			
 			function addSearchForItem(button) {
-				$.Drag.VisualEvent.onAddListInput(button);
+				const clone = $.Drag.VisualEvent.onAddListInput(button);
+				const select = clone.querySelector('.select select').onchange();
 			};
 			
 			function removeSearchForItem(button) {
@@ -348,9 +539,159 @@
 			function handleInteractiveInput(input) {
 				$.Drag.VisualEvent.handleInteractiveInput(input);
 			};
+		
+			function search() {
+				const editor = $.Drag.VisualEvent.getEditor();
+				if (!editor)
+					return;
+				
+				const searchIn = {};
+
+				if (document.querySelector('#common-event-checkbox').checked) {
+					searchIn['Common Event'] = {};
+					
+					if (document.querySelector('#all-common-event-checkbox').checked) 
+						searchIn['Common Event'].ids = '*';
+					else
+						searchIn['Common Event'].ids = [parseInt(document.querySelector('#common-event-id-from').value), parseInt(document.querySelector('#common-event-id-to').value)];
+				}
+				
+				if (document.querySelector('#map-event-checkbox').checked) {
+					searchIn['Map Event'] = {};
+					
+					if (document.querySelector('#all-map-checkbox').checked) 
+						searchIn['Map Event'].mapIds = '*';
+					else
+						searchIn['Map Event'].mapIds = [parseInt(document.querySelector('#map-id-from').value), parseInt(document.querySelector('#map-id-to').value)];
+					
+					if (document.querySelector('#all-map-event-checkbox').checked) 
+						searchIn['Map Event'].ids = '*';
+					else
+						searchIn['Map Event'].ids = [parseInt(document.querySelector('#map-event-id-from').value), parseInt(document.querySelector('#map-event-id-to').value)];
+					
+					if (document.querySelector('#map-event-page-checkbox').checked) 
+						searchIn['Map Event'].pageIds = '*';
+					else
+						searchIn['Map Event'].pageIds = [parseInt(document.querySelector('#map-event-page-id-from').value), parseInt(document.querySelector('#map-event-page-id-to').value)];
+				}
+				
+				if (document.querySelector('#troop-event-checkbox').checked) {
+					searchIn['Troop Event'] = {};
+					
+					if (document.querySelector('#all-troop-event-checkbox').checked) 
+						searchIn['Troop Event'].ids = '*';
+					else
+						searchIn['Troop Event'].ids = [parseInt(document.querySelector('#troop-event-id-from').value), parseInt(document.querySelector('#troop-event-id-to').value)];
+					
+					if (document.querySelector('#troop-event-page-checkbox').checked) 
+						searchIn['Troop Event'].pageIds = '*';
+					else
+						searchIn['Troop Event'].pageIds = [parseInt(document.querySelector('#troop-event-page-id-from').value), parseInt(document.querySelector('#troop-event-page-id-to').value)];
+				}
+				
+				
+				const searchFor = {
+					mode: parseInt(document.querySelector('#search-for-type').value),
+					items: {types: [], values: []},
+				};
+				
+				const itemContainers = document.querySelectorAll('#search-for-items-container');
+				for (const itemContainer of itemContainers) {
+					const select = itemContainer.querySelector('#interactive-container select');
+					const itemType = select.value;
+					
+					const itemInput = itemContainer.querySelector('#dependances-container').children[select.selectedIndex].querySelector('*[data-dependance="true"]');
+					const itemValue = $.Drag.VisualEvent.getInputValue(itemInput);
+					
+					searchFor.items.types.push(itemType);
+					searchFor.items.values.push(itemValue);
+				}
+				console.log(searchFor);
+				const searchResultContainer = document.querySelector('#result-container');
+				searchResultContainer.style.display = 'initial';
+				try {
+					const searchResult = editor.searchReferences(searchIn, searchFor);
+					console.log(searchResult);
+					if (Object.keys(searchIn).length === 0) {
+						searchResultContainer.querySelector('#refs-count').innerHTML = `<span style="color: red;">No event type selected.</span>`;
+						searchResultContainer.querySelector('#refs-detail-container').innerHTML = ``;
+					} else if (searchResult.count === 0) {
+						searchResultContainer.querySelector('#refs-count').innerHTML = `No reference found.`;
+						searchResultContainer.querySelector('#refs-detail-container').innerHTML = ``;
+					} else {
+						const refsCount = searchResult.count;
+						delete searchResult.count;
+						searchResultContainer.querySelector('#refs-count').innerHTML = `${refsCount} reference(s) found.`;
+						
+						let html = "";
+						for (const eventType in searchResult) {
+							console.log(eventType, searchResult);
+							html += `
+								<p>${eventType.includes('Map') ? `Map${String($.Drag.VisualEvent.extractMapId(eventType)).padStart(3, '0')} (${$.Drag.VisualEvent.getMapName($.Drag.VisualEvent.extractMapId(eventType))})` : eventType} :</p>
+								<div id="ref-titles">
+									<span>Event name</span>
+									<span>Command name</span>
+									<span>Command details</span>
+								</div>
+							`;
+							
+							for (const result of searchResult[eventType]) {
+								const event = result.event;
+								
+								if (result.refs)
+									for (const ref of result.refs) {
+										const details = ref.types.map((type, i) => `${type}: ${ref.values[i]}`).join(', ');
+										html += `
+											<div id="ref-detail" onclick="jumpTo(this);" 
+											data-eventType="${eventType.includes('Map') ? 'Map Event' : eventType}" ${result.mapId !== undefined ? `data-mapId="${result.mapId}"` : ''} 
+											data-eventId="${event.id}" ${result.pageId !== undefined ? `data-pageId="${result.pageId}"` : ''} data-nodeId="${ref.nodeId}">
+												<div>${jumpToSvg}<span>${String(event.id).padStart(4, '0')}: ${event.name} ${result.pageId !== undefined ? `(Page: ${result.pageId})` : ''}<span></div>
+												<div>${ref.commandName}</div>
+												<div>${details}</div>
+											</div>
+										`;
+									}
+								else if (result.commandIds)
+									for (const commandId of result.commandIds) {
+										const list = event.list ? event.list : event.pages[result.pageId].list;
+										const command = list[commandId];
+										const name = (command.code !== 357 ? $.Drag.VisualEvent.getCommandName(command.code) || $.Drag.VisualEvent.getCommandName($.Drag.VisualEvent.getAssociatedCommandsParent(command.code)) : `${list[commandId].parameters[0]}: ${list[commandId].parameters[2]}`) || '' ;
+										const details = command.code !== 357 ? list[commandId].parameters.join(', ') : JSON.stringify(list[commandId].parameters[3]);
+										html += `
+											<div id="ref-detail" onclick="jumpTo(this);" 
+											data-eventType="${eventType.includes('Map') ? 'Map Event' : eventType}" ${result.mapId !== undefined ? `data-mapId="${result.mapId}"` : ''} 
+											data-eventId="${event.id}" ${result.pageId !== undefined ? `data-pageId="${result.pageId}"` : ''}>
+												<div>${jumpToSvg}<span>${String(event.id).padStart(4, '0')}: ${event.name} ${result.pageId !== undefined ? `(Page: ${result.pageId})` : ''}<span></div>
+												<div>${name}</div>
+												<div>${details}</div>
+											</div>
+										`;
+									}
+							}
+						}
+						searchResultContainer.querySelector('#refs-detail-container').innerHTML = html;
+					}
+				} catch (error) {
+					searchResultContainer.querySelector('#refs-count').innerHTML = `<span style="color: red;">An error has occured.</span>`;
+					searchResultContainer.querySelector('#refs-detail-container').innerHTML = ``;
+					console.error(error);
+				}
+			};
 			
-			function ok() {
-				quit();
+			function jumpTo(element) {
+				const eventType = element.getAttribute('data-eventType');
+				const mapId = parseInt(element.getAttribute('data-mapId')) || null;
+				const eventId = parseInt(element.getAttribute('data-eventId'));
+				const pageId = parseInt(element.getAttribute('data-pageId')) || null;
+				const nodeId = parseInt(element.getAttribute('data-nodeId'));
+				
+				const editor = $.Drag.VisualEvent.getEditor();
+				if (editor && eventType && eventId) {
+					editor.loadEvent(eventId, eventType, pageId, mapId);
+					if (nodeId !== undefined)
+						editor.onNodesReadyEx = (() => editor.focusNode(nodeId));
+					$.Drag.VisualEvent.focusEditor();
+				}
 			};
 			
 			function quit() {

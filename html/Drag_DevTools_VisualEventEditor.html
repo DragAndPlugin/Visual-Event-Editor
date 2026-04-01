@@ -53,6 +53,7 @@
 			<div>
 				<span onclick="openMapPropertiesMenu(this);" id="map-properties-edit">Edit Map Properties</span>
 				<span id="map-event-create">Create</span>
+				<span id="map-event-advanced-search" onclick="openAdvancedSearch(this);">Advanced Search...</span>
 			</div>
 			<p id="map-event-actions">Map Event Actions</p>
 			<div>
@@ -69,6 +70,7 @@
 			<p>General</p>
 			<div>
 				<span id="troop-event-maximum">Set Maximum Events</span>
+				<span id="troop-event-advanced-search" onclick="openAdvancedSearch(this);">Advanced Search...</span>
 			</div>
 			<p id="troop-event-actions">Troop Event Actions</p>
 			<div>
@@ -321,6 +323,9 @@
 			};
 			
 			function checkNewVersionAvailable(data) {
+				if (data === '404: Not Found')
+					return;
+				
 				data = data.trim().toLowerCase();
 				if (data !== $.Drag.VisualEvent.version.trim().toLowerCase()) {
 					document.querySelector('#title-new-version').classList.remove('hidden');
@@ -1788,15 +1793,24 @@
 				
 				window.data.mapTargetId = mapId;
 				
-				if (window.data._cacheMaps && window.data._cacheMaps[mapId])
+				if (hasMapInCache(mapId))
 					loadMapDataFromCache(mapId);
 				else
-					requestLoadDataMap(mapId, fromRestore);
+					requestLoadDataMap(mapId);
 			};
 			
-			function requestLoadDataMap(mapId = window.data.mapTargetId) {				
+			function hasMapInCache(mapId) {
+				return window.data._cacheMaps && window.data._cacheMaps[mapId];
+			};
+			
+			function requestLoadDataMap(mapId = window.data.mapTargetId, callback) {				
 				const filename = $.Drag.VisualEvent.getMapFileName(mapId);
-				$.Drag.VisualEvent.loadDataFile(filename, onDataMapLoad);
+				// $.Drag.VisualEvent.loadDataFile(filename, callback ? callback : onDataMapLoad);
+				const map = require(`./data/${$.Drag.VisualEvent.getMapFileName(mapId)}.json`);
+				if (callback)
+					callback(map);
+				else
+					onDataMapLoad(map);
 			};
 			
 			function onDataMapLoad(data) {
@@ -1831,8 +1845,12 @@
 					return;
 				}
 				
-				window.data.loadedMap = window.data._cacheMaps[mapId];				
+				window.data.loadedMap = getMapFromCache(mapId);				
 				makeMapEventList();
+			};
+			
+			function getMapFromCache(mapId) {
+				return window.data._cacheMaps[mapId];
 			};
 			
 			function showMapEventContextMenu(e) {
@@ -2140,6 +2158,26 @@
 				reloadGraphEditor(eventId, eventType, pageId, true);
 			};
 			
+			function loadEvent(eventId, eventType, pageId, mapId) {
+				saveEventInCache();				
+				
+				if (eventType === "Map Event" && mapId && mapId !== window.data.mapTargetId) {
+					window.data._tempTargetId = eventId;
+					window.data._tempPageId = pageId;
+					loadMapData(mapId, true);
+				} else
+					reloadGraphEditor(eventId, eventType, pageId, true);
+			};
+			
+			function focusNode(nodeId) {
+				const node = getNodeById(nodeId);
+				if (!node)
+					return;
+				
+				const nodePosition = getNodePosition(node);
+				setGraphPosition(-nodePosition[0] + (window.outerWidth / 2) - (node.offsetWidth / 2), -nodePosition[1] + (window.outerHeight / 2) - (node.offsetHeight / 2));
+			};
+			
 			function ensureLeftPanelSelection(target) {
 				const eventContainer = document.querySelector('#event-container');
 				for (const selected of eventContainer.querySelectorAll('.selected'))
@@ -2275,6 +2313,8 @@
 					}
 				}
 				
+				if (window._onEditorReady)
+					window._onEditorReady();
 				triggerModsFunction("onEditorReady");
 			};
 			
@@ -3262,7 +3302,7 @@
 							<span class="nodeOutput ${outputExec.containerClass ? outputExec.containerClass : ''}" id="secondary-exec-output">
 								<span>${outputExec.name || ""}</span></b>
 								${outputExec.type !== undefined ? $.Drag.VisualEvent.getInputField(outputExec) : ''}
-								<span ${outputExec.connectionData ? outputExec.connectionData : ''} data-connected="false" data-nodeId="${nodeId}" data-connectionId="${outputConnectionId++}" data-indent="${params.indent + 1 || 1}" class="exec outputConnection"></span>
+								<span ${outputExec.connectionData ? outputExec.connectionData : ''} data-connected="false" data-nodeId="${nodeId}" data-connectionId="${outputConnectionId++}" data-indent="${params.indent + 1 || 1}" data-exclusive="exec" class="exec outputConnection"></span>
 							</span>`;
 				
 				const customOutputExecParams = isCustom ? getCustomNodeOutputExecParams(params.commandCode) : {};
@@ -3330,6 +3370,7 @@
 				node.removeAttribute('data-_inputsReady');
 				triggerAllOnReadyOnChange(node);
 				autofitAllTextArea(node);
+				registerNodeReferences(node);
 				
 				triggerModsFunction("onNodeReady", [node]);
 				for (const mod of Object.values(window._mods))
@@ -3347,6 +3388,11 @@
 				if (window.onNodesReady) {
 					window.onNodesReady();
 					window.onNodesReady = null;
+				}
+				
+				if (window.onNodesReadyEx) {
+					window.onNodesReadyEx();
+					window.onNodesReadyEx = null;
 				}
 				
 				window._allNodesReady = true;
@@ -3855,6 +3901,17 @@
 					return parseInt(node.getAttribute('data-commandCode')) || 0;
 				else
 					return node.getAttribute('data-commandCode') || "";
+			};
+			
+			function getNodeCommandName(node) {
+				const commandCode = getNodeCommandCode(node);
+				if (node.getAttribute('data-isCustom') !== "true")
+					if (commandCode === 357) {
+						return node.getAttribute('data-pluginCommandName');
+					} else
+						return $.Drag.VisualEvent.getCommandName(commandCode);
+				else
+					return window._customNodes[commandCode].name || "";
 			};
 			
 			function getEventPageData(eventType, eventId, pageId, parseIfCurrent = true) {
@@ -5319,53 +5376,305 @@
 			};
 			
 			function searchReferences(searchIn = {}, searchFor = {}) {
-				const events = [];
-				if (searchIn.eventType.includes('c')) {
-					const maxEventCount = getCommonEventCount();
-					for (let i = 1; i <= maxEventCount; i++) {
-						let event;
-						const eventKey = getEventKey('Common Event', null, i);
-						if (hasEventInCache("Common Event", eventKey))
-							event = getEventCache("Common Event", eventKey).data;
-						else
-							event = data.$dataCommonEvents[i];
-						
-						if (event)
-							events.push(event);
+				const refs = {count: 0};
+				for (const eventType in searchIn) {
+					switch (eventType) {
+						case 'Common Event':
+							const commonEvents = searchIn[eventType].ids === '*' ? getCommonEventsInRange(1, getCommonEventCount()) : getCommonEventsInRange(searchIn[eventType].ids[0], searchIn[eventType].ids[1]);
+							for (const commonEvent of commonEvents) {
+								if (hasEventInCache(eventType, commonEvent.id)) {
+									const eventCache = getEventCache(eventType, getEventKey(eventType, null, commonEvent.id));
+									const correspondingRefs = searchForRefsFromEventCache(eventCache, searchFor);
+									if (correspondingRefs.length > 0) {
+										if (!refs[eventType])
+											refs[eventType] = [];
+										
+										refs[eventType].push({event: commonEvent, refs: correspondingRefs});
+										refs.count += correspondingRefs.length;
+									}
+								} else {
+									const commandIds = searchForRefsInEventList(commonEvent.list, searchFor);
+									if (commandIds.length > 0) {
+										if (!refs[eventType])
+											refs[eventType] = [];
+										
+										refs[eventType].push({event: commonEvent, commandIds: commandIds});
+										refs.count += commandIds.length;
+									}
+								}
+							}
+							
+							break;
+						case 'Map Event':
+							const mapList = $.Drag.VisualEvent.getMapList();
+							for (const mapFilename of mapList) {
+								const mapId = $.Drag.VisualEvent.extractMapId(mapFilename);
+								if (searchIn[eventType].mapIds !== '*' && (mapId < searchIn[eventType].mapIds[0] || mapId > searchIn[eventType].mapIds[1]))
+									continue;
+								
+								const map = hasMapInCache(mapId) ? getMapFromCache(mapId) : require(`./data/${mapFilename}`);								
+								const mapEvents = searchIn[eventType].ids === '*' ? getMapEventsInRange(mapId, 1, getMapEventCount(map)) : getMapEventsInRange(mapId, searchIn[eventType].ids[0], searchIn[eventType].ids[1]);
+								for (const mapEvent of mapEvents)
+									for (const [pageId, page] of mapEvent.pages.entries()) {
+										if (searchIn[eventType].pageIds !== '*' && (pageId < searchIn[eventType].pageIds[0] || pageId > searchIn[eventType].pageIds[1]))
+											continue;
+										
+										const pageCache = getEventCache(eventType, getEventKey(eventType, mapId, mapEvent.id, pageId));
+										if (pageCache) {
+											const correspondingRefs = searchForRefsFromEventCache(pageCache, searchFor);
+											if (correspondingRefs.length > 0) {
+												if (!refs[mapFilename])
+													refs[mapFilename] = [];
+												
+												refs[mapFilename].push({event: mapEvent, pageId: pageId, mapId: mapId, refs: correspondingRefs});
+												refs.count += correspondingRefs.length;
+											}
+										} else {
+											const commandIds = searchForRefsInEventList(page.list, searchFor);
+											if (commandIds.length > 0) {
+												if (!refs[mapFilename])
+													refs[mapFilename] = [];
+												
+												refs[mapFilename].push({event: mapEvent, pageId: pageId, mapId: mapId, commandIds: commandIds});
+												refs.count += commandIds.length;
+											}
+										}
+									}
+							}
+							break;
+						case 'Troop Event':
+							const troopEvents = searchIn[eventType].ids === '*' ? getTroopEventsInRange(1, getTroopEventCount()) : getTroopEventsInRange(searchIn[eventType].ids[0], searchIn[eventType].ids[1]);
+							if (searchIn[eventType].pageIds !== '*')
+								searchIn[eventType].pageIds.sort();
+							
+							for (const troopEvent of troopEvents) {
+								for (const [pageId, page] of troopEvent.pages.entries()) {
+									if (searchIn[eventType].pageIds !== '*' && (pageId < searchIn[eventType].pageIds[0] || pageId > searchIn[eventType].pageIds[1]))
+										continue;
+									
+									const pageCache = getEventCache(eventType, getEventKey(eventType, null, troopEvent.id, pageId));
+									if (pageCache) {
+										const correspondingRefs = searchForRefsFromEventCache(pageCache, searchFor);
+										if (correspondingRefs.length > 0) {
+											if (!refs[eventType])
+												refs[eventType] = [];
+											
+											refs[eventType].push({event: troopEvent, pageId: pageId, refs: correspondingRefs});
+											refs.count += correspondingRefs.length;
+										}
+									} else {
+										const commandIds = searchForRefsInEventList(page.list, searchFor);
+										if (commandIds.length > 0) {
+											if (!refs[eventType])
+												refs[eventType] = [];
+											
+											refs[eventType].push({event: troopEvent, pageId: pageId, commandIds: commandIds});
+											refs.count += commandIds.length;
+										}
+									}
+								}
+							}
+							break;
 					}
 				}
+				return refs;
+			};
+			
+			function searchForRefsFromEventCache(eventCache, search) {
+				if (!eventCache || !search || !eventCache.references)
+					return [];
 				
-				const refs = {events: [], command: []};
-				for (const event of events)
-					for (const command of event.list) {
-						if (commandMeetSearch(command, searchFor)) {
-							let index = refs.events.indexOf(event);
-							if (index === -1)
-								index = refs.events.push(event);
-							
-							if (!Array.isArray(refs.command[index]))
-								refs.command[index] = [];
-							refs.command[index].push(command);
-						}
-					}
+				const refs = [];
+				const references = eventCache.references;
+				for (const reference of references) {
+					if (!reference)
+						continue;
+					
+					if (eventCacheReferenceMeetSearch(reference, search))
+						refs.push(reference);
+				}
 				
 				return refs;
 			};
 			
+			function eventCacheReferenceMeetSearch(reference, search) {
+				const result = new Array(search.items.types.length).fill(false);
+				for (const [typeId, type] of search.items.types.entries()) {
+					if (type === 'command') {
+						const commandCode = search.items.values[typeId];
+						if (commandCode == reference.commandCode) {
+							if (search.mode === 0)
+								return true;
+							else
+								result[typeId] = true;
+						}
+					} else {
+						const indexes = $.Drag.VisualEvent.findAllIndexes(reference.types, type);
+						const values = reference.values;
+						console.log(reference, type, search.items.values[typeId], indexes, values);
+						for (const index of indexes) {
+							if (type === "text" && values[index].includes(search.items.values[typeId])) {
+								if (search.mode === 0)
+									return true;
+								else
+									result[typeId] = true;
+							} else if (Array.isArray(values[index]) && Array.isArray(search.items.values[typeId]) && $.Drag.VisualEvent.arrayIncludesArray(values[index], search.items.values[typeId])) {
+								if (search.mode === 0)
+									return true;
+								else
+									result[typeId] = true;
+							} else if (values[index] == search.items.values[typeId]) {
+								if (search.mode === 0)
+									return true;
+								else
+									result[typeId] = true;
+							}
+						}
+					}
+				}
+				
+				return result.every(item => item);
+			};
+			
+			function searchForRefsInEventList(list, searchFor) {
+				if (!list || !searchFor)
+					return [];
+				
+				const commandIds = [];
+				for (const [commandId, command] of list.entries())
+					if (commandMeetSearch(command, searchFor))
+						commandIds.push(commandId);
+				
+				return commandIds;
+			};
+	
 			function commandMeetSearch(command, search) {
-				let commandParameters = $.Drag.VisualEvent.getCommandParameters(command.code);
-				if (!Array.isArray(commandParameters))
+				if (!command || !command.code)
 					return false;
 				
-				const flatCommandParameters = $.Drag.VisualEvent.flattenArray(commandParameters.map(commandParameter => commandParameter.type === "interactive" ? getFlatInteractiveInputParameters(commandParameter) : commandParameter));
-				console.log(flatCommandParameters);
-				// console.log(search);
-				for (let commandParameter of flatCommandParameters) {
-					if (search.inputsType.includes(commandParameter.type))
-						return true;	
+				const isPluginCommand = command.code === 357;
+				
+				let commandParameters;
+				if (isPluginCommand)
+					commandParameters = $.Drag.VisualEvent.getPluginCommandParameters(command.parameters[0], command.parameters[1]);
+					
+				else
+					commandParameters = $.Drag.VisualEvent.getCommandParameters(command.code);
+				
+				if (!commandParameters || !Array.isArray(commandParameters))
+					return false;
+				
+				commandParameters = commandParameters.filter(commandParameter => !commandParameter.notParam);
+				
+				if (!isPluginCommand) {
+					const commandParametersIndex = $.Drag.VisualEvent.commandsParametersIndex[`command${command.code}`];
+					setCommandParametersIndexs(commandParameters, commandParametersIndex);
+				}
+				
+				const parameters = isPluginCommand ? getPluginParametersFromParametersValues(commandParameters, command.parameters) : getParametersFromParametersValues(commandParameters, command.parameters);
+				const parametersTypes = parameters.map(commandParameter => commandParameter.type);
+				const parametersValues = parameters.map(commandParameter => commandParameter.value);
+				
+				const result = new Array(search.items.types.length).fill(false);
+				for (const [typeId, type] of search.items.types.entries()) {
+					if (type === 'command') {
+						const commandCode = parseInt(search.items.values[typeId]);
+						if (commandCode === command.code) {
+							if (search.mode === 0)
+								return true;
+							else
+								result[typeId] = true;
+						}
+					} else {
+						const indexes = $.Drag.VisualEvent.findAllIndexes(parametersTypes, type);
+						for (const index of indexes) {
+							if (parametersValues[index] == search.items.values[typeId]) {
+								if (search.mode === 0)
+									return true;
+								else
+									result[typeId] = true;
+							}
+						}
+					}
 				}
 
-				return false;
+				return result.every(item => item);
+			};
+			
+			function getParametersFromParametersValues(parameters, parametersValues, result = []) {
+				for (const [parameterId, parameter] of parameters.entries()) {
+					if (parameter.type === 'interactive') {
+						if (!parameter.controller.notParam) {
+							parameter.controller.value = parametersValues[parameter.controller.parameterIndex !== undefined ? parameter.controller.parameterIndex : parameterId];
+							result.push(parameter.controller);
+							
+							let behavior = parameter.behavior[parameter.controller.value];
+							if (!Array.isArray(behavior))
+								behavior = [behavior];
+							for (const dependanceId of behavior)
+								getParametersFromParametersValues([parameter.dependances[dependanceId]], parametersValues, result);
+						} else 
+							getParametersFromParametersValues(parameter.dependances, parametersValues, result);
+						
+						
+					} else {
+						parameter.value = parametersValues[parameter.parameterIndex !== undefined ? parameter.parameterIndex : parameterId];
+						result.push(parameter);
+					}
+				}
+				return result;
+			};
+			
+			function getPluginParametersFromParametersValues(parameters, parametersValues) {
+				for (const parameter in parameters)
+					parameters[parameter].value = parametersValues[3][parameters[parameter].name];
+					
+				return parameters;
+			};
+			
+			function getCommonEventsInRange(startId, endId) {
+				if (startId > endId)
+					endId = startId;
+				
+				const events = [];
+				for (let i = startId; i <= endId; i++) {
+					const eventKey = getEventKey('Common Event', null, i);
+					const event = hasEventInCache("Common Event", i) ? getEventCache("Common Event", eventKey).data : data.$dataCommonEvents[i];
+					if (event)
+						events.push(event);
+				}
+				
+				return events;
+			};
+			
+			function getTroopEventsInRange(startId, endId) {
+				if (startId > endId)
+					endId = startId;
+				
+				const events = [];
+				for (let i = startId; i <= endId; i++) {
+					const eventKey = getPartialEventKey('Troop Event', null, i);
+					const event = hasEventInCache("Troop Event", i) ? getEventCache("Troop Event", eventKey).data : data.$dataTroops[i];
+					if (event)
+						events.push(event);
+				}
+				
+				return events;
+			};
+			
+			function getMapEventsInRange(mapId, startId, endId) {
+				if (startId > endId)
+					endId = startId;
+				
+				const events = [];
+				for (let i = startId; i <= endId; i++) {
+					const eventKey = getPartialEventKey('Map Event', mapId, i);
+					const event = hasEventInCache("Map Event", i, mapId) ? getEventCache("Map Event", eventKey).data : hasMapInCache(mapId) ? getMapFromCache(mapId).events[i] : null;
+					if (event)
+						events.push(event);
+				}
+				
+				return events;
 			};
 			
 			function getFlatInteractiveInputParameters(commandParameter) {
@@ -6738,12 +7047,6 @@
 			};
 			
 			//nodes			
-			// function isGraphNodesCacheAccurate() {
-				// data.$dataCommonEvents[window.data.targetId].list.map(command => command.code).filter(commandCode => commandCode && !$.Drag.VisualEvent.flattenArray(Object.values($.Drag.VisualEvent.associatedCommands)).includes(`command${commandCode}`))
-				// window.nodes.slice(1).map(node => parseInt(node.getAttribute('data-commandCode')))
-				// getGraphNodesFromCache().map(cache => cache ? cache.commandCode : null)
-			// };
-			
 			function deepCacheAllGraphNodes(type = window.data.targetType, mapTargetId = window.data.mapTargetId, targetId = window.data.targetId, pageId = window.data.pageId) {	
 				if (type === window.data.targetType, mapTargetId === window.data.mapTargetId, targetId === window.data.targetId, pageId === window.data.pageId)
 					for (const node of window.nodes)
@@ -7093,19 +7396,55 @@
 			};
 			
 			function onInputChange(input) {
-				if (!input || input.classList.contains('onReadyOnChange') || !window._registerInputChange)
+				if (!input || input.classList.contains('onReadyOnChange'))
 					return;
 				
-				const node = $.Drag.VisualEvent.getAncestorById(input, 'graphNode');
-				if (node) { //input.getAttribute('data-isCommandParameter')
+				if (!window._registerInputChange)
+					return;
+				
+					const node = $.Drag.VisualEvent.getAncestorById(input, 'graphNode');
+				if (node) {
 					if (!isUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0))
 						setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
 					
-					if (node)
+					if (node) {
 						updateCacheGraphNodeParameters(node);
+						registerNodeReferences(node);
+					}
 				} else if ($.Drag.VisualEvent.getAncestorById(input, 'event-data-container'))
 					if (!isUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, null))
 						setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, null);
+			};
+			
+			function registerNodeReferences(node) {
+				if (!node)
+					return;
+				
+				const inputs = getNodeInputs(node).filter(input => !input.disabled);
+				const nodeId = getNodeId(node);
+				
+				const inputsTypes = [];
+				const inputsValues = [];
+				for (const input of inputs) {
+					const inputType = input.getAttribute('data-inputType');
+					if (['select', 'radio', 'checkbox', 'empty'].includes(inputType))
+						continue;
+					
+					const inputValue = parseNodeInputs(node, [input], true, true, false);
+					inputsTypes.push(inputType);
+					inputsValues.push(inputValue[0]);
+				}
+
+				const references = getEventCacheItem('references', window.data.targetType, window.data.mapTargetId, window.data.targetId, window.data.pageId) || [];
+				references[nodeId] = { 
+					nodeId: nodeId,
+					commandCode: getNodeCommandCode(node),
+					commandName: getNodeCommandName(node),
+					types: inputsTypes,
+					values: inputsValues
+				};
+				
+				saveItemInEventCache('references', references, window.data.targetType, window.data.mapTargetId, window.data.targetId, window.data.pageId);				
 			};
 			
 			const nodeResizeObserver = new ResizeObserver((entries) => {
