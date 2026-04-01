@@ -606,12 +606,12 @@
 					searchFor.items.types.push(itemType);
 					searchFor.items.values.push(itemValue);
 				}
-				console.log(searchFor);
+				
 				const searchResultContainer = document.querySelector('#result-container');
 				searchResultContainer.style.display = 'initial';
 				try {
 					const searchResult = editor.searchReferences(searchIn, searchFor);
-					console.log(searchResult);
+					
 					if (Object.keys(searchIn).length === 0) {
 						searchResultContainer.querySelector('#refs-count').innerHTML = `<span style="color: red;">No event type selected.</span>`;
 						searchResultContainer.querySelector('#refs-detail-container').innerHTML = ``;
@@ -625,7 +625,7 @@
 						
 						let html = "";
 						for (const eventType in searchResult) {
-							console.log(eventType, searchResult);
+							
 							html += `
 								<p>${eventType.includes('Map') ? `Map${String($.Drag.VisualEvent.extractMapId(eventType)).padStart(3, '0')} (${$.Drag.VisualEvent.getMapName($.Drag.VisualEvent.extractMapId(eventType))})` : eventType} :</p>
 								<div id="ref-titles">
