@@ -198,6 +198,20 @@ module.exports = [
 	}, 
 	{
 		category: "Game Progression", //string, category in node list 
+		name: "Control Variable (Text)", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_control_variable_text", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['variable', 'text'], //array of string, list of inputs of the node
+		outputs: [], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
+			behaviors.push({code: "_control_variable_text", indent: command.indent, parameters: command.parameters});
+		}
+	}, 
+	{
+		category: "Game Progression", //string, category in node list 
 		name: "Control Event Self Switch", //string, name of the node
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
 		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
