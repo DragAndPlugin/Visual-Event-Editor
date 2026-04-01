@@ -57,7 +57,7 @@ Drag.VisualEvent.version = "0.1.047";
 		if (!Drag.VisualEvent.inputs)
 			Drag.VisualEvent.inputs = {};
 		
-		const data = require(`./js/data/Drag/${filename}.js`)(Utils.RPGMAKER_NAME);
+		const data = require(`./js/data/Visual Event/${filename}.js`)(Utils.RPGMAKER_NAME);
 		for (const key in data)
 			if (!Drag.VisualEvent.inputs[key])
 				Drag.VisualEvent.inputs[key] = data[key];
@@ -68,7 +68,7 @@ Drag.VisualEvent.version = "0.1.047";
 		if (!Drag.VisualEvent.interactiveInputs)
 			Drag.VisualEvent.interactiveInputs = {};
 		
-		const data = require(`./js/data/Drag/${filename}.js`)(Drag, Utils.RPGMAKER_NAME);
+		const data = require(`./js/data/Visual Event/${filename}.js`)(Drag, Utils.RPGMAKER_NAME);
 		for (const key in data)
 			if (!Drag.VisualEvent.interactiveInputs[key])
 				Drag.VisualEvent.interactiveInputs[key] = data[key];
@@ -476,6 +476,15 @@ Drag.VisualEvent.version = "0.1.047";
 			return Drag.VisualEvent.associatedCommands[code] || [];
 	};
 	
+	Drag.VisualEvent.getAssociatedCommandsParent = function(code) {
+		if (typeof code === "number")
+			code = `command${code}`;
+			
+		for (const key in Drag.VisualEvent.associatedCommands)
+			if (Drag.VisualEvent.associatedCommands[key].indexOf(code) !== -1)
+				return key;
+	};
+	
 	Drag.VisualEvent.getInputParameters = function(type, properties = {}) {
 		if (Drag.VisualEvent.inputs[type]) {
 			return {...{...Drag.VisualEvent.inputs[type]}, ...properties}; 
@@ -492,10 +501,11 @@ Drag.VisualEvent.version = "0.1.047";
 	
 	Drag.VisualEvent.getCommandParameters = function(code) {
 		try {
-			if (typeof code === "number")
-				return JSON.parse(JSON.stringify(Drag.VisualEvent.commandsParameters[`command${code}`])); //deep copy
+			const commandParameters = typeof code === "number" ? Drag.VisualEvent.commandsParameters[`command${code}`] : Drag.VisualEvent.commandsParameters[code];
+			if (commandParameters)
+				return JSON.parse(JSON.stringify(commandParameters)); //deep copy
 			else 
-				return JSON.parse(JSON.stringify(Drag.VisualEvent.commandsParameters[code]));
+				return {};
 		} catch (error) {
 			console.error(error);
 			return {};
@@ -781,6 +791,14 @@ Drag.VisualEvent.version = "0.1.047";
 		return arr;
 	};
 	
+	Drag.VisualEvent.findAllIndexes = function(arr, item) {
+		const indexes = arr.reduce((arr2, value, index) => {
+			if (value === item) arr2.push(index);
+			return arr2;
+		}, []);
+		return indexes;
+	};
+	
 	//check if arr1 includes all values of arr2
 	Drag.VisualEvent.arrayIncludesArray = function(arr1, arr2) {
 		return arr2.every(item => arr1.includes(item));
@@ -996,6 +1014,12 @@ Drag.VisualEvent.version = "0.1.047";
 	
 	Drag.VisualEvent.getEditor = function() {
 		return Drag.VisualEvent.graphWindowHandler;
+	};
+	
+	Drag.VisualEvent.focusEditor = function() {
+		const editor = Drag.VisualEvent.getEditor();
+		if (editor)
+		return editor.focus();
 	};
 	
 	Drag.VisualEvent.onCloseEditor = function(event) {
@@ -2066,8 +2090,12 @@ Drag.VisualEvent.version = "0.1.047";
 		}
 	};
 	
-	Drag.VisualEvent.isRadio = function (element) {
+	Drag.VisualEvent.isRadio = function(element) {
 		return (element && element.nodeName && Drag.VisualEvent.isInput(element) && element.type.toLowerCase() === "radio");
+	};
+	
+	Drag.VisualEvent.isSelect = function(element) {
+		return (element && element.nodeName && element.nodeName.toLowerCase() === "select");
 	};
 	
 	Drag.VisualEvent.isInput = function(element) {
@@ -2406,6 +2434,10 @@ Drag.VisualEvent.version = "0.1.047";
 			return "";
 	};
 	
+	Drag.VisualEvent.extractMapId = function(name = "") {
+		return parseInt(name.replace('Map', '').replace('.json', ''));
+	};
+	
 	Drag.VisualEvent.getCurrentMapId = function() {
 		return $dataMap ? $dataMap.mapId : 0; 
 	};
@@ -2485,7 +2517,7 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	Drag.VisualEvent.onAddListInput = function(button) {
-		Drag.VisualEvent.addListInput(button);
+		const clone = Drag.VisualEvent.addListInput(button);
 		Drag.VisualEvent.onInputChange(button);
 		
 		const editor = Drag.VisualEvent.getEditor();
@@ -2494,6 +2526,8 @@ Drag.VisualEvent.version = "0.1.047";
 			if (node)
 				editor.cacheGraphNode(node);
 		}
+		
+		return clone;
 	};
 	
 	Drag.VisualEvent.addListInput = function(button) {
@@ -2953,7 +2987,7 @@ Drag.VisualEvent.version = "0.1.047";
 		return `
 			<div class="flex" style="align-items: center;">
 				<input type="checkbox" id="${params.id ? params.id : ''}" class="${params.class || ''}" onchange="${params.onchange || ''}" ${params.value ? 'checked': ''} ${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} ${params.disabled ? 'disabled' : ''} />
-				${params.name && params.showName ? `<span style="margin-left: 0.5em;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">${params.name}</span>` : ''}
+				${params.name && params.showName ? `<span style="margin-left: 0.5em; cursor: pointer;" onclick="$.Drag.VisualEvent.toggleCheckbox(this.previousElementSibling);">${params.name}</span>` : ''}
 			</div>
 		`;
 	};
@@ -3053,14 +3087,11 @@ Drag.VisualEvent.version = "0.1.047";
 		if (!params.addOptions || !Array.isArray(params.addOptions))
 			params.addOptions = [];
 		
-		const commandOptions = Drag.VisualEvent.flatCommandsName;
-		if (Utils.RPGMAKER_NAME === 'MV')
-			commandOptions.push('Plugin Command (MV)');
+		const commandOptions = Drag.VisualEvent.flattenArray(Object.values(Drag.VisualEvent.commandsCategories)).map(command => [parseInt(command.replace('command', '')), Drag.VisualEvent.getCommandName(command).replaceAll('&#8620;', '').replaceAll('&#10100;', '')]);		
+		params.options = commandOptions;
 		
-		params.options = params.addOptions.concat(commandOptions);
-		
-		const defaultId = params.default !== undefined ? params.default : 0;	
-		const literalsOptions = params.options.map((option, optionId) => `<option ${optionId === defaultId ? 'selected' : ''} value="${optionId}">${option || ''}</option>`);
+		const defaultId = 101; //show text	
+		const literalsOptions = params.options.map(option => `<option ${option[0] === defaultId ? 'selected' : ''} value="${option[0]}">${option[1] || ''}</option>`);
 		
 		for (const plugin in Drag.VisualEvent.pluginJSDocData) {
 			const pluginData = Drag.VisualEvent.pluginJSDocData[plugin];
@@ -3801,7 +3832,7 @@ Drag.VisualEvent.version = "0.1.047";
 	
 	Drag.VisualEvent.handleInteractiveInput = function(input) {
 		const parsedBehaviors = JSON.parse(input.getAttribute('data-behavior'));
-		const value = Drag.VisualEvent.getInputValue(input);
+		const value = Drag.VisualEvent.isSelect(input) ? input.selectedIndex : Drag.VisualEvent.getInputValue(input);
 		const behaviors = Array.isArray(parsedBehaviors[value]) ? parsedBehaviors[value] : [parsedBehaviors[value] !== undefined ? parsedBehaviors[value] : value];
 		const dependanceLevel = parseInt(input.getAttribute('data-dependancelevel'));
 

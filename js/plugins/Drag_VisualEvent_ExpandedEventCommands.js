@@ -218,6 +218,13 @@ Drag.VisualEvent_ExpandedEventCommands.version = "1.0.0";
 		return true;
 	};
 	
+	// Control Variable Text 
+	Game_Interpreter.prototype.command_control_variable_text = function(params) {
+		if (params[0] > 0)
+			$gameVariables.setValue(params[0], params[1]);
+		return true;
+	};
+	
 	// Control Event Self Switch
 	Game_Interpreter.prototype.command_control_event_self_switch = function(params) {
 		if (params[0] > 0 && params[1] > 0 && params.length > 3) {
