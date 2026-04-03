@@ -25,8 +25,8 @@ Drag.VisualEvent_ExpandedEventCommands.version = "1.0.0";
 (function() {
 	
 	if (Imported.Drag_VisualEvent) {
-		Drag.VisualEvent.loadInputData('Drag_VisualEvent_ExpandedEventCommands_InputData');
-		Drag.VisualEvent.loadInteractiveInputData('Drag_VisualEvent_ExpandedEventCommands_InteractiveInputData');
+		Drag.VisualEvent.loadInputData('expanded_event_commands/input_data.js');
+		Drag.VisualEvent.loadInteractiveInputData('expanded_event_commands/interactive_input_data.js');
 	}
 	
 	// Wait Variable

@@ -41,450 +41,49 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.pluginVersionUrl = "https://raw.githubusercontent.com/DragAndPlugin/Visual-Event-Editor/refs/heads/main/version";
 	Drag.VisualEvent.patreonUrl = "http://www.patreon.com/dragandplugin";
 	Drag.VisualEvent.itchUrl = "https://drag-and-plug-in.itch.io";
-	Drag.VisualEvent.nwWindowPath = "Drag_DevTools_index.html"; 
-	Drag.VisualEvent.nwVisualEventWindowPath = "html/Drag_DevTools_VisualEventEditor.html";
+	
+	Drag.VisualEvent.nwVisualEventWindowPath = "./Drag_VisualEvent/html/Drag_DevTools_VisualEventEditor.html";
 	Drag.VisualEvent.nwVisualEventWindowName = "Drag's DevTools Graph Editor";
-	Drag.VisualEvent.nwFileExplorerWindowPath = "html/Drag_DevTools_FileExplorer.html";
-	Drag.VisualEvent.nwFileExplorerWindowName = "Drag's DevTools File Explorer";
 	
 	Drag.VisualEvent.databaseTypes = ["actor", "animation", "armor", "class", "common_event", "enemy", "item", "skill", "state", "tileset", "troop", "weapon", "switch", "variable", "map_event", "equipment_type", "element_type"];
 	Drag.VisualEvent.dataFiles = ["Actors", "Animations", "Armors", "Classes", "CommonEvents", "Enemies", "Items", "MapInfos", "Skills", "States", "System", "Tilesets", "Troops", "Weapons"];
 	Drag.VisualEvent.pluginJSDocData = {};
 	
 	
-	//loader functions for inputs data
+	//loader functions for inputs/commands/events data
 	Drag.VisualEvent.loadInputData = function(filename) {
 		if (!Drag.VisualEvent.inputs)
 			Drag.VisualEvent.inputs = {};
 		
-		const data = require(`./js/data/Visual Event/${filename}.js`)(Utils.RPGMAKER_NAME);
+		const data = require(`./Drag_VisualEvent/js/${filename}`)(Utils.RPGMAKER_NAME);
 		for (const key in data)
 			if (!Drag.VisualEvent.inputs[key])
 				Drag.VisualEvent.inputs[key] = data[key];
 	};
-	Drag.VisualEvent.loadInputData('Drag_VisualEvent_InputData');
+	Drag.VisualEvent.loadInputData('input_data.js');
 	
 	Drag.VisualEvent.loadInteractiveInputData = function(filename) {
 		if (!Drag.VisualEvent.interactiveInputs)
 			Drag.VisualEvent.interactiveInputs = {};
 		
-		const data = require(`./js/data/Visual Event/${filename}.js`)(Drag, Utils.RPGMAKER_NAME);
+		const data = require(`./Drag_VisualEvent/js/${filename}`)(Drag, Utils.RPGMAKER_NAME);
 		for (const key in data)
 			if (!Drag.VisualEvent.interactiveInputs[key])
 				Drag.VisualEvent.interactiveInputs[key] = data[key];
 	};
-	Drag.VisualEvent.loadInteractiveInputData('Drag_VisualEvent_InteractiveInputData');
+	Drag.VisualEvent.loadInteractiveInputData('interactive_input_data.js');
 	
-	//TODO: split to ./js/data/Drag/Drag_VisualEvent_CommandData
-	Drag.VisualEvent.commandsCategories = {
-		"Message": ["command101", "command102", "command103", "command104", "command105"],
-		"Game Progression": ["command121", "command122", "command123", "command124"],
-		"Flow Control": ["command111","command112", "command113", "command115", "command117", "command118", "command119", "command108"],
-		"Party": ["command125", "command126", "command127", "command128", "command129"],
-		"Actor": ["command311", "command312", "command326", "command313", "command314", "command315", "command316", "command317", "command318", "command319", "command320", "command321", "command324", "command325"],
-		"Movement": ["command201", "command202", "command203", "command204", "command205", "command206"],
-		"Character": ["command211", "command216", "command217", "command212", "command213", "command214"],
-		"Picture": ["command231", "command232", "command233", "command234", "command235"],
-		"Timing": ["command230"],
-		"Screen": ["command221", "command222", "command223", "command224", "command225", "command236"],
-		"Audio & Video": ["command241", "command242", "command243", "command244", "command245", "command246", "command249", "command250", "command251", "command261"],
-		"Scene Control": ["command301", "command302", "command303", "command351", "command352", "command353", "command354"],
-		"System Settings": ["command132", "command133", "command139", "command140", "command134", "command135", "command136", "command137", "command138", "command322", "command323"],
-		"Map": ["command281", "command282", "command283", "command284", "command285"],
-		"Battle": ["command331", "command332", "command342", "command333", "command334", "command335", "command336", "command337", "command339", "command340"],
-		"Advanced": ["command355", "command356", "command357"]
-	};
-	
-	Drag.VisualEvent.flatCommandsName = [
-		"Show Text", "Show Choices", "Input Number", "Select Item", "Show Scrolling Text", "Comment", 
-		"Conditional Branch", "Loop", "Break Loop",
-		"Exit Event Processing", "Common Event", "Label", "Jump to Label",
-		"Control Switches", "Control Variables", "Control Self Switch", "Control Timer",
-		"Change Gold", "Change Items", "Change Weapons", "Change Armors", "Change Party Member",
-		"Change Battle BGM", "Change Victory ME", "Change Save Access", "Change Menu Access",
-		"Change Encounter", "Change Formation Access", "Change Window Color", "Change Defeat ME", "Change Vehicle BGM",
-		"Transfer Player", "Set Vehicle Location", "Set Event Location", "Scroll Map", "Set Movement Route", "Get On/Off Vehicle",
-		"Change Transparency", "Show Animation", "Show Balloon Icon", "Erase Event", "Change Player Followers", "Gather Followers",
-		"Fade Out Screen", "Fade In Screen", "Tint Screen", "Flash Screen", "Shake Screen",
-		"Wait", "Show Picture", "Move Picture", "Rotate Picture", "Tint Picture", "Erase Picture",
-		"Set Weather Effect", "Play BGM", "Fadeout BGM", "Save BGM", "Replay BGM", "Play BGS", "Fadeout BGS",
-		"Play ME", "Play SE", "Stop SE", "Play Movie", "Change Map Name Display", "Change Tileset",
-		"Change Battle Background", "Change Parallax", "Get Location Info", "Battle Processing",
-		"Shop Processing", "Name Input Processing", "Change HP", "Change MP", "Change TP", "Change State", "Recover All",
-		"Change EXP", "Change Level", "Change Parameter", "Change Skill", "Change Equipment", "Change Name", "Change Class",
-		"Change Actor Images", "Change Vehicle Image", "Change Nickname", "Change Profile", "Change Enemy HP", "Change Enemy MP",
-		"Change Enemy TP", "Change Enemy State", "Enemy Recover All", "Enemy Appear", "Enemy Transform", "Show Battle Animation",
-		"Force Action", "Abort Battle", "Open Menu Screen", "Open Save Screen", "Game Over", "Return to Title Screen", 
-		"Script",
-	];
-	
-	Drag.VisualEvent.commandsName = {
-		command0: "End",
-		command101: "Show Text", command102: "<span class='symbolHeader'>&#10100;</span><span> Show Choices</span>", command103: "Input Number", command104: "Select Item", command105: "Show Scrolling Text", command108: "Comment", command408: "Comment",
-		command111: "<span class='symbolHeader'>&#10100;</span><span> Conditional Branch</span>", command402: "When [**]", command403: "When Cancel", command411: "Else", command112: "<span class='symbolHeader'>&#8620;</span> <span>Loop</span>", command413: "Repeat Above", command113: "Break Loop",
-		command115: "Exit Event Processing", command117: "Common Event", command118: "Label", command119: "Jump to Label",
-		command121: "Control Switches", command122: "Control Variables", command123: "Control Self Switch", command124: "Control Timer",
-		command125: "Change Gold", command126: "Change Items", command127: "Change Weapons", command128: "Change Armors", command129: "Change Party Member",
-		command132: "Change Battle BGM", command133: "Change Victory ME", command134: "Change Save Access", command135: "Change Menu Access",
-		command136: "Change Encounter", command137: "Change Formation Access", command138: "Change Window Color", command139: "Change Defeat ME", command140: "Change Vehicle BGM",
-		command201: "Transfer Player", command202: "Set Vehicle Location", command203: "Set Event Location", command204: "Scroll Map", command205: "Set Movement Route", command206: "Get On/Off Vehicle",
-		command211: "Change Transparency", command212: "Show Animation", command213: "Show Balloon Icon", command214: "Erase Event", command216: "Change Player Followers", command217: "Gather Followers",
-		command221: "Fade Out Screen", command222: "Fade In Screen", command223: "Tint Screen", command224: "Flash Screen", command225: "Shake Screen",
-		command230: "Wait", command231: "Show Picture", command232: "Move Picture", command233: "Rotate Picture", command234: "Tint Picture", command235: "Erase Picture",
-		command236: "Set Weather Effect", command241: "Play BGM", command242: "Fadeout BGM", command243: "Save BGM", command244: "Replay BGM", command245: "Play BGS", command246: "Fadeout BGS",
-		command249: "Play ME", command250: "Play SE", command251: "Stop SE", command261: "Play Movie", command281: "Change Map Name Display", command282: "Change Tileset",
-		command283: "Change Battle Background", command284: "Change Parallax", command285: "Get Location Info", command301: "Battle Processing", command601: "If Win", command602: "If Escape", command603: "If Lose",
-		command302: "Shop Processing", command303: "Name Input Processing", command311: "Change HP", command312: "Change MP", command326: "Change TP", command313: "Change State", command314: "Recover All",
-		command315: "Change EXP", command316: "Change Level", command317: "Change Parameter", command318: "Change Skill", command319: "Change Equipment", command320: "Change Name", command321: "Change Class",
-		command322: "Change Actor Images", command323: "Change Vehicle Image", command324: "Change Nickname", command325: "Change Profile", command331: "Change Enemy HP", command332: "Change Enemy MP",
-		command342: "Change Enemy TP", command333: "Change Enemy State", command334: "Enemy Recover All", command335: "Enemy Appear", command336: "Enemy Transform", command337: "Show Battle Animation",
-		command339: "Force Action", command340: "Abort Battle", command351: "Open Menu Screen", command352: "Open Save Screen", command353: "Game Over", command354: "Return to Title Screen", 
-		command355: "Script", command356: "Plugin Command (MV)", command357: "Plugin Command (MZ)",
-	};
-	
-	Drag.VisualEvent.commandsEngine = {
-		command356: "MV",
-		command357: "MZ"
-	};
-	
-	//command added here won't have their own nodes and will be ignored. their inputs, if they have any will be added to their parent/associated command. 
-	//ie : command 401 will be ignored, its text input will be added to command101
-	Drag.VisualEvent.associatedCommands = {
-		command101: ["command401"],
-		command102: ["command402", "command403", "command404"],
-		command105: ["command405"],
-		command108: ["command408"],
-		command111: ["command411", "command412"],
-		command112: ["command413"],
-		command205: ["command505"],
-		command301: ["command601", "command602", "command603", "command604"],
-		command302: ["command605"],
-		command355: ["command655"],
-		command357: ["command657"]
-	};
-	
-	Drag.VisualEvent.flatAssociatedCommandsCode = [401, 402, 403, 404, 405, 408, 411, 412, 413, 505, 601, 602, 603, 604, 605, 655, 657];
-	
-	Drag.VisualEvent.commandsParametersIndex = {
-		command102: [0, 4, 3, 2, 1],
-		command111: [Utils.RPGMAKER_NAME === "MZ" ? 
-			{controller: 0, dependances: [1, 2, 1, 4, {controller: 2, dependances: [3, 3]}, 1, 2, 2, 1, 1, 1, {controller: 2, dependances: [3, 3, 3, 3, 3, 3]}, 1, {controller: 2, dependances: [3]}, 1, 2, 2, 1, 1, 1, 2, 1, 2, 1, 2, 1, 1]}
-			:
-			{controller: 0, dependances: [1, 2, 1, 4, {controller: 2, dependances: [3, 3]}, 1, 2, 2, 1, 1, 1, {controller: 2, dependances: [3, 3, 3, 3, 3, 3]}, 1, {controller: 2, dependances: [3]}, 1, 2, 2, 1, 1, 1, 2, 1, 2, 1, 1, 1]}
-		],
-		command122: [{controller: -1, dependances: [0, 1]}, 2, {controller: 3, dependances: [4, 4, 4, 5, {controller: 4, dependances: Utils.RPGMAKER_NAME === "MZ" ? [5, 5, 5, 5, 6, 5, 6, 5, 6, 5, 5, 5] : [5, 5, 5, 5, 6, 5, 6, 5, 6, 5, 5,]}, 4]}],
-	};
-	
-	Drag.VisualEvent.commandsParameters = {		
-		command101: Utils.RPGMAKER_NAME === "MZ" ? [Drag.VisualEvent.inputs.face, Drag.VisualEvent.inputs.selectWindowBackground, Drag.VisualEvent.inputs.selectVerticalPosition, Drag.VisualEvent.inputs.name] : [Drag.VisualEvent.inputs.face, Drag.VisualEvent.inputs.selectWindowBackground, Drag.VisualEvent.inputs.selectVerticalPosition],
-		command401: [Drag.VisualEvent.inputs.text],
-		command102: [Drag.VisualEvent.inputs.choicesOutput, Drag.VisualEvent.inputs.cancelOutput, Drag.VisualEvent.inputs.selectWindowBackground, Drag.VisualEvent.inputs.selectHorizontalPosition, Drag.VisualEvent.inputs.defaultChoice, Drag.VisualEvent.inputs.cancelChoice],
-		command402: [],
-		command403: [],
-		command404: [],
-		command103: [Drag.VisualEvent.inputs.variable, Drag.VisualEvent.inputs.digits],
-		command104: [Drag.VisualEvent.inputs.variable, Drag.VisualEvent.inputs.selectItemType],
-		command105: [Drag.VisualEvent.inputs.scrollingSpeed, Drag.VisualEvent.inputs.fastForward],
-		command405: [Drag.VisualEvent.inputs.text],
-		command108: [Drag.VisualEvent.inputs.text],
-		command408: [Drag.VisualEvent.inputs.text],
-		command111: [Drag.VisualEvent.interactiveInputs.selectConditional, Drag.VisualEvent.inputs.ifOutput, Drag.VisualEvent.inputs.elseOutput],
-		command411: [],
-		command112: [Drag.VisualEvent.inputs.loopOutput],
-		command412: [],
-		command413: [],
-		command113: [],
-		command115: [],
-		command117: [Drag.VisualEvent.inputs.commonEvent],
-		command118: [Drag.VisualEvent.inputs.label],
-		command119: [Drag.VisualEvent.inputs.label],
-		command121: [Drag.VisualEvent.interactiveInputs.selectSwitchWithRange, Drag.VisualEvent.inputs.radioOnOff],
-		command122: [Drag.VisualEvent.interactiveInputs.selectVariableWithRange, Drag.VisualEvent.inputs.radioOperation, Drag.VisualEvent.interactiveInputs.selectVariableOperand],
-		command123: [Drag.VisualEvent.inputs.selectSelfSwitch, Drag.VisualEvent.inputs.radioOnOff],
-		command124: [Drag.VisualEvent.interactiveInputs.selectTimerAction],
-		command125: [Drag.VisualEvent.inputs.radioOperation2, Drag.VisualEvent.interactiveInputs.selectOperand],
-		command126: [Drag.VisualEvent.inputs.item, Drag.VisualEvent.inputs.radioOperation2, Drag.VisualEvent.interactiveInputs.selectOperand],
-		command127: [Drag.VisualEvent.inputs.weapon, Drag.VisualEvent.inputs.radioOperation2, Drag.VisualEvent.interactiveInputs.selectOperand, Drag.VisualEvent.inputs.includeEquipment],
-		command128: [Drag.VisualEvent.inputs.armor, Drag.VisualEvent.inputs.radioOperation2, Drag.VisualEvent.interactiveInputs.selectOperand, Drag.VisualEvent.inputs.includeEquipment],
-		command129: [Drag.VisualEvent.inputs.actor, Drag.VisualEvent.inputs.radioOperation3, Drag.VisualEvent.inputs.initialize],
-		command132: [Drag.VisualEvent.inputs.bgm, Drag.VisualEvent.inputs.volume, Drag.VisualEvent.inputs.pitch, Drag.VisualEvent.inputs.pan, Drag.VisualEvent.inputs.play, Drag.VisualEvent.inputs.stop],
-		command133: [Drag.VisualEvent.inputs.victoryme, Drag.VisualEvent.inputs.volume, Drag.VisualEvent.inputs.pitch, Drag.VisualEvent.inputs.pan, Drag.VisualEvent.inputs.play, Drag.VisualEvent.inputs.stop],
-		command134: [Drag.VisualEvent.inputs.radioEnabledDisabled],
-		command135: [Drag.VisualEvent.inputs.radioEnabledDisabled],
-		command136: [Drag.VisualEvent.inputs.radioEnabledDisabled],
-		command137: [Drag.VisualEvent.inputs.radioEnabledDisabled],
-		command138: [Drag.VisualEvent.inputs.rgba],
-		command139: [Drag.VisualEvent.inputs.defeatme, Drag.VisualEvent.inputs.volume, Drag.VisualEvent.inputs.pitch, Drag.VisualEvent.inputs.pan, Drag.VisualEvent.inputs.play, Drag.VisualEvent.inputs.stop],
-		command140: [Drag.VisualEvent.inputs.selectVehicle, Drag.VisualEvent.inputs.bgm, Drag.VisualEvent.inputs.volume, Drag.VisualEvent.inputs.pitch, Drag.VisualEvent.inputs.pan, Drag.VisualEvent.inputs.play, Drag.VisualEvent.inputs.stop],
-		command201: [Drag.VisualEvent.interactiveInputs.selectLocationWithDesignation, Drag.VisualEvent.inputs.selectDirectionRetain, Drag.VisualEvent.inputs.selectFade],
-		command202: [Drag.VisualEvent.inputs.selectVehicle, Drag.VisualEvent.interactiveInputs.selectLocationWithDesignation],
-		command203: [Drag.VisualEvent.inputs.mapEventWithThis, Drag.VisualEvent.interactiveInputs.selectEventLocationWithDesignation, Drag.VisualEvent.inputs.selectDirectionRetain], //remove mapID value since it use current map
-		command204: [Drag.VisualEvent.inputs.selectDirection, Drag.VisualEvent.inputs.distance, Drag.VisualEvent.inputs.selectSpeed, Drag.VisualEvent.inputs.waitForCompletion],
-		command205: [Drag.VisualEvent.inputs.moveRoute],
-		command505: [],
-		command206: [],
-		command211: [Drag.VisualEvent.inputs.radioTransparency],
-		command212: [Drag.VisualEvent.inputs.mapEventWithThisAndPlayer, Drag.VisualEvent.inputs.animation, Drag.VisualEvent.inputs.waitForCompletion],
-		command213: [Drag.VisualEvent.inputs.mapEventWithThisAndPlayer, Drag.VisualEvent.inputs.selectBalloonIcon, Drag.VisualEvent.inputs.waitForCompletion],
-		command214: [],
-		command216: [Drag.VisualEvent.inputs.radioFollowers],
-		command217: [],
-		command221: [],
-		command222: [],
-		command223: [Drag.VisualEvent.inputs.rgbg, Drag.VisualEvent.inputs.normalTint, Drag.VisualEvent.inputs.darkTint, Drag.VisualEvent.inputs.sepiaTint, Drag.VisualEvent.inputs.sunsetTint, Drag.VisualEvent.inputs.nightTint, Drag.VisualEvent.inputs.durationFrame, Drag.VisualEvent.inputs.waitForCompletion],
-		command224: [Drag.VisualEvent.inputs.rgbi, Drag.VisualEvent.inputs.durationFrame, Drag.VisualEvent.inputs.waitForCompletion], 
-		command225: [Drag.VisualEvent.inputs.rangePower, Drag.VisualEvent.inputs.rangeSpeed, Drag.VisualEvent.inputs.durationFrame, Drag.VisualEvent.inputs.waitForCompletion],
-		command230: [Drag.VisualEvent.inputs.durationFrame],
-		command231: [Drag.VisualEvent.inputs.pictureID, Drag.VisualEvent.inputs.picture, Drag.VisualEvent.inputs.selectOrigin, Drag.VisualEvent.interactiveInputs.directVariablePosition, Drag.VisualEvent.inputs.width, Drag.VisualEvent.inputs.height, Drag.VisualEvent.inputs.opacity, Drag.VisualEvent.inputs.selectBlendMode],
-		command232: [Drag.VisualEvent.inputs.pictureID, Drag.VisualEvent.inputs.empty, Drag.VisualEvent.inputs.selectOrigin, Drag.VisualEvent.interactiveInputs.directVariablePosition, Drag.VisualEvent.inputs.width, Drag.VisualEvent.inputs.height, Drag.VisualEvent.inputs.opacity, Drag.VisualEvent.inputs.selectBlendMode, Drag.VisualEvent.inputs.durationFrame, Drag.VisualEvent.inputs.waitForCompletion, Utils.RPGMAKER_NAME === "MZ" ? Drag.VisualEvent.inputs.selectEasingType : Drag.VisualEvent.inputs.empty],
-		command233: [Drag.VisualEvent.inputs.pictureID, Drag.VisualEvent.inputs.speed],
-		command234: [Drag.VisualEvent.inputs.pictureNumber, Drag.VisualEvent.inputs.rgbg, Drag.VisualEvent.inputs.normalTint, Drag.VisualEvent.inputs.darkTint, Drag.VisualEvent.inputs.sepiaTint, Drag.VisualEvent.inputs.sunsetTint, Drag.VisualEvent.inputs.nightTint, Drag.VisualEvent.inputs.durationFrame, Drag.VisualEvent.inputs.waitForCompletion],
-		command235: [Drag.VisualEvent.inputs.pictureID],
-		command236: [Drag.VisualEvent.inputs.selectWeather, Drag.VisualEvent.inputs.rangePower, Drag.VisualEvent.inputs.durationFrame, Drag.VisualEvent.inputs.waitForCompletion],
-		command241: [Drag.VisualEvent.inputs.bgm, Drag.VisualEvent.inputs.volume, Drag.VisualEvent.inputs.pitch, Drag.VisualEvent.inputs.pan, Drag.VisualEvent.inputs.play, Drag.VisualEvent.inputs.stop],
-		command242: [Drag.VisualEvent.inputs.durationSeconds],
-		command243: [],
-		command244: [],
-		command245: [Drag.VisualEvent.inputs.bgs, Drag.VisualEvent.inputs.volume, Drag.VisualEvent.inputs.pitch, Drag.VisualEvent.inputs.pan, Drag.VisualEvent.inputs.play, Drag.VisualEvent.inputs.stop],
-		command246: [Drag.VisualEvent.inputs.durationSeconds],
-		command249: [Drag.VisualEvent.inputs.me, Drag.VisualEvent.inputs.volume, Drag.VisualEvent.inputs.pitch, Drag.VisualEvent.inputs.pan, Drag.VisualEvent.inputs.play, Drag.VisualEvent.inputs.stop],
-		command250: [Drag.VisualEvent.inputs.se, Drag.VisualEvent.inputs.volume, Drag.VisualEvent.inputs.pitch, Drag.VisualEvent.inputs.pan, Drag.VisualEvent.inputs.play, Drag.VisualEvent.inputs.stop],
-		command251: [],
-		command261: [Drag.VisualEvent.inputs.movie],
-		command281: [Drag.VisualEvent.inputs.radioOnOff],
-		command282: [Drag.VisualEvent.inputs.tileset],
-		command283: [Drag.VisualEvent.inputs.battlebacks],
-		command284: [Drag.VisualEvent.inputs.parallax, Drag.VisualEvent.inputs.horizontalLoop, Drag.VisualEvent.inputs.verticalLoop, Drag.VisualEvent.inputs.horizontalScroll, Drag.VisualEvent.inputs.verticalScroll],
-		command285: [Drag.VisualEvent.inputs.variable, Drag.VisualEvent.inputs.selectInfoType, Drag.VisualEvent.interactiveInputs.selectInfoLocationWithDesignation], //remove mapID value since it use current map
-		command301: [Drag.VisualEvent.interactiveInputs.selectTroopDesignation, Drag.VisualEvent.inputs.canEscape, Drag.VisualEvent.inputs.canLose, Drag.VisualEvent.inputs.winOutput, Drag.VisualEvent.inputs.escapeOutput, Drag.VisualEvent.inputs.loseOutput],
-		command601: [],
-		command602: [],
-		command603: [],
-		command604: [],
-		command302: [Drag.VisualEvent.inputs.shopProcessing, Drag.VisualEvent.inputs.purchaseOnly],
-		command605: [Drag.VisualEvent.inputs.shopProcessing],
-		command303: [Drag.VisualEvent.inputs.actor, Drag.VisualEvent.inputs.maximumCharacters],
-		command311: [Drag.VisualEvent.interactiveInputs.selectActorWithRange, Drag.VisualEvent.inputs.radioOperation2, Drag.VisualEvent.interactiveInputs.selectOperand, Drag.VisualEvent.inputs.allowDeath],
-		command312: [Drag.VisualEvent.interactiveInputs.selectActorWithRange, Drag.VisualEvent.inputs.radioOperation2, Drag.VisualEvent.interactiveInputs.selectOperand],
-		command326: [Drag.VisualEvent.interactiveInputs.selectActorWithRange, Drag.VisualEvent.inputs.radioOperation2, Drag.VisualEvent.interactiveInputs.selectOperand],
-		command313: [Drag.VisualEvent.interactiveInputs.selectActorWithRange, Drag.VisualEvent.inputs.radioOperation3, Drag.VisualEvent.inputs.state],
-		command314: [Drag.VisualEvent.interactiveInputs.selectActorWithRange],
-		command315: [Drag.VisualEvent.interactiveInputs.selectActorWithRange, Drag.VisualEvent.inputs.radioOperation2, Drag.VisualEvent.interactiveInputs.selectOperand, Drag.VisualEvent.inputs.showLevelUp],
-		command316: [Drag.VisualEvent.interactiveInputs.selectActorWithRange, Drag.VisualEvent.inputs.radioOperation2, Drag.VisualEvent.interactiveInputs.selectOperand, Drag.VisualEvent.inputs.showLevelUp],
-		command317: [Drag.VisualEvent.interactiveInputs.selectActorWithRange, Drag.VisualEvent.inputs.selectParameter, Drag.VisualEvent.inputs.radioOperation2, Drag.VisualEvent.interactiveInputs.selectOperand],
-		command318: [Drag.VisualEvent.interactiveInputs.selectActorWithRange, Drag.VisualEvent.inputs.radioLearnForget, Drag.VisualEvent.inputs.skill],
-		command319: [Drag.VisualEvent.inputs.actor, Drag.VisualEvent.interactiveInputs.selectEquipmentWithType],
-		command320: [Drag.VisualEvent.inputs.actor, Drag.VisualEvent.inputs.name],
-		command321: [Drag.VisualEvent.inputs.actor, Drag.VisualEvent.inputs.class, Drag.VisualEvent.inputs.saveExp],
-		command322: [Drag.VisualEvent.inputs.actor, Drag.VisualEvent.inputs.face, Drag.VisualEvent.inputs.characterSheet, Drag.VisualEvent.inputs.svbattler], //make face character battler update on change actor
-		command323: [Drag.VisualEvent.inputs.selectVehicle, Drag.VisualEvent.inputs.characterSheet], //make vehicle image update on change vehicle
-		command324: [Drag.VisualEvent.inputs.actor, Drag.VisualEvent.inputs.name],
-		command325: [Drag.VisualEvent.inputs.actor, Drag.VisualEvent.inputs.text],
-		command331: [Drag.VisualEvent.inputs.selectTroopEnemy, Drag.VisualEvent.inputs.radioOperation2, Drag.VisualEvent.interactiveInputs.selectOperand, Drag.VisualEvent.inputs.allowDeath],
-		command332: [Drag.VisualEvent.inputs.selectTroopEnemy, Drag.VisualEvent.inputs.radioOperation2, Drag.VisualEvent.interactiveInputs.selectOperand],
-		command342: [Drag.VisualEvent.inputs.selectTroopEnemy, Drag.VisualEvent.inputs.radioOperation2, Drag.VisualEvent.interactiveInputs.selectOperand],
-		command333: [Drag.VisualEvent.inputs.selectTroopEnemy, Drag.VisualEvent.inputs.radioOperation3, Drag.VisualEvent.inputs.state],
-		command334: [Drag.VisualEvent.inputs.selectTroopEnemy],
-		command335: [Drag.VisualEvent.inputs.selectTroopEnemy2],
-		command336: [Drag.VisualEvent.inputs.selectTroopEnemy2, Drag.VisualEvent.inputs.enemy],
-		command337: Utils.RPGMAKER_NAME === "MZ" ? [Drag.VisualEvent.inputs.selectTroopEnemy, Drag.VisualEvent.inputs.animation] : [Drag.VisualEvent.inputs.selectTroopEnemy, Drag.VisualEvent.inputs.animation, Drag.VisualEvent.inputs.targetAllEnemies],
-		command339: [Drag.VisualEvent.interactiveInputs.selectEnemyActorSubject, Drag.VisualEvent.inputs.skill, Drag.VisualEvent.inputs.selectTarget],
-		command340: [],
-		command351: [],
-		command352: [],
-		command353: [],
-		command354: [],
-		command355: [Drag.VisualEvent.inputs.text],
-		command655: [Drag.VisualEvent.inputs.text],
-		command356: [Drag.VisualEvent.inputs.text], //Plugin Command MV, to improve, if possible
-		command357: [], //plugin command MZ inputs are defined by the jsdoc parser
-		command657: []
-	};
-	
-	Drag.VisualEvent.moveRouteNames = [
-		'End', 'Move Down', 'Move Left', 'Move Right', 'Move Up', 'Move Lower Left', 'Move Lower Right', 'Move Upper Left', 'Move Upper Right', 'Move at Random', 'Move Toward Player', 'Move Away from Player', 'Move Forward', 'Move Backward', 
-		'Jump', 'Wait', 'Turn Down', 'Turn Left', 'Turn Right', 'Turn Up', 'Turn 90° Right', 'Turn 90° Left', 'Turn 180°', 'Turn 90° Right or Left', 'Turn at Random', 'Turn Toward Player', 'Turn Away from Player', 
-		'Switch On', 'Switch Off', 'Change Speed', 'Change Frequency', 'Walking Animation On', 'Walking Animation Off', 'Stepping Animation On', 'Stepping Animation Off', 'Direction Fix On', 'Direction Fix Off', 
-		'Through On', 'Through Off', 'Transparent On', 'Transparent Off', 'Change Image', 'Change Opacity', 'Change Blend Mode', 'Play SE', 'Script'
-	];
-	
-	Drag.VisualEvent.moveRouteParameters = {
-		14: [Drag.VisualEvent.inputs.x, Drag.VisualEvent.inputs.y],
-		15: [Drag.VisualEvent.inputs.durationFrame],
-		27: [Drag.VisualEvent.inputs.switch],
-		28: [Drag.VisualEvent.inputs.switch],
-		29: [Drag.VisualEvent.inputs.selectSpeed],
-		30: [Drag.VisualEvent.inputs.selectFrequency],
-		41: [Drag.VisualEvent.inputs.characterSheet],
-		42: [Drag.VisualEvent.inputs.opacity],
-		43: [Drag.VisualEvent.inputs.selectBlendMode],
-		44: [Drag.VisualEvent.inputs.se],
-		45: [Drag.VisualEvent.inputs.script],
-	};
-	
-	//TODO: split to ./js/data/Drag/Drag_VisualEvent_EventData
-	Drag.VisualEvent.emptyList = {
-		code: 0, 
-		indent: 0, 
-		parameters: []
-	};
-	
-	Drag.VisualEvent.getEmptyList = function() {
-		return {...Drag.VisualEvent.emptyList};
-	};
-	
-	Drag.VisualEvent.defaultCommonEvent = {
-		id: 0,
-		list: [Drag.VisualEvent.getEmptyList()],
-		name: "",
-		switchId: 1,
-		trigger: 0
-	};
-	
-	Drag.VisualEvent.defaultMapEventPage = {
-		conditions: {
-			actorId: 1,
-			actorValid: false,
-			itemId: 1,
-			itemValid: false,
-			selfSwitchCh: "A",
-			selfSwitchValid: false,
-			switch1Id: 1,
-			switch1Valid: false,
-			switch2Id: 1,
-			switch2Valid: false,
-			variableId: 1,
-			variableValid: false,
-			variableValue: 0,
-		},
-		directionFix: false,
-		image: {
-			characterIndex: 0,
-			characterName: "",
-			direction: 2,
-			pattern: 0,
-			tileId: 0,
-		},
-		list: [Drag.VisualEvent.getEmptyList()],
-		moveFrequency: 3,
-		moveRoute: {
-			list: [{code: 0, parameters: []}], 
-			repeat: true, 
-			skippable: false, 
-			wait: false
-		},
-		moveSpeed: 3,
-		moveType: 0,
-		priorityType: 0,
-		stepAnime: false,
-		through: false,
-		trigger: 0,
-		walkAnime: true,
-	};
-	
-	Drag.VisualEvent.defaultTroopEventPage = {
-		conditions: {
-			actorHp: 50,
-			actorId: 1,
-			actorValid: false,
-			enemyHp: 50,
-			enemyIndex: 0,
-			enemyValid: false,
-			switchId: 1,
-			switchValid: false,
-			turnA: 0,
-			turnB: 0,
-			turnEnding: false,
-			turnValid: false
-		},
-		list: [Drag.VisualEvent.getEmptyList()],
-		span: 0
-	};
-	
-	Drag.VisualEvent.getDefaultEventPage = function(type) {
-		if (type === "Map Event")
-			return JSON.parse(JSON.stringify(Drag.VisualEvent.defaultMapEventPage)); 
-		else if (type === "Troop Event")
-			return JSON.parse(JSON.stringify(Drag.VisualEvent.defaultTroopEventPage)); 
-		else
-			return {};
-	};
-	
-	Drag.VisualEvent.defaultTroopEvent = {
-		id: 0,
-		members: [],
-		name: "",
-		pages: [Drag.VisualEvent.getDefaultEventPage("Troop Event")]
-	};
-	
-	Drag.VisualEvent.defaultMapEvent = {
-		id: 0,
-		name: "EV000",
-		note: "",
-		pages: [Drag.VisualEvent.getDefaultEventPage("Map Event")],
-		x: 0,
-		y: 0
-	};
+	try {
+		require(`./Drag_VisualEvent/js/mz_plugin_command.js`)(Drag.VisualEvent, Utils.RPGMAKER_NAME);
+		require(`./Drag_VisualEvent/js/command_data.js`)(Drag.VisualEvent, Utils.RPGMAKER_NAME);
+		require(`./Drag_VisualEvent/js/event_data.js`)(Drag.VisualEvent, Utils.RPGMAKER_NAME);
+	} catch(error) {
+		console.error(error);
+	}
 	
 	//------------------------------------------------------------------------------------------------------------
-	// plugin functions
-	
-	Drag.VisualEvent.getDefaultCommonEvent = function() {
-		return Drag.VisualEvent.deepCopyJSON(Drag.VisualEvent.defaultCommonEvent);
-	};
-	
-	Drag.VisualEvent.getDefaultMapEvent = function() {
-		return Drag.VisualEvent.deepCopyJSON(Drag.VisualEvent.defaultMapEvent);
-	};
-	
-	Drag.VisualEvent.getDefaultTroopEvent = function() {
-		return Drag.VisualEvent.deepCopyJSON(Drag.VisualEvent.defaultTroopEvent);
-	};
-	
-	Drag.VisualEvent.getDefaultEvent = function(type) {
-		switch (type) {
-			case "Common Event":
-				return Drag.VisualEvent.getDefaultCommonEvent();
-			case "Map Event":
-				return Drag.VisualEvent.getDefaultMapEvent();
-			case "Troop Event":
-				return Drag.VisualEvent.getDefaultTroopEvent();
-			default: 
-				return null;
-		};
-	};
-	
-	Drag.VisualEvent.getCommandName = function(code) {
-		if (typeof code === "number")
-			return Drag.VisualEvent.commandsName[`command${code}`];
-		else 
-			return Drag.VisualEvent.commandsName[code];
-	};
-	
-	Drag.VisualEvent.getCommandCategory = function(code) {
-		for (category in Drag.VisualEvent.commandsCategories)
-			if (Drag.VisualEvent.commandsCategories[category].includes(`command${code}`))
-				return category;
-			
-		return "";
-	};
-	
-	Drag.VisualEvent.getAssociatedCommands = function(code) {
-		if (typeof code === "number")
-			return Drag.VisualEvent.associatedCommands[`command${code}`] || [];
-		else
-			return Drag.VisualEvent.associatedCommands[code] || [];
-	};
-	
-	Drag.VisualEvent.getAssociatedCommandsParent = function(code) {
-		if (typeof code === "number")
-			code = `command${code}`;
-			
-		for (const key in Drag.VisualEvent.associatedCommands)
-			if (Drag.VisualEvent.associatedCommands[key].indexOf(code) !== -1)
-				return key;
-	};
-	
+	// plugin functions	
+
 	Drag.VisualEvent.getInputParameters = function(type, properties = {}) {
 		if (Drag.VisualEvent.inputs[type]) {
 			return {...{...Drag.VisualEvent.inputs[type]}, ...properties}; 
@@ -499,157 +98,8 @@ Drag.VisualEvent.version = "0.1.047";
 			return [];
 	};
 	
-	Drag.VisualEvent.getCommandParameters = function(code) {
-		try {
-			const commandParameters = typeof code === "number" ? Drag.VisualEvent.commandsParameters[`command${code}`] : Drag.VisualEvent.commandsParameters[code];
-			if (commandParameters)
-				return JSON.parse(JSON.stringify(commandParameters)); //deep copy
-			else 
-				return {};
-		} catch (error) {
-			console.error(error);
-			return {};
-		}
-	};
-	
-	Drag.VisualEvent.getMoveCommandParameters = function(code) {
-		return Drag.VisualEvent.moveRouteParameters[parseInt(code)].map(item => {return {...item}}); 
-	};
-	
-	Drag.VisualEvent.getPluginList = function() {
-		// return PluginManager ? PluginManager._scripts : [];
-		return Array.from(document.querySelectorAll('script')).filter(script => script.src.includes('js/plugins/')).map(script => script.src.split('/js/plugins/').pop().replace('.js', ''));
-	};
-	
-	Drag.VisualEvent.fetchPluginCommands = function(name, callback, parseParams = true, parseCommands = true) {
-		Drag.VisualEvent.fetchPluginText(name, {parseParams: parseParams, parseCommands: parseCommands}, callback);
-	};
-	
-	Drag.VisualEvent.fetchPluginText = function(name, options, callback) {
-		name = name.replace('.js', '').trim();
-		fetch(`js/plugins/${name}.js`).then(res => {
-			return res.text();
-		}).then(text => {
-			const parsed = Drag.VisualEvent.parsePluginJSDoc(text, name, options);
-			callback(parsed);
-		});
-	};
-	
-	Drag.VisualEvent.parsePluginJSDoc = function(text, name, options = {parseParams: true, parseCommands: true}) {
-		if (Utils.RPGMAKER_NAME !== "MZ") {
-			Drag.VisualEvent.pluginJSDocData[name] = {};
-			return {}
-		}
-		
-		const jsdocRegex = /@[^@\n]+|~struct~\w+:/g;
-		const structRegex = /~struct~\w+:/g;
-		const matches = [...text.matchAll(jsdocRegex)];
-		
-		const pluginData = {};
-		if (options.parseParams)
-			pluginData.params = {};
-		if (options.parseCommands)
-			pluginData.commands = {};
-		if (options.parseParams || options.parseCommands)
-			pluginData.structs = {};
-		
-		for (const [i, match] of matches.entries()) {
-			if (match.parsed)
-				continue;
-			
-			const [tag, val] = Drag.VisualEvent.parseJSDocTag(match[0]);
-			
-			const isStruct = tag.match(structRegex);
-			if (tag === "command" || tag === "param" || isStruct) {
-				const data = {name: !isStruct ? val : Drag.VisualEvent.getStructName(tag)};
-				
-				for (let j = i + 1; j < matches.length; j++) {
-					const [subTag, subVal] = Drag.VisualEvent.parseJSDocTag(matches[j][0]);
-					
-					if (subTag === "command" || (subTag === "param" && !isStruct) || subTag.match(structRegex)) 
-						break;
-					else {
-						if (tag === "command" && options.parseCommands) {
-							if (subTag === "arg") {
-								data.args = data.args || [];
-								data.args.push({name: subVal});
-							} else {
-								if (!data.args)
-									data[subTag] = subVal;
-								else
-									Drag.VisualEvent.parseJSDocTagAndVal(subTag, subVal, data.args[data.args.length - 1]);
-							}
-						} else if (tag === "param" && options.parseParams) {
-							Drag.VisualEvent.parseJSDocTagAndVal(subTag, subVal, data);
-						} else if (isStruct && (options.parseCommands || options.parseParams)) {
-							if (subTag === "param") {
-								data.params = data.params || [];
-								data.params.push({name: subVal});
-							} else
-								Drag.VisualEvent.parseJSDocTagAndVal(subTag, subVal, data.params[data.params.length - 1]);
-						}
-						
-						matches[j].parsed = true;
-					}
-				}
-				
-				if (tag === "command" && options.parseCommands)
-					pluginData.commands[val] = data;
-				else if (tag === "param" && options.parseParams && !isStruct)
-					pluginData.params[val] = data;
-				else if (isStruct && (options.parseCommands || options.parseParams))
-					pluginData.structs[data.name] = data;
-				
-			} else
-				pluginData[tag] = val;
-		}
-		
-		Drag.VisualEvent.pluginJSDocData[name] = pluginData;
-		return pluginData;
-	};
-	
-	Drag.VisualEvent.parseJSDocTag = function(text) {
-		const tag = text.replace(/ .*/, '').replace("@", '').trim();
-		const val = text.substring(tag.length + 1).trim();
-		
-		return [tag, val];
-	};
-	
-	Drag.VisualEvent.parseJSDocTagAndVal = function(tag, val, obj) {
-		const structTypeRegex = /struct<\w+>/g;
-		
-		if (tag === "type" && val.slice(-2) === "[]") {
-			val = val.slice(0, -2);
-			obj[tag] = val
-			obj["isList"] = true;
-		} else if (tag !== "option" && tag !== "value")
-			obj[tag] = val;
-		
-		if (tag === "type" && (val === "combo" || val === "select")) {
-			obj["options"] = [];
-			obj["values"] = [];
-		} else if (obj["options"] && tag === "option") {
-			obj["options"].push(val);
-			obj["values"].push(val);
-		} else if (obj["values"] && tag === "value") 
-			obj["values"][obj["values"].length - 1] = val;
-		
-		if (tag === "type" && val.match(structTypeRegex)) {
-			obj["structName"] = Drag.VisualEvent.getStructName(val);
-			obj["type"] = "struct";
-		}
-	};
-	
-	Drag.VisualEvent.getStructName = function(structString) {
-		return structString.replace("struct<", "").replace("~struct~", "").replace(">", "").replace(":", "").replace("[]", "").trim();
-	};
-	
-	Drag.VisualEvent.getPluginCommandParameters = function(pluginName, commandName) {
-		const pluginData = Drag.VisualEvent.pluginJSDocData[pluginName];
-		const commandData = pluginData ? pluginData.commands[commandName] : null;
-		const commandArgs = commandData ? commandData.args : null;
-		return commandArgs ? commandArgs.map(item => {return {...item}}) : []; //two level deep copy
-	};
+	//----------------------------------------------------------------------
+	// utils
 	
 	Drag.VisualEvent.flattenArray = function(arr) {
 		if (!Array.isArray(arr))
@@ -669,8 +119,6 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.replaceAll = function(str, find, replace) {
 		return str.replace(new RegExp(Drag.VisualEvent.escapeRegExp(find), 'g'), replace);
 	};
-	
-	// window.addEventListener("keydown", (event) => { if (event.keyCode === 116) Drag.VisualEvent.reloadGame(); }, true);
 	
 	Drag.VisualEvent.reloadGame = function() {
 		if (Drag.VisualEvent.getEditor() && Drag.VisualEvent.getEditor().saveCache)
@@ -976,22 +424,24 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	//------------------------------------------------------------------------------------------------------------
-	// window opener
+	// window openers && other windows related functions
 
+	//ctrl+shift+f8 open editor
 	window.addEventListener("keydown", (event) => { if (event.keyCode === 119 && event.ctrlKey && event.shiftKey) Drag.VisualEvent.openEditor(); });
+	
 	Drag.VisualEvent.openEditor = function(id = 0, type = "") {
 		try {
-			if (!Drag.VisualEvent.graphWindowHandler) {
+			if (!Drag.VisualEvent.editorWindowHandler) {
 				if (Drag.VisualEvent.modules.fs && Drag.VisualEvent.modules.fs.existsSync(Drag.VisualEvent.nwVisualEventWindowPath)) {
 					console.log(Drag.VisualEvent.nwVisualEventWindowPath + " opened by : " + Drag.VisualEvent.pluginName);
-					const width = screen.width * 0.75;
-					const height = screen.height * 0.75;
-					const top = (screen.height / 2) - (height / 2);
-					const left = (screen.width / 2) - (width / 2); 
-					Drag.VisualEvent.graphWindowHandler = window.open(Drag.VisualEvent.nwVisualEventWindowPath, Drag.VisualEvent.nwVisualEventWindowName, `dependent=1, menubar=0, resizable=1, width=${width}, height=${height}, top=${top}, left=${left}`);
-					Drag.VisualEvent.graphWindowHandler.data = {}
-					Drag.VisualEvent.graphWindowHandler.data.targetId = parseInt(id);
-					Drag.VisualEvent.graphWindowHandler.data.targetType = type;
+					const width = screen.width;
+					const height = screen.height;
+					const top = 0;
+					const left = 0; 
+					Drag.VisualEvent.editorWindowHandler = window.open(Drag.VisualEvent.nwVisualEventWindowPath, Drag.VisualEvent.nwVisualEventWindowName, `dependent=1, menubar=0, resizable=1, width=${width}, height=${height}, top=${top}, left=${left}`);
+					Drag.VisualEvent.editorWindowHandler.data = {}
+					Drag.VisualEvent.editorWindowHandler.data.targetId = parseInt(id);
+					Drag.VisualEvent.editorWindowHandler.data.targetType = type;
 					
 					const GUI = require('nw.gui');
 					const GUIWindow = GUI.Window.get();
@@ -1000,12 +450,12 @@ Drag.VisualEvent.version = "0.1.047";
 						GUI.App.quit();
 					});
 					
-					Drag.VisualEvent.graphWindowHandler.addEventListener("beforeunload", Drag.VisualEvent.onCloseEditor);					
+					Drag.VisualEvent.editorWindowHandler.addEventListener("beforeunload", Drag.VisualEvent.onCloseEditor);					
 				} else { 
 					console.error(`Couldn't open ${Drag.VisualEvent.nwVisualEventWindowName}. ${Drag.VisualEvent.nwVisualEventWindowPath} file does not exist or is not in the right place.`);
 				}
 			} else {
-				Drag.VisualEvent.graphWindowHandler.focus();
+				Drag.VisualEvent.editorWindowHandler.focus();
 			}
 		} catch(err) {
 			console.error(err);
@@ -1013,7 +463,7 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	Drag.VisualEvent.getEditor = function() {
-		return Drag.VisualEvent.graphWindowHandler;
+		return Drag.VisualEvent.editorWindowHandler;
 	};
 	
 	Drag.VisualEvent.focusEditor = function() {
@@ -1023,10 +473,12 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	Drag.VisualEvent.onCloseEditor = function(event) {
-		if (event) {
+		if (event)
 			event.preventDefault();
-			// event.returnValue = true;
-		}
+		
+		if (Drag.VisualEvent.windowsHandlers)
+			for (const windowHandler in Drag.VisualEvent.windowsHandlers)
+				Drag.VisualEvent.windowsHandlers[windowHandler].close();
 		
 		console.log("Saving Visual Event Editor cache before closing...");
 		const editor = Drag.VisualEvent.getEditor();
@@ -1042,41 +494,9 @@ Drag.VisualEvent.version = "0.1.047";
 	
 	Drag.VisualEvent.closeEditor = function() {
 		console.log("Closing Visual Event Editor");
-		Drag.VisualEvent.graphWindowHandler.removeEventListener("beforeunload", Drag.VisualEvent.onCloseEditor);
-		Drag.VisualEvent.graphWindowHandler.close(true);
-		Drag.VisualEvent.graphWindowHandler = null;
-	};
-	
-	Drag.VisualEvent.openWindow = function(path, commonDir, name, width, height, top, left, data = {}) {
-		if (Utils.RPGMAKER_NAME === "MV")
-			top += 30;
-		
-		try {
-			if (!Drag[`${name}WindowHandler`] || Drag[`${name}WindowHandler`].closed) {
-				if (Drag.VisualEvent.modules.fs && Drag.VisualEvent.modules.fs.existsSync(path)) {
-					const screenWidth = window.screen.width;
-					const screenHeight = window.screen.height;
-					if (left + width + 20 > screenWidth)
-						left += screenWidth - (left + width + 20); 
-					if (top + height + (window.outerHeight - window.innerHeight) + 10 > screenHeight)
-						top += screenHeight - (top + height + (window.outerHeight - window.innerHeight) + 10); 
-					
-					Drag[`${name}WindowHandler`] = window.open(path.replace(commonDir, ''), name, `attributionsrc=1, dependent=1, menubar=1, resizable=1, width=${width}, height=${height}, top=${top}, left=${left}`);
-					Drag[`${name}WindowHandler`].data = data;
-					
-					const editor = Drag.VisualEvent.getEditor();
-					const fontSize = editor ? Drag.VisualEvent.getDocumentFontSize(editor.document) : 16;
-					Drag[`${name}WindowHandler`].addEventListener('load', () => {
-						Drag.VisualEvent.setDocumentFontSize(Drag[`${name}WindowHandler`].document, fontSize);
-					});
-				} else { 
-					console.error(`Couldn't open ${name}. ${path} file does not exist or is not in the right place.`);
-				}
-			} else if(Drag[`${name}WindowHandler`])
-				Drag[`${name}WindowHandler`].focus();
-		} catch(err) {
-			console.error(err);
-		}
+		Drag.VisualEvent.editorWindowHandler.removeEventListener("beforeunload", Drag.VisualEvent.onCloseEditor);
+		Drag.VisualEvent.editorWindowHandler.close(true);
+		Drag.VisualEvent.editorWindowHandler = null;
 	};
 	
 	Drag.VisualEvent.setLightMode = function(doc, lightMode = "dark") {
@@ -1122,10 +542,47 @@ Drag.VisualEvent.version = "0.1.047";
 		return parseInt(doc.documentElement.style.fontSize) || 16;
 	};
 	
+	Drag.VisualEvent.openWindow = function(filename, name, width, height, top, left, data = {}) {
+		const filepath = `./Drag_VisualEvent/html/`;
+		
+		if (Utils.RPGMAKER_NAME === "MV")
+			top += 30;
+		
+		try {
+			if (!Drag.VisualEvent.windowsHandlers)
+				Drag.VisualEvent.windowsHandlers = {};
+			
+			if (!Drag.VisualEvent.windowsHandlers[`${name}`] || Drag.VisualEvent.windowsHandlers[`${name}`].closed) {
+				if (Drag.VisualEvent.modules.fs && Drag.VisualEvent.modules.fs.existsSync(filepath + filename)) {
+					const screenWidth = window.screen.width;
+					const screenHeight = window.screen.height;
+					if (left + width + 20 > screenWidth)
+						left += screenWidth - (left + width + 20); 
+					if (top + height + (window.outerHeight - window.innerHeight) + 10 > screenHeight)
+						top += screenHeight - (top + height + (window.outerHeight - window.innerHeight) + 10); 
+					
+					Drag.VisualEvent.windowsHandlers[`${name}`] = window.open(filename, name, `attributionsrc=1, dependent=1, menubar=1, resizable=1, width=${width}, height=${height}, top=${top}, left=${left}`);
+					Drag.VisualEvent.windowsHandlers[`${name}`].data = data;
+					
+					const editor = Drag.VisualEvent.getEditor();
+					const fontSize = editor ? Drag.VisualEvent.getDocumentFontSize(editor.document) : 16;
+					Drag.VisualEvent.windowsHandlers[`${name}`].addEventListener('load', () => {
+						Drag.VisualEvent.setDocumentFontSize(Drag.VisualEvent.windowsHandlers[`${name}`].document, fontSize);
+					});
+				} else { 
+					console.error(`Couldn't open ${name}. ${filepath}${filename} file does not exist or is not in the right place.`);
+				}
+			} else if(Drag.VisualEvent.windowsHandlers[`${name}`])
+				Drag.VisualEvent.windowsHandlers[`${name}`].focus();
+		} catch(err) {
+			console.error(err);
+		}
+	};
+	
 	Drag.VisualEvent.openAdvancedSearchWindow = function(input) {
 		const rect = input.getBoundingClientRect();
 		Drag.VisualEvent.openWindow(
-			'html/Drag_DevTools_AdvancedSearch.html', 'html/', 'Advanced Search', 
+			'Drag_DevTools_AdvancedSearch.html', 'Advanced Search', 
 			window.screen.width * 0.35, window.screen.height * 0.625, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
 			{input: input}
 		);
@@ -1135,7 +592,7 @@ Drag.VisualEvent.version = "0.1.047";
 		const rect = input.getBoundingClientRect();
 		const val =  input.getAttribute('data-value') || "";
 		Drag.VisualEvent.openWindow(
-			'html/Drag_DevTools_ShopProcessing.html', 'html/', 'Shop Processing Menu', 
+			'Drag_DevTools_ShopProcessing.html', 'Shop Processing Menu', 
 			window.screen.width * 0.3, window.screen.height * 0.625, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
 			{input: input, value: val}
 		);
@@ -1147,7 +604,7 @@ Drag.VisualEvent.version = "0.1.047";
 		const structName = input.getAttribute('data-structName');
 		const val = JSON.parse(Drag.VisualEvent.unescapeQuotes(input.getAttribute('data-structValue')));
 		Drag.VisualEvent.openWindow(
-			'html/Drag_DevTools_StructureManager.html', 'html/', 'Structure Manager', 
+			'Drag_DevTools_StructureManager.html', 'Structure Manager', 
 			window.screen.width * 0.3, window.screen.height * 0.7, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
 			{input: input, pluginName: pluginName, structName: structName, value: val}
 		);
@@ -1158,7 +615,7 @@ Drag.VisualEvent.version = "0.1.047";
 		const type = input.getAttribute('data-inputType') || input.getAttribute('data-type');
 		console.log(rect, input.ownerDocument.defaultView.screenTop, input.ownerDocument.defaultView.screenLeft)
 		Drag.VisualEvent.openWindow(
-			'html/Drag_DevTools_SwitchVariableMenu.html', 'html/', 'Switch & Variable Menu', 
+			'Drag_DevTools_SwitchVariableMenu.html', 'Switch & Variable Menu', 
 			window.screen.width * 0.4, window.screen.height * 0.75, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
 			{input: input, type: type}
 		);
@@ -1178,7 +635,7 @@ Drag.VisualEvent.version = "0.1.047";
 		const y = parseInt(input.getAttribute('data-y')) || 0;
 		
 		Drag.VisualEvent.openWindow(
-			'html/Drag_DevTools_MoveRouteMenu.html', 'html/', 'Move Route Menu', 
+			'Drag_DevTools_MoveRouteMenu.html', 'Move Route Menu', 
 			window.screen.width * 0.55, window.screen.height * 0.65, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
 			{input: input, list: list, parameters: parameters, eventId: eventId, repeat: repeat, wait: wait, skip: skip, thisEventOnly: thisEventOnly, mapId: mapId, x: x, y: y}
 		);
@@ -1197,7 +654,7 @@ Drag.VisualEvent.version = "0.1.047";
 		const allowMapChange = input.getAttribute('data-allowMapChange') === "true";
 		
 		Drag.VisualEvent.openWindow(
-			'html/Drag_DevTools_MapLocationPicker.html', 'html/', 'Map Location Picker', 
+			'Drag_DevTools_MapLocationPicker.html', 'Map Location Picker', 
 			window.screen.width * 0.5, window.screen.height * 0.625, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
 			{input: input, mapId: mapId, x: x, y: y, isMoveRoutePreview: isMoveRoutePreview, list: list, parameters: parameters, allowSearch: allowSearch, allowMapChange: allowMapChange}
 		);
@@ -1212,7 +669,7 @@ Drag.VisualEvent.version = "0.1.047";
 		const rect = input.getBoundingClientRect();
 		
 		Drag.VisualEvent.openWindow(
-			'html/Drag_DevTools_MapSettingsMenu.html', 'html/', 'Map Settings Menu', 
+			'Drag_DevTools_MapSettingsMenu.html', 'Map Settings Menu', 
 			window.screen.width * 0.5, window.screen.height * 0.625, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
 			{input: input, mapId: mapId, x: x, y: y}
 		);
@@ -1235,7 +692,7 @@ Drag.VisualEvent.version = "0.1.047";
 		const value = fileCount > 1 ? input.value.split(",") : input.value;
 		
 		Drag.VisualEvent.openWindow(
-			Drag.VisualEvent.nwFileExplorerWindowPath, 'html/', Drag.VisualEvent.nwFileExplorerWindowName, 
+			"Drag_DevTools_FileExplorer.html", "File Explorer", 
 			window.screen.width  * 0.35, window.screen.height * 0.625, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
 			{input: input, value: value, src: src, fileCount: fileCount, previewType: previewType, allowNone: allowNone, exitFolder: exitFolder, allowSubFolder: allowSubFolder, 
 			isCharacterSheet: isCharacterSheet, isFullCharacterSheet: isFullCharacterSheet, fileTypes: fileTypes, subImageSize: subImageSize, allowTilesetSelection: allowTilesetSelection, tilesetNames: tilesetNames}
@@ -1248,7 +705,7 @@ Drag.VisualEvent.version = "0.1.047";
 		
 		const rect = input.getBoundingClientRect();
 		Drag.VisualEvent.openWindow(
-			'html/Drag_DevTools_NotetagManager.html', 'html/', 'Notetag Manager', 
+			'Drag_DevTools_NotetagManager.html', 'Notetag Manager', 
 			window.screen.width * 0.225, window.screen.height * 0.6, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
 			{input: input}
 		);
@@ -1260,7 +717,7 @@ Drag.VisualEvent.version = "0.1.047";
 		
 		const rect = input.getBoundingClientRect();
 		Drag.VisualEvent.openWindow(
-			'html/Drag_DevTools_TroopMembersManager.html', 'html/', 'Troops Members Manager', 
+			'Drag_DevTools_TroopMembersManager.html', 'Troops Members Manager', 
 			window.screen.width * 0.6, window.screen.height * 0.7, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
 			{input: input, troop: troop, enemies: enemies}
 		);	
@@ -1289,7 +746,7 @@ Drag.VisualEvent.version = "0.1.047";
 			eventData = editor.hasItemInEventCache("data", "Troop Event", 0, eventId) ? editor.getEventCacheItem("data", "Troop Event", 0, eventId) : (editor.data.$dataTroops[eventId] || Drag.VisualEvent.getDefaultTroopEvent());
 		
 		Drag.VisualEvent.openWindow(
-			'html/Drag_DevTools_EventConditionsMenu.html', 'html/', 'Event Conditions', 
+			'Drag_DevTools_EventConditionsMenu.html', 'Event Conditions', 
 			window.screen.width * 0.4, window.screen.height * 0.5, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
 			{input: input, eventType: eventType, eventData: eventData, pageId: pageId, editor: editor}
 		);
@@ -1827,18 +1284,21 @@ Drag.VisualEvent.version = "0.1.047";
 		return $gameVariables.value($dataSystem.variables.indexOf(name) || 0);
 	};
 	
-	
 	//------------------------------------------------------------------------------------------------------------
-	// XHR Read JSON
+	// Editor cache
 	
+	Drag.VisualEvent.cacheFilepath = "./Drag_VisualEvent/cache/cache.json";
 	Drag.VisualEvent.loadEditorCache = function() {
-		const url = "html/data/cache.json";
 		const xhr = new XMLHttpRequest();
-		xhr.open("GET", url);
+		xhr.open("GET", Drag.VisualEvent.cacheFilepath);
 		xhr.overrideMimeType("application/json");
 		xhr.onload = () => this.onEditorCacheLoad(xhr);
 		xhr.onerror = () => this.onEditorCacheError();
 		xhr.send();
+	};
+	
+	Drag.VisualEvent.saveEditorCache = function(cache, callback) {
+		Drag.VisualEvent.writeJSON(Drag.VisualEvent.cacheFilepath, cache, callback);
 	};
 	
 	Drag.VisualEvent.onEditorCacheLoad = function(xhr) {
@@ -1856,7 +1316,10 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.onEditorCacheError = function() {
 		Drag.VisualEvent.getEditor().onCacheLoadError();
 	};
-	 
+	
+	//------------------------------------------------------------------------------------------------------------
+	// XHR Write/Read JSON
+	
 	Drag.VisualEvent.loadDataFile = function(name, callback) {
 		const url = "data/" + name + ".json";
 		const xhr = new XMLHttpRequest();
@@ -2388,16 +1851,16 @@ Drag.VisualEvent.version = "0.1.047";
 		return folders;
 	};
 	
-	Drag.VisualEvent.getFileList = function(sPath = '', types = '*') {
+	Drag.VisualEvent.getFileList = function(path = '', types = '*') {
 		if (!Drag.VisualEvent.modules.fs || !Drag.VisualEvent.modules.path)
 			return;
 		
-		if (!Drag.VisualEvent.modules.fs.existsSync(sPath))
+		if (!Drag.VisualEvent.modules.fs.existsSync(path))
 			return [];
 		
-		const filesAndFolders = Drag.VisualEvent.modules.fs.readdirSync(sPath);
+		const filesAndFolders = Drag.VisualEvent.modules.fs.readdirSync(path);
 		const files = filesAndFolders.filter((item) => {
-			const itemPath = Drag.VisualEvent.modules.path.join(sPath, item);
+			const itemPath = Drag.VisualEvent.modules.path.join(path, item);
 			const extName = Drag.VisualEvent.modules.path.extname(itemPath);
 			const stats = Drag.VisualEvent.modules.fs.statSync(itemPath);
 			return stats.isFile() && (types.includes(extName) || types === '*');
