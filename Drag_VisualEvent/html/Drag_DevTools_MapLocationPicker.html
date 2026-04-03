@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="viewport" content="user-scalable=no">
+        <link rel="icon" href="../../icon/icon.png" type="image/png">
+        <link rel="apple-touch-icon" href="../../icon/icon.png">
+		<link href="../css/Drag_DevTools.css" rel="stylesheet">
+		<style>
+			:root {
+				--scaleMapPreview: 1;
+				--xMapPreview: 0px;
+				--yMapPreview: 0px;
+				--moveRouteSymbolSize: 75%;
+			}
+
+			html {
+				overflow-y: auto;
+			}
+			
+			svg {
+				width: 1.5em;
+				height: 1.5em;
+			}
+
+			#content {
+				display: grid;
+				height: 100%;
+				margin: 0;
+				grid-template-columns: 0.3fr 0.7fr;
+			}
+
+			#map-list {
+				box-sizing: border-box;
+				border-right: 0.125em solid rebeccapurple;
+				overflow-y: auto;
+				padding-bottom: 3.125em;
+				display: flex;
+				flex-direction: column;
+			}
+
+			#map-list-content {
+				overflow: auto;
+				border-right: 0.0625em solid rebeccapurple;
+				height: 100%;
+			}
+
+			#map-preview {
+				text-align: center;
+				position: relative;
+			}
+
+			#map-preview > div > img {
+				height: auto;
+				max-width: 100%;
+				transform: scale(var(--scaleMapPreview)) translate(var(--xMapPreview), var(--yMapPreview));
+			}
+
+			#map-preview > div > img:not([style*="display: none"]) ~ img {
+				position: absolute;
+				top: 0;
+				left: 0;
+			}
+
+			.map, .search {
+				padding: 0.5em;
+				cursor: pointer;
+				border: 0.125em solid transparent;
+				display: flex;
+				align-items: center;
+				justify-content: flex-start;
+			}
+			
+			.map > *, .search > * {
+				margin-right: 0.75em;
+			}
+			
+			.map > *:last-child, .search > *:last-child {
+				margin-right: 0em;
+			}
+
+			.selected {
+				border: 0.125em solid white !important;
+			}
+
+			#sub-selection-container {
+				transform: scale(var(--scaleMapPreview)) translate(var(--xMapPreview), var(--yMapPreview));
+				width: 100%;
+				height: 100%;
+				position: absolute;
+				top: 0;
+				left: 0;
+			}
+
+			.sub-selection {
+				cursor: pointer;
+				box-sizing:
+				border-box;
+				position: absolute;
+				border: 0.125em solid transparent;
+			}
+			
+			body[data-gridEnabled="true"] .sub-selection {
+				border: 0.0625em solid white;
+			}
+
+			.map:hover, .sub-selection:hover {
+				border: 0.125em solid white !important;
+			}
+
+			.sub-selection.selected {
+				box-shadow: inset 0px 0px 0px 0.125em rgb(0 0 0 / 1), inset 0px 0px 0px 0.25em rgb(255, 255, 255) !important;
+			}
+			
+			#checkbox-container {
+				position: relative;
+				display: grid;
+				grid-template-columns: repeat(3, 0.3333fr);
+				text-align: left;
+				padding: 0.5em 0.5em;
+				margin: 0.5em 0;
+				width: 100%;
+				box-sizing: border-box;
+				border-bottom: 0.0625em solid rebeccapurple;
+			}
+			
+			#checkbox-container > * {
+				margin-right: 0.625em;
+			}
+			
+			#checkbox-container > * {
+				margin-bottom: 0.3125em;
+			}
+			
+			#checkbox-container > div {
+				align-items: center;
+			}
+			
+			#checkbox-container > div > * {
+				margin-right: 0.5em;
+			}
+			
+			#checkbox-container > div > *:last-child {
+				margin-right: 0px;
+			}
+			
+			#img-container {
+				position: relative;
+				display: inline-block;
+				line-height: 0;
+				border: 0.0625em solid var(--color);
+				overflow: auto;
+				position: absolute;
+				top: 8.125em;
+				left: 0px;
+				overflow: hidden;
+			}
+
+			#display-container {
+				display: flex;
+				justify-content: space-around;
+			}
+
+			#bottom-container {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				padding: 0.5em;
+				max-height: 3.125em;
+				border-top: 0.125em solid rebeccapurple;
+				background-color: var(--background-color);
+				display: flex;
+				justify-content: flex-end;
+				box-sizing: border-box;
+			}
+			
+			#bottom-container > * {
+				margin-right: 1.5em;
+			}
+			
+			#bottom-container > *:last-child {
+				margin-right: 0em;
+			}
+
+			#bottom-container > button {
+				cursor: pointer;
+				padding: 0.5em 2em;
+			}
+			
+			#move-route-preview-container {
+				position: relative; 
+				width: 100%; 
+				height: 100%;
+			}
+			
+			#move-route-preview-symbol, #move-route-preview-player {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				width: var(--moveRouteSymbolSize);
+				height: var(--moveRouteSymbolSize);
+			}
+			
+			#preview-wrapper {
+				position: relative;
+				width: 100%;
+				height: 100%;
+			}
+			
+			#move-route-preview-symbol svg {
+				width: 100%;
+				height: 100%;
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+			}
+			
+			#move-route-preview-speed-container, #move-route-preview-size-container, #move-route-preview-add-player-container {
+				position: absolute;
+				width: 7.8125em;
+				right: 0.3125em;
+				opacity: 0.5;
+			}
+			
+			#move-route-preview-speed-container {
+				top: 8.4375em;
+			}
+			
+			#move-route-preview-size-container {
+				top: 11.5625em;
+			}
+			
+			#move-route-preview-add-player-container {
+				top: 14.6875em;
+			}
+			
+			#move-route-preview-speed-container > span, #move-route-preview-size-container > span {
+				color: #fff;
+				text-shadow: -0.0625em -0.0625em 0 #000, 0 -0.0625em 0 #000, 0.0625em -0.0625em 0 #000, 0.0625em 0 0 #000, 0.0625em 0.0625em 0 #000, 0 0.0625em 0 #000, -0.0625em 0.0625em 0 #000, -0.0625em 0 0 #000;
+				-webkit-font-smoothing: antialiased;	
+			}
+			
+			#move-route-preview-add-player-container > button {
+				font-size: 0.75;
+			}
+			
+			#move-route-preview-speed-container:hover, #move-route-preview-size-container:hover, #move-route-preview-add-player-container:hover {
+				opacity: 1;
+			}
+			
+			#move-route-preview-tooltip {
+				display: flex;
+				flex-direction: column;
+				text-align: left;
+				padding: 0.5em 2em 0.5em 1em;
+				border: 0.125em solid var(--color);
+				box-shadow: 0.3125em 0.3125em 0.625em 0.1875em black;
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: fit-content;
+				height: fit-content;
+				background: var(--background-color);
+			}
+			
+			#move-route-preview-tooltip > * {
+				margin-right: 0.1em;
+			}
+			
+			#move-route-preview-tooltip > *:last-child {
+				margin-right: 0em;
+			}
+			
+			#move-route-preview-tooltip > * {
+				margin-bottom: 0.1em;
+			}
+			
+			#move-route-preview-tooltip > *:last-child {
+				margin-bottom: 0em;
+			}
+		</style>
+    </head>
+    <body style="height: 100%">
+		<div id="content">
+			<div id="map-list"></div>
+			<div id="map-preview">
+				<div id="checkbox-container">
+					<div class="flex">
+						<input type="checkbox" onchange="toggleImage(this, 0);" checked />
+						<span>Show Layer 1</span>
+					</div>
+					<div class="flex">
+						<input type="checkbox" onchange="toggleImage(this, 1);" checked />
+						<span>Show Layer 2</span>
+					</div>
+					<div class="flex">
+						<input type="checkbox" onchange="toggleImage(this, 2);" checked />
+						<span>Show Layer 3</span>
+					</div>
+					<div class="flex">
+						<input type="checkbox" onchange="toggleImage(this, 3);" checked />
+						<span>Show Layer 4</span>
+					</div>
+					<div class="flex">
+						<input type="checkbox" onchange="toggleImage(this, 4);" checked />
+						<span>Show Shadows</span>
+					</div>
+					<div class="flex">
+						<input type="checkbox" onchange="toggleImage(this, 5);" checked />
+						<span>Show Lower Events</span>
+					</div>
+					<div class="flex">
+						<input type="checkbox" onchange="toggleImage(this, 6);" checked />
+						<span>Show Normal Events</span>
+					</div>
+					<div class="flex">
+						<input type="checkbox" onchange="toggleImage(this, 7);" checked />
+						<span>Show Upper Events</span>
+					</div>
+					<div class="flex">
+						<input type="checkbox" onchange="toggleGrid(this);" />
+						<span>Show Grid</span>
+					</div>
+				</div>
+				<div id="display-container">
+					<span id="hover-display">Hover :<b></b></span>
+					<span id="selected-display">Selected :<b></b></span>
+				</div>
+				<div id="img-container"></div>
+				<div id="move-route-preview-tooltip" class="hidden"></div>
+				<div id="move-route-preview-speed-container" class="hidden"></div>
+				<div id="move-route-preview-size-container" class="hidden"></div>
+				<div id="move-route-preview-add-player-container" class="hidden"></div>
+			</div>
+			<div id="bottom-container">
+				<button onclick="ok()">OK</button>
+				<button onclick="quit();">Cancel</button>
+			</div>
+		</div>
+		<!--<div onclick="toggleLightMode()" id="lightMode">
+			<span>&#9790;</span>
+			<span>&#9728;</span>
+		</div>-->
+		<script type="text/javascript">
+			function main() {
+				document.title = "Drag_DevTools_MapLocationPicker";
+				loadDataMainWindow();
+				$.Drag.VisualEvent.setLightMode(document);
+
+				setup();
+				showMapList();
+			};
+
+			function loadDataMainWindow() {
+				$ = window.opener;
+			};
+
+			function setup() {
+				if (data.allowSearch === undefined)
+					data.allowSearch = true;
+				
+				if (!data.mapId)
+					data.allowMapChange = true;
+				
+				if (data.isMoveRoutePreview) {
+					const moveRoutePreviewSpeedContainer = document.querySelector('#move-route-preview-speed-container');
+					moveRoutePreviewSpeedContainer.innerHTML = `
+						<span>Preview Speed :</span>
+						${$.Drag.VisualEvent.getInputField({type: "integer", placeholder: "Play Speed", min: 1, max: 2000, value: 10, id: "move-route-preview-speed-input"})}
+					`;
+					moveRoutePreviewSpeedContainer.classList.remove('hidden');
+					
+					const moveRoutePreviewSizeContainer = document.querySelector('#move-route-preview-size-container');
+					moveRoutePreviewSizeContainer.innerHTML = `
+						<span>Preview Size :</span>
+						${$.Drag.VisualEvent.getInputField({type: "integer", placeholder: "Size", min: 1, max: 100, value: 75, id: "move-route-preview-size-input", onchange: "changePreviewSize(this);"})}
+					`;
+					moveRoutePreviewSizeContainer.classList.remove('hidden');
+					
+					const moveRoutePreviewAddPlayerContainer = document.querySelector('#move-route-preview-add-player-container');
+					moveRoutePreviewAddPlayerContainer.innerHTML = `
+						<button onclick="data._setPlayerPosition = true;">Set Player Position</button>
+					`;
+					moveRoutePreviewAddPlayerContainer.classList.remove('hidden');
+				}
+			};
+
+			function showMapList() {
+				// if (!data.allowMapChange === false)
+					// return;
+				
+				const container = document.querySelector('#map-list');
+				const maps = data.allowMapChange ? $.Drag.VisualEvent.getMapList() : data.mapId ? [`Map${String(data.mapId).padStart(3, "0")}.json`] : [$.Drag.VisualEvent.getMapList()[0]];
+				let count = 0;
+				let content = '';
+
+				if (data.allowSearch) {
+					content += `
+						<div class="search">
+							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="25px" height="25px">
+								<circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/>
+								<line x1="16.5" y1="16.5" x2="22" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+							</svg>
+							<input type="text" placeholder="Search..." onchange="searchMap(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+						</div>`;
+					count++;
+				}
+				
+				for (const [j, map] of maps.entries()) {
+					const mapId = parseInt(map.replace(/^\D+/g, ''));
+					if (!data.selectedFile)
+						data.selectedFile = data.mapId > 0 ? (mapId === data.mapId ? map : data.selectedFile) : map;
+					content += `
+						<div class="map ${data.selectedFile === map ? 'selected' : ''}" style="${count % 2 === 0 ? '' : 'background-color: #ffffff17;'}" data-mapId="${mapId}" data-src="${map}" onclick="selectMap(this)">
+							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--color)" width="25" height="25">
+								<path d="M6 2C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2H6ZM13 9V3.5L18.5 9H13Z"></path>
+							</svg>
+							<span>${map.replace('.json', '')}</span>
+						</div>
+					`;
+					count++;
+				}
+					
+
+				container.innerHTML = content;
+
+				if (maps.length > 0 && data.selectedFile)
+					showMapPreview();
+				else
+					hideFilePreview();
+			};
+
+			function searchMap(input) {
+				const search = input.value.toLowerCase().trim();
+				const container = input.parentElement.parentElement;
+				let count = 0;
+
+				for (const map of container.querySelectorAll('.map')) {
+					if (map.getAttribute('data-src').toLowerCase().includes(search)) {
+						map.classList.remove('hidden');
+						count++;
+					} else
+						map.classList.add('hidden');
+
+					map.style.backgroundColor = count % 2 === 0 ? '' : '#ffffff17';
+				}
+			};
+
+			function selectMap(element) {
+				const container = element.parentElement;
+				const src = element.getAttribute('data-src');
+
+				showMapPreview(src);
+
+				for (const selected of container.querySelectorAll('.map.selected'))
+					selected.classList.remove('selected');
+				element.classList.add('selected');
+				data.selectedFile = src;
+				data.mapId = parseInt(element.getAttribute('data-mapId'));
+			};
+
+			function showMapPreview(file) {
+				if (!file) {
+					file = document.querySelector('.map.selected');
+					file = file.getAttribute('data-src');
+				}
+				if (!file) {
+					file = document.querySelector('.map');
+					file = file.getAttribute('data-src');
+				}
+				if (!file)
+					return;
+				
+				const mapData = $.Drag.VisualEvent.getMapData(file, makeMapPreview);
+			};
+
+			function makeMapPreview(mapData) {
+				this._subSelectionReady = false;
+
+				const contentPreview = document.querySelector('#map-preview #img-container');
+				contentPreview.classList.remove('hidden');
+
+				const images = [];
+				for (let i = 0; i < 8; i++) {
+					let image = document.querySelector(`#map-image[data-layerId="${i}"]`);
+					if (!image) {
+						image = new Image();
+						image.id = "map-image";
+						image.onload = onImageLoad.bind(this, image);
+						image.setAttribute('data-layerId', i);
+						contentPreview.appendChild(image);
+					}
+					image.style.display = "none";
+					images.push(image);
+				}
+				
+				$.Drag.VisualEvent.getMapUrlData(mapData, images);
+
+				if (!document.querySelector('#sub-selection-container')) {
+					const subSelectionContainer = document.createElement('div');
+					subSelectionContainer.id = "sub-selection-container";
+					contentPreview.appendChild(subSelectionContainer);
+				}
+			};
+
+			function toggleImage(checkbox, id) {
+				const checked = checkbox.checked;
+				const image = Array.from(document.querySelectorAll('#img-container > img'))[id];
+				if (checked)
+					image.style.display = "initial";
+				else
+					image.style.display = "none";
+			};
+			
+			function toggleGrid(checkbox) {
+				if (checkbox.checked)
+					document.body.setAttribute('data-gridEnabled', 'true');
+				else
+					document.body.setAttribute('data-gridEnabled', 'false');
+			};
+
+			function hideFilePreview() {
+				const contentPreview = document.querySelector('#map-preview > div').classList.add("hidden");
+			};
+			
+			function onImageLoad(img, ev) {
+				if (!this._subSelectionReady)
+					setupSubSelection(img, ev);
+				
+				const imageLayerId = parseInt(img.getAttribute('data-layerId'));
+				const checkboxs = Array.from(document.querySelectorAll('#checkbox-container input'));
+				const checkbox = checkboxs[imageLayerId];
+				
+				if (checkbox && checkbox.checked)
+					img.style.display = "initial";
+			};
+
+			function setupSubSelection(element, ev) {
+				this._subSelectionReady = true;
+				const container = document.querySelector('#sub-selection-container');
+				const targetWidth = element.naturalWidth;
+				const targetHeight = element.naturalHeight;
+				const width = 100 / (element.naturalWidth / ($.$dataSystem.tileSize || 48));
+				const height = 100 / (element.naturalHeight / ($.$dataSystem.tileSize || 48));
+				data.selectedIndex = 0; //data.value[1] !== undefined ? parseInt(data.value[1]) : 0;
+
+				let tWidth = 0;
+				let tHeight = 0;
+				let content = '';
+				let count = 0;
+				let x = 0;
+				let y = 0;
+				while (tHeight < 100) {
+					while (tWidth < 100) {
+						content += `
+							<div class="sub-selection ${data.x === x && data.y === y ? 'selected initial' : ''}" onclick="selectSubSelection(this);" onmouseover="hoverSubSelection(this);" onmouseout="unhoverSubSelection(this);"
+								data-x="${x}" data-y="${y}" data-index="${count}"
+								style="left: ${tWidth}%; top: ${tHeight}%; width: ${width}%; height: ${height}%">
+								<div id="move-route-preview-container"></div>
+							</div>
+						`;
+						tWidth += width;
+						count++;
+						x++;
+					}
+					tWidth = 0;
+					x = 0;
+					y++;
+					tHeight += height;
+				}
+				container.innerHTML = content;
+				document.querySelector('#selected-display > b').innerHTML = ` x:${data.x} y:${data.y}`;
+				document.querySelector('#hover-display > b').innerHTML = ` x:${data.x} y:${data.y}`;
+				
+				if (data.isMoveRoutePreview)
+					startShowMoveRoutePreview();
+			};
+
+			function selectSubSelection(element) {
+				if (data._setPlayerPosition)
+					return addMoveRoutePreviewPlayer(element);
+				
+				for (const selected of document.querySelectorAll('.sub-selection.selected'))
+					selected.classList.remove('selected');
+				element.classList.add('selected');
+				data.selectedIndex = element.getAttribute('data-index');
+				data.x = parseInt(element.getAttribute('data-x'));
+				data.y = parseInt(element.getAttribute('data-y'));
+
+				document.querySelector('#selected-display > b').innerHTML = ` x:${data.x} y:${data.y}`;
+				
+				if (data.isMoveRoutePreview)
+					startShowMoveRoutePreview();
+			};
+
+			function hoverSubSelection(element) {
+				document.querySelector('#hover-display > b').innerHTML = ` x:${parseInt(element.getAttribute('data-x'))} y:${parseInt(element.getAttribute('data-y'))}`;
+				if (data.isMoveRoutePreview)
+					showMoveRouteSummary(element);
+			};
+			
+			function unhoverSubSelection(element) {
+				if (data.isMoveRoutePreview)
+					hideMoveRouteSummary(element);
+			};
+
+			document.querySelector('#img-container').addEventListener("mousedown", enableMapPreviewMovement);
+			document.querySelector('#img-container').addEventListener("contextmenu", (event) => {event.preventDefault(); return false;});
+			window.addEventListener("mouseup", disableMapPreviewMovement);
+			window.addEventListener("mousemove", moveMapPreview);
+
+			function enableMapPreviewMovement(event) {
+				if (event.which !== 3)
+					return true;
+				event.preventDefault();
+				
+				const imgContainer = document.querySelector('#img-container');
+				imgContainer.setAttribute('data-mousex', event.x);
+				imgContainer.setAttribute('data-mousey', event.y);
+
+				window._moveMapPreview = true;
+				return false;
+			};
+
+			function disableMapPreviewMovement(event) {
+				window._moveMapPreview = false;
+			};
+
+			function moveMapPreview(event) {
+				if (!window._moveMapPreview)
+					return false;
+
+				const imgContainer = document.querySelector('#img-container');
+				const scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scaleMapPreview'));
+
+				const mousex = parseInt(imgContainer.getAttribute('data-mousex')) || 0;
+				const mousey = parseInt(imgContainer.getAttribute('data-mousey')) || 0;
+
+				const xMapPreview = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--xMapPreview'));
+				const yMapPreview = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--yMapPreview'));
+
+				const scaleMult = 100 / (scale * 100);
+				const hMovement = (event.x - mousex) * scaleMult;
+				const vMovement = (event.y - mousey) * scaleMult;
+
+				document.querySelector(':root').style.setProperty('--xMapPreview', xMapPreview + hMovement + "px");
+				document.querySelector(':root').style.setProperty('--yMapPreview', yMapPreview + vMovement + "px");
+
+				imgContainer.setAttribute('data-mousex', event.x);
+				imgContainer.setAttribute('data-mousey', event.y);
+
+				event.stopPropagation();
+				event.preventDefault();
+				return false;
+			};
+
+			document.querySelector('#img-container').addEventListener("wheel", zoomMapPreview);
+
+			function zoomMapPreview(event) {
+				const minScale = 0.1;
+				const maxScale = 3;
+
+				const delta = Math.sign(event.deltaY) * -0.1;
+				const scaleMapPreview = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scaleMapPreview')) || 1;
+
+				const scale = parseFloat(Math.min(Math.max(scaleMapPreview + delta, minScale), maxScale).toFixed(1));
+				document.querySelector(':root').style.setProperty('--scaleMapPreview', scale);
+
+				event.stopPropagation();
+				event.preventDefault();
+				return false;
+			};
+
+			function ok() {
+				if (data && !data.isMoveRoutePreview && data.selectedFile !== undefined && data.input && data.input.getAttribute('data-value')) {
+					const includeMapId = data.input.getAttribute('data-value').split(',').length > 2;
+					const selectedMap = document.querySelector('.map.selected');
+					const mapId = selectedMap ? parseInt(selectedMap.getAttribute('data-mapId')) : data.mapId;
+					const literalMapId = includeMapId ? `Map${mapId.toString().padStart(3, '0')}` : "Current Map";
+					const x = data.x || 0;
+					const y = data.y || 0;
+					const value = `${literalMapId}: x: ${x}, y: ${y}`;
+					
+					data.input.setAttribute('data-value', `${includeMapId ? mapId + "," : ''}${x},${y}`);
+					data.input.setAttribute('data-x', x);
+					data.input.setAttribute('data-y', y);
+					if (includeMapId)
+						data.input.setAttribute('data-mapId', mapId);
+					
+					data.input.value = value;
+					data.input.dispatchEvent(new Event('change', {bubbles: true}));
+				}
+				window.close();
+			};
+
+			function quit() {
+				window.close();
+			};
+
+			main();
+			
+			//------------------------------------------------------------------------------------------------------
+			// MOVE ROUTE PREVIEW
+			// to do : add collisions if not through? repeat for nb iteration if repeat movements? 
+			
+			if (data.isMoveRoutePreview)
+				setInterval(updateMoveRoutePreview, 250);
+			
+			function updateMoveRoutePreview() {
+				if (!data.input)
+					return;
+				
+				if (data.input.getAttribute('data-needRefresh') === "true") {
+					data.input.setAttribute('data-needRefresh', "false");
+					data.list = JSON.parse(data.input.getAttribute('data-list'));
+					data.parameters = JSON.parse(data.input.getAttribute('data-parameters'));
+					startShowMoveRoutePreview();
+				}
+			};
+			
+			function addMoveRoutePreviewPlayer(tile) {
+				data._setPlayerPosition = false;
+				for (const playerPreview of document.querySelectorAll('#move-route-preview-player'))
+					playerPreview.remove();
+				
+				tile.innerHTML += `
+					<div id="move-route-preview-player">
+						${getMoveRouteSymbol("player")}
+					</div>
+				`;
+			};
+			
+			function getMoveRouteSymbol(type, addBlackBg = false) {
+				switch (type) {
+					case "start":
+						return `
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								${addBlackBg ? '<circle cx="12" cy="12" r="10" fill="black" stroke="black" stroke-width="2"></circle>' : ''}
+								<circle cx="12" cy="12" r="9" stroke-width="2" fill="none" stroke="#c50000" ></circle>
+								<circle cx="12" cy="12" r="4" fill="#c50000"></circle>
+							</svg>
+						`;
+						break;
+					case "step":
+						return `
+							<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" xml:space="preserve" width="24" height="24">
+								${addBlackBg ? '<circle cx="12" cy="12" r="10" fill="black" stroke="black" stroke-width="2"></circle>' : ''}
+								<circle  cx="12" cy="12" r="9" stroke-width="1.8" fill="none" stroke="dodgerblue"></circle>
+								<polyline stroke-width="1.8" fill="none" stroke="dodgerblue" points="16,9 19,12 16,15"></polyline>
+							</svg>
+						`;
+					case "jump":
+						return `
+							<svg width="24px" height="24px" viewBox="-8 -8 32 32" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 70%;">
+								${addBlackBg ? '<circle cx="12" cy="12" r="10" fill="black" stroke="black" stroke-width="2"></circle>' : ''}
+								<path d="M3 6L6 6L6 12L10 12L10 6L13 6V5L8 0L3 5L3 6Z" stroke="black" stroke-width="3"></path>
+								<path d="M3 6L6 6L6 12L10 12L10 6L13 6V5L8 0L3 5L3 6Z" fill="#d8d800"></path>
+								<path d="M2 16L14 16V14L2 14V16Z" stroke="black" stroke-width="3"></path>
+								<path d="M2 16L14 16V14L2 14V16Z" fill="#d8d800"></path>
+							</svg>
+						`;
+					case "jumpLand":
+						return `
+							<svg width="24px" height="24px" viewBox="-8 -8 32 32" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 70%;">
+								${addBlackBg ? '<circle cx="12" cy="12" r="10" fill="black" stroke="black" stroke-width="2"></circle>' : ''}
+								<path d="M3 10L6 10L6 4L10 4L10 10L13 10V11L8 16L3 11L3 10Z" stroke="black" stroke-width="3">
+								</path><path d="M3 10L6 10L6 4L10 4L10 10L13 10V11L8 16L3 11L3 10Z" fill="#d8d800"></path>
+								<path d="M2 0L14 1.90735e-06V2L2 2V0Z" stroke="black" stroke-width="3">
+								</path><path d="M2 0L14 1.90735e-06V2L2 2V0Z" fill="#d8d800"></path>
+							</svg>
+						`;
+					case "arrow": 
+						return `
+							<svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M6 12H18M18 12L13 7M18 12L13 17" stroke="black" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
+								<path d="M6 12H18M18 12L13 7M18 12L13 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+							</svg>
+						`;
+					case "end":
+						return `
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								${addBlackBg ? '<circle cx="12" cy="12" r="10" fill="black" stroke="black" stroke-width="2"></circle>' : ''}
+								<circle cx="12" cy="12" r="9" fill="none" stroke="limegreen" stroke-width="2"></circle>
+								<circle cx="12" cy="12" r="4" fill="limegreen"></circle>
+							</svg>
+						`;
+					case "player":
+						return `
+							<svg width="24px" height="24px" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">
+								<path d="M382 626q-91 19-148 56-67 44-67 101v13q0 18 12 30t30 12h582q18 0 30-12t12-30v-13q0-57-69-101-58-37-150-57-24-5-39-23.5T560 559v-5q0-21 17-33 40-28 65-81 25-51 25-102 0-45-22.5-83t-61-60.5T500 172t-83.5 22.5-61 60.5-22.5 83q0 50 24 100 24 52 62 81 16 11 16 31v10q0 24-15 42.5T382 626z" stroke="black" stroke-width="200"></path>
+								<path fill="white" d="M382 626q-91 19-148 56-67 44-67 101v13q0 18 12 30t30 12h582q18 0 30-12t12-30v-13q0-57-69-101-58-37-150-57-24-5-39-23.5T560 559v-5q0-21 17-33 40-28 65-81 25-51 25-102 0-45-22.5-83t-61-60.5T500 172t-83.5 22.5-61 60.5-22.5 83q0 50 24 100 24 52 62 81 16 11 16 31v10q0 24-15 42.5T382 626z"></path>
+							</svg>
+						`;
+					default:
+						return type;
+				};
+			};
+			
+			function getPreviewDelay() {
+				const speed = Math.min(Math.max(document.querySelector('#move-route-preview-speed-input').value || 10, 1), 2000);
+				return 2000 / speed;
+			};
+			
+			function changePreviewSize(input) {
+				const size = Math.min(Math.max(document.querySelector('#move-route-preview-size-input').value || 75, 0), 100);
+				document.querySelector(':root').style.setProperty('--moveRouteSymbolSize', `${size}%`);
+			};
+			
+			function addMoveRoutePreview(tile, type = "", delay = 0, style = "") {
+				if (!tile)
+					return;
+				
+				window._moveRouteTimeoutIds.push(setTimeout(() => {
+					tile.firstElementChild.innerHTML += `
+						<div id="move-route-preview-symbol" style="${style}">
+							<div id="preview-wrapper">
+								${type !== "" ? getMoveRouteSymbol(type, tile.firstElementChild.childElementCount === 0) : ""}
+							</div>
+						</div>
+					`;
+				}, delay));
+			};
+			
+			// ${tile.firstElementChild.childElementCount === 0 ? `
+							// <div id="move-route-preview-symbol" style="transform: translate(-50%, -50%) rotate(0deg);">
+								// <div id="preview-wrapper">
+									// <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" xml:space="preserve" width="24" height="24">
+										// <circle cx="12" cy="12" r="10" fill="black" stroke="black" stroke-width="2"></circle>
+									// </svg>
+								// </div>
+							// </div>
+						// ` : ''}
+			
+			function clearMoveRoutePreview() {
+				if (window._moveRouteTimeoutIds)
+					for (const timeoutId of window._moveRouteTimeoutIds)
+						clearTimeout(timeoutId);
+				window._moveRouteTimeoutIds = [];
+				
+				const subSelectionContainer = document.querySelector('#sub-selection-container');
+				for (const tile of subSelectionContainer.querySelectorAll('#move-route-preview-symbol'))
+					tile.remove();
+				
+				for (const tile of subSelectionContainer.querySelectorAll('.sub-selection[data-moveRoute]'))
+					tile.removeAttribute('data-moveRoute');
+			};
+			
+			function startShowMoveRoutePreview() {
+				clearMoveRoutePreview();
+				const coords = showStartMoveRoutePreview();
+				showNextMoveRoutePreview(0, coords);
+			};
+			
+			function showStartMoveRoutePreview() {
+				const subSelectionContainer = document.querySelector('#sub-selection-container');
+				const startingTile = subSelectionContainer.querySelector('.selected') || subSelectionContainer.firstElementChild;
+				
+				startingTile.setAttribute('data-moveRoute', `[1,-1] `);
+				addMoveRoutePreview(startingTile, "start");
+				addMoveRoutePreview(startingTile, "step", 0, getRotationFromFaceDir("down"));
+				
+				return [parseInt(startingTile.getAttribute('data-x')), parseInt(startingTile.getAttribute('data-y'))];
+			};
+			
+			function showEndMoveRoutePreview(coords, delay) {
+				const subSelectionContainer = document.querySelector('#sub-selection-container');
+				const endTile = subSelectionContainer.querySelector(`div[data-x="${coords[0]}"][data-y="${coords[1]}"]`);
+				if (!endTile)
+					return;
+				
+				const endTileDataMoveRoute = endTile.getAttribute('data-moveRoute') || "";
+				endTile.setAttribute('data-moveRoute', endTileDataMoveRoute + `[${data.list.length + 1},-2] `);
+				addMoveRoutePreview(endTile, "end", delay);
+				return;
+			};
+			
+			function showNextMoveRoutePreview(moveRouteId = 0, coords = [0, 0], faceDir = "down") {
+				const moveRoute = data.list[moveRouteId];
+				const delay = getPreviewDelay();
+				
+				//end
+				if (!moveRoute)
+					return showEndMoveRoutePreview(coords, delay);
+				
+				const subSelectionContainer = document.querySelector('#sub-selection-container');
+				const tile = subSelectionContainer.querySelector(`div[data-x="${coords[0]}"][data-y="${coords[1]}"]`);
+				if (tile)
+					tile.setAttribute('data-moveRoute', (tile.getAttribute('data-moveRoute') || "") + `[${moveRouteId + 2},${moveRoute}] `);
+				
+				let [dir, newFaceDir, skip] = getDirsFromMoveRoute(moveRoute, moveRouteId, faceDir, coords);
+				if (skip)
+					return showNextMoveRoutePreview(++moveRouteId, coords, newFaceDir);
+				
+				coords[0] = Math.max(coords[0] + dir[0], 0);
+				coords[1] = Math.max(coords[1] + dir[1], 0);
+				
+				// jump
+				if (moveRoute === 14) {
+					addMoveRoutePreview(tile, "jump", delay);
+					
+					const jumpLandTile = subSelectionContainer.querySelector(`div[data-x="${coords[0]}"][data-y="${coords[1]}"]`);
+					addMoveRoutePreview(jumpLandTile, "jumpLand", delay, "z-index: 10");
+					addMoveRoutePreview(jumpLandTile, "step", delay, getRotationFromFaceDir(newFaceDir));
+				} else if (dir.join(",") !== "0,0" || faceDir !== newFaceDir) {
+					//step
+					const destTile = subSelectionContainer.querySelector(`div[data-x="${coords[0]}"][data-y="${coords[1]}"]`);
+					addMoveRoutePreview(destTile, "step", delay, getRotationFromFaceDir(newFaceDir));
+					
+					// arrow
+					if (dir.join(",") !== "0,0") {
+						const style = getArrowStyleFromDir(dir);					
+						addMoveRoutePreview(tile, "arrow", delay, style);
+					}
+				}
+				
+				window._moveRouteTimeoutIds.push(setTimeout(() => showNextMoveRoutePreview(++moveRouteId, coords, newFaceDir), delay));
+			};
+			
+			function getDirsFromMoveRoute(moveRoute, moveRouteId, faceDir, coords) {
+				let dir = [0, 0];
+				let shouldContinue = false;
+				
+				switch (moveRoute) {
+					case 1: //move down
+						dir = [0, 1];
+						faceDir = "down";
+						break;
+					case 2: //move left
+						dir = [-1, 0];
+						faceDir = "left";
+						break;
+					case 3: //move right
+						dir = [1, 0];
+						faceDir = "right";
+						break;
+					case 4: //move up
+						dir = [0, -1];
+						faceDir = "up";
+						break;
+					case 5: //move lower left
+						dir = [-1, 1];
+						if (faceDir === "right")
+							faceDir = "left";
+						else if (faceDir === "up")
+							faceDir = "down";
+						break;
+					case 6: //move lower right
+						dir = [1, 1];
+						if (faceDir === "left")
+							faceDir = "right";
+						else if (faceDir === "up")
+							faceDir = "down";
+						break;
+					case 7: //move upper left
+						dir = [-1, -1];
+						if (faceDir === "right")
+							faceDir = "left";
+						else if (faceDir === "down")
+							faceDir = "up";
+						break;
+					case 8: //move upper right
+						dir = [1, -1];
+						if (faceDir === "left")
+							faceDir = "right";
+						else if (faceDir === "down")
+							faceDir = "up";
+						break;
+					case 9: //move at random
+						faceDir = getRandomFaceDir();
+						dir = getDirFromFaceDir(faceDir);
+						break;
+					case 10: {//move toward player
+						const playerPreviewTile = document.querySelector('#move-route-preview-player');
+						if (!playerPreviewTile) {
+							shouldContinue = true;
+							break;
+						}
+						
+						const dx = coords[0] - parseInt(playerPreviewTile.parentElement.getAttribute('data-x'));
+						const dy = coords[1] - parseInt(playerPreviewTile.parentElement.getAttribute('data-y'));
+						if (Math.abs(dx) > Math.abs(dy)) {
+							dir = dx > 0 ? [-1, 0] : [1, 0];
+							faceDir = getFaceDirFromDir(dir);
+						} else if (dy !== 0) {
+							dir = dy > 0 ? [0, -1] : [0, 1];
+							faceDir = getFaceDirFromDir(dir);
+						} else 
+							dir = [0, 0];
+						break;
+					} case 11: {//move away player
+						const playerPreviewTile = document.querySelector('#move-route-preview-player');
+						if (!playerPreviewTile) {
+							shouldContinue = true;
+							break;
+						}
+						
+						const dx = coords[0] - parseInt(playerPreviewTile.parentElement.getAttribute('data-x'));
+						const dy = coords[1] - parseInt(playerPreviewTile.parentElement.getAttribute('data-y'));
+						if (Math.abs(dx) > Math.abs(dy)) {
+							dir = dx > 0 ? [1, 0] : [-1, 0];
+							faceDir = getFaceDirFromDir(dir);
+						} else if (dy !== 0) {
+							dir = dy > 0 ? [0, 1] : [0, -1];
+							faceDir = getFaceDirFromDir(dir);
+						} else 
+							dir = [0, 0];
+						break;
+					} case 12: //move forward
+						dir = getDirFromFaceDir(faceDir);
+						break;
+					case 13: //move backward
+						dir = getDirFromFaceDir(faceDir);
+						dir[0] = Math.max(Math.min(dir[0] * -1, 1), -1);
+						dir[1] = Math.max(Math.min(dir[1] * -1, 1), -1);
+						break;
+					case 14: //jump
+						dir[0] = data.parameters[moveRouteId][0];
+						dir[1] = data.parameters[moveRouteId][1];
+						if (dir[1] !== 0)
+							faceDir = dir[1] > 0 ? "down" : "up";
+						else if (dir[0] !== 0)
+							faceDir = dir[0] > 0 ? "right" : "left";
+						break;
+					case 16: //turn down
+						faceDir = "down";
+						break;
+					case 17: //turn left
+						faceDir = "left";
+						break;
+					case 18: //turn right
+						faceDir = "right";
+						break;
+					case 19: //turn up
+						faceDir = "up";
+						break;
+					case 20: //turn 90 right
+						faceDir = getNextFaceDir(faceDir);
+						break;
+					case 21: //turn 90 left
+						faceDir = getPreviousFaceDir(faceDir);
+						break;
+					case 22: //turn 180
+						faceDir = getOppositeFaceDir(faceDir);
+						break;
+					case 23: //turn 90 left or 90 right
+						faceDir = Math.random() > 0.5 ? getNextFaceDir(faceDir) : getPreviousFaceDir(faceDir);
+						break;
+					case 24: //turn at random
+						faceDir = getRandomFaceDir();
+						break;
+					case 25: { //turn toward player
+						const playerPreviewTile = document.querySelector('#move-route-preview-player');
+						if (!playerPreviewTile) {
+							shouldContinue = true;
+							break;
+						}
+						
+						const dx = coords[0] - parseInt(playerPreviewTile.parentElement.getAttribute('data-x'));
+						const dy = coords[1] - parseInt(playerPreviewTile.parentElement.getAttribute('data-y'));
+						if (Math.abs(dx) > Math.abs(dy))
+							faceDir = dx > 0 ? "left" : "right";
+						else if (dy !== 0)
+							faceDir = dy > 0 ? "up" : "down";
+						break;
+					} case 26: { //turn away player
+						const playerPreviewTile = document.querySelector('#move-route-preview-player');
+						if (!playerPreviewTile) {
+							shouldContinue = true;
+							break;
+						}
+						
+						const dx = coords[0] - parseInt(playerPreviewTile.parentElement.getAttribute('data-x'));
+						const dy = coords[1] - parseInt(playerPreviewTile.parentElement.getAttribute('data-y'));
+						if (Math.abs(dx) > Math.abs(dy))
+							faceDir = dx > 0 ? "right" : "left";
+						else if (dy !== 0)
+							faceDir = dy > 0 ? "down" : "up";
+						break;
+					} default: 
+						shouldContinue = true;
+						break;
+				}
+				
+				return [dir, faceDir, shouldContinue];
+			};
+			
+			function getRandomFaceDir() {
+				return ["up", "down", "left", "right"][~~(4 * Math.random())];
+			};
+			
+			function getNextFaceDir(faceDir) {
+				const dirs = ["up", "right", "down", "left"];
+				const index = dirs.indexOf(faceDir) + 1;
+				return index > dirs.length - 1 ? "up" : dirs[index];
+			};
+			
+			function getPreviousFaceDir(faceDir) {
+				const dirs = ["up", "right", "down", "left"];
+				const index = dirs.indexOf(faceDir) - 1;
+				return index < 0 ? "left" : dirs[index];
+			};
+			
+			function getOppositeFaceDir(faceDir) {
+				switch (faceDir) {
+					case "down":
+						return "up";
+					case "left":
+						return "right";
+					case "right":
+						return "left";
+					case "up":
+						return "down";
+					default:
+						return "down";
+				}
+			};
+			
+			function getFaceDirFromDir(dir) {
+				switch (dir.join(",")) {
+					case "0,1":
+						return "down";
+					case "-1,0":
+						return "left";
+					case "1,0":
+						return "right";
+					case "0,-1":
+						return "up";
+					default:
+						return "down";
+				}
+			};
+			
+			function getDirFromFaceDir(faceDir) {
+				switch (faceDir) {
+					case "down":
+						return [0, 1];
+					case "left":
+						return [-1, 0];
+					case "right":
+						return [1, 0];
+					case "up":
+						return [0, -1];
+					default:
+						return [0, 1];
+				}
+			};
+			
+			function getArrowStyleFromDir(dir) {
+				switch (dir.join(",")) {
+					case "1,0":
+						return ["transform: translate(-50%, -50%); left: 106%;"];
+					case "0,1":
+						return ["transform: translate(-50%, -50%) rotate(90deg); top: 106%;"];
+					case "-1,0":
+						return ["transform: translate(-50%, -50%) rotate(180deg); left: -6%;"];
+					case "0,-1":
+						return ["transform: translate(-50%, -50%) rotate(270deg); top: -6%;"];
+					case "-1,1":
+						return ["transform: translate(-50%, -50%) rotate(135deg); left: -6%; top: 112.5%;"];
+					case "1,1":
+						return ["transform: translate(-50%, -50%) rotate(45deg); left: 112.5%; top: 112.5%;"];
+					case "-1,-1":
+						return ["transform: translate(-50%, -50%) rotate(225deg); left: -6%; top: -6%;"];
+					case "1,-1":
+						return ["transform: translate(-50%, -50%) rotate(315deg); left: 112.5%; top: -6%;"];	
+					default:
+						return [null, ""];
+				}
+			};
+			
+			function getRotationFromFaceDir(faceDir) {
+				switch (faceDir) {
+					case "down":
+						return "transform: translate(-50%, -50%) rotate(90deg);";
+					case "left":
+						return "transform: translate(-50%, -50%) rotate(180deg);";
+					case "right":
+						return "transform: translate(-50%, -50%);";
+					case "up":
+						return "transform: translate(-50%, -50%) rotate(270deg);";	
+					default:
+						return "transform: translate(-50%, -50%) rotate(90deg);";
+				}
+			};
+			
+			function hideMoveRouteSummary() {
+				const moveRoutePreviewTooltip = document.querySelector('#move-route-preview-tooltip');
+				moveRoutePreviewTooltip.classList.add('hidden');
+			};
+			
+			function showMoveRouteSummary(tile) {
+				hideMoveRouteSummary();				
+				if (!tile.hasAttribute('data-moveRoute'))
+					return;
+				
+				const dataMoveRoute = tile.getAttribute('data-moveRoute').trim().split(" ").map(s => JSON.parse(s));
+				if (dataMoveRoute.length === 0)
+					return;
+				
+				let html = "";
+				for (const data of dataMoveRoute) {
+					if (!data[1])
+						continue;
+					const index = data[0]; 
+					const name = data[1] === -1 ? "Start" : data[1] === - 2 ? "End" : $.Drag.VisualEvent.moveRouteNames[data[1]]
+					html += `<span>${index}: ${name}</span>`;
+				}
+					
+				const moveRoutePreviewTooltip = document.querySelector('#move-route-preview-tooltip');
+				moveRoutePreviewTooltip.innerHTML = html;
+				moveRoutePreviewTooltip.classList.remove('hidden');
+				
+				const mapPreview = document.querySelector('#map-preview');
+				const tileRect = tile.getBoundingClientRect();
+				const left = tileRect.x - mapPreview.getBoundingClientRect().x - (moveRoutePreviewTooltip.offsetWidth / 2) + (tileRect.width / 2);
+				const top = tileRect.y - moveRoutePreviewTooltip.offsetHeight;
+				moveRoutePreviewTooltip.style.left = `${left}px`;
+				moveRoutePreviewTooltip.style.top = `${top}px`;
+			};
+
+		</script>
+	</body>
+</html>

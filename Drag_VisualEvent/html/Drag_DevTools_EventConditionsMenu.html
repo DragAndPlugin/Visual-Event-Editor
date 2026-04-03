@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="viewport" content="user-scalable=no">
+        <link rel="icon" href="../../icon/icon.png" type="image/png">
+        <link rel="apple-touch-icon" href="../../icon/icon.png">
+		<link href="../css/Drag_DevTools.css" rel="stylesheet">
+		<style>
+			html {
+				overflow-y: auto;
+			}
+			
+			input[type="text"]:disabled, input[type="number"]:disabled, select:disabled {
+				text-indent: initial !important;
+			}
+			
+			.select {
+				margin: 0px !important;
+			}
+
+			#content {
+				height: 100%;
+				margin: 0;
+			}
+			
+			#pages-container {
+				display: flex;
+				justify-content: flex-start;
+				align-items: flex-end;
+				border-bottom: 0.0625em solid rebeccapurple;
+				padding: 1em 0 0 1em;
+			}
+			
+			#pages-container > * {
+				display: block;
+				padding: 0.5em 1.5em;
+				border-width: 0.125em;
+				border-color: rebeccapurple;
+				border-style: solid;
+				border-bottom-width: 0px;
+				cursor: pointer;
+				font-size: 0.9375em;
+				font-family: sans-serif;
+			}
+			
+			#pages-container > .selected-page {
+				border-color: #8070d4;
+				background-color: #ffffff17;
+				font-size: 1.125em;
+				border-bottom: 0.0625em solid var(--background-color);
+				margin-bottom: -0.0625em;
+			}
+			
+			#conditions-container {
+				margin-top: 1em;
+				margin-left: 1em;
+			}
+			
+			#conditions-container > * {
+				margin-top: 1em;
+			}
+			
+			#conditions-container > div {
+				display: flex;
+				justify-content: flex-start;
+				align-items: center;
+			}
+			
+			#conditions-container > div > * {
+				margin-left: 1em !important;
+			}
+			
+			#bottom-container {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				padding: 1em;
+				border-top: 0.125em solid rebeccapurple;
+				background-color: var(--background-color);
+				display: flex;
+				justify-content: flex-end;
+				z-index: 10;
+			}
+
+			#bottom-container > button {
+				cursor: pointer;
+				padding: 0.5em 2em;
+				margin-left: 1.5em;
+			}
+			
+			input[type="checkbox"] + span {
+				cursor: pointer;
+			}
+		</style>
+    </head>
+    <body style="height: 100%">
+		<div id="content">
+			<div id="pages-container"></div>
+			<div id="conditions-container"></div>
+			<div id="bottom-container">
+				<button onclick="ok()">OK</button>
+				<button onclick="quit();">Cancel</button>
+			</div>
+		</div>
+		<!--<div onclick="$.Drag.VisualEvent.toggleLightMode(document)" id="lightMode">
+			<span>&#9790;</span>
+			<span>&#9728;</span>
+		</div>-->
+		<script type="text/javascript">			
+			function main() {
+				document.title = "Drag_DevTools_EventConditions";
+				loadDataMainWindow();
+				$.Drag.VisualEvent.setLightMode(document);
+				
+				setup();
+			};
+			
+			function loadDataMainWindow() {
+				$ = window.opener;
+			};
+			
+			function setup() {
+				data._conditions = [];
+				data._pageCount = data.eventData.pages.length;
+				
+				for (let pageId = 0; pageId < data._pageCount; pageId++) {
+					// if (data.editor.hasEventPageConditionsInCache(data.editor.data.targetType, data.editor.data.mapTargetId, data.editor.data.targetId, pageId))
+						// data._conditions.push({...data.editor.getEventPageConditionsFromCache(data.editor.data.targetType, data.editor.data.mapTargetId, data.editor.data.targetId, pageId)});
+					if (data.eventData.pages[pageId])
+						data._conditions.push({...data.eventData.pages[pageId].conditions});
+					else 
+						data._conditions.push({});
+				}
+				
+				// data._conditions = data.eventData.pages.map(page => {return {...page.conditions}});
+				
+				showPagesList();
+				showPageConditions();
+			};
+			
+			function showPagesList() {
+				let html = "";
+				// for (const [i, page] of data.eventData.pages.entries())
+				for (let pageId = 0; pageId < data._pageCount; pageId++)
+					html += `<span ${data.pageId === pageId ? 'class="selected-page"' : ''} data-pageId="${pageId}" onclick="selectPage(this);">Page ${pageId + 1}</span>`;
+				const pageContainer = document.querySelector('#pages-container');
+				pageContainer.innerHTML = html;
+			};
+			
+			function showPageConditions() {
+				switch (data.eventType) {
+					case "Map Event":
+						showMapEventConditions();
+						break;
+					case "Troop Event":
+						showTroopEventConditions();
+						break;
+					default:
+						const conditionsContainer = document.querySelector('#conditions-container');
+						conditionsContainer.innerHTML = `Error: unrecognized event type ${data.eventType}.`;
+				}
+			};
+			
+			function showMapEventConditions() {
+				const conditionsData = data._conditions[data.pageId];
+				
+				const switch1Checkbox = $.Drag.VisualEvent.getInputParameters("checkbox", {id: "switch1-valid-condition", value: conditionsData.switch1Valid, name: "Switch", onchange: "toggleInput(this);"});
+				const switch1Input = $.Drag.VisualEvent.getInputParameters("switch", {id: "switch1-value-condition", value: conditionsData.switch1Id, disabled: !conditionsData.switch1Valid});
+				const switch2Checkbox = $.Drag.VisualEvent.getInputParameters("checkbox", {id: "switch2-valid-condition", value: conditionsData.switch2Valid, name: "Switch", onchange: "toggleInput(this);"});
+				const switch2Input = $.Drag.VisualEvent.getInputParameters("switch", {id: "switch2-value-condition", value: conditionsData.switch2Id, disabled: !conditionsData.switch2Valid});
+				
+				const variableCheckbox = $.Drag.VisualEvent.getInputParameters("checkbox", {id: "variable-valid-condition", value: conditionsData.variableValid, name: "Variable", onchange: "toggleInput(this);"});
+				const variableInput = $.Drag.VisualEvent.getInputParameters("variable", {id: "variable-id-condition", value: conditionsData.variableId, disabled: !conditionsData.variableValid});
+				const variableValueInput = {type: "integer", id: "variable-value-condition", value: conditionsData.variableValue, name: "", disabled: !conditionsData.variableValid};
+				
+				const selfSwitchCheckbox = $.Drag.VisualEvent.getInputParameters("checkbox", {id: "selfswitch-valid-condition", value: conditionsData.selfSwitchValid, name: "Self Switch", onchange: "toggleInput(this);"});
+				const selfSwitchInput = $.Drag.VisualEvent.getInputParameters("selectSelfSwitch", {id: "selfswitch-value-condition", value: conditionsData.selfSwitchCh, disabled: !conditionsData.selfSwitchValid});
+				
+				const itemCheckbox = $.Drag.VisualEvent.getInputParameters("checkbox", {id: "item-valid-condition", value: conditionsData.itemValid, name: "Has Item", onchange: "toggleInput(this);"});
+				const itemInput = $.Drag.VisualEvent.getInputParameters("item", {id: "item-value-condition", value: conditionsData.itemId, disabled: !conditionsData.itemValid});
+				
+				const actorCheckbox = $.Drag.VisualEvent.getInputParameters("checkbox", {id: "actor-valid-condition", value: conditionsData.actorValid, name: "Has Actor", onchange: "toggleInput(this);"});
+				const actorInput = $.Drag.VisualEvent.getInputParameters("actor", {id: "actor-value-condition", value: conditionsData.actorId, disabled: !conditionsData.actorValid});
+				
+				const conditionsContainer = document.querySelector('#conditions-container');
+				conditionsContainer.innerHTML = `
+					<span>Map Event Conditions :</span>
+					<div id="switch1-condition-container">
+						${$.Drag.VisualEvent.getInputField(switch1Checkbox)}
+						${$.Drag.VisualEvent.getInputField(switch1Input)}
+						<span>is ON</span>
+					</div>
+					<div id="switch2-condition-container">
+						${$.Drag.VisualEvent.getInputField(switch2Checkbox)}
+						${$.Drag.VisualEvent.getInputField(switch2Input)}
+						<span>is ON</span>
+					</div>
+					<div id="variable-condition-container">
+						${$.Drag.VisualEvent.getInputField(variableCheckbox)}
+						${$.Drag.VisualEvent.getInputField(variableInput)}
+						<span>is >=</span>
+						${$.Drag.VisualEvent.getInputField(variableValueInput)}
+					</div>
+					<div id="selfswitch-condition-container">
+						${$.Drag.VisualEvent.getInputField(selfSwitchCheckbox)}
+						${$.Drag.VisualEvent.getInputField(selfSwitchInput)}
+						<span>is ON</span>
+					</div>
+					<div id="item-condition-container">
+						${$.Drag.VisualEvent.getInputField(itemCheckbox)}
+						${$.Drag.VisualEvent.getInputField(itemInput)}
+						<span>in party inventory</span>
+					</div>
+					<div id="actor-condition-container">
+						${$.Drag.VisualEvent.getInputField(actorCheckbox)}
+						${$.Drag.VisualEvent.getInputField(actorInput)}
+						<span>in party</span>
+					</div>
+				`;
+			};
+			
+			function showTroopEventConditions() {
+				const conditionsData = data._conditions[data.pageId];
+				
+				const turnendCheckbox = $.Drag.VisualEvent.getInputParameters("checkbox", {id: "turnend-valid-condition", value: conditionsData.turnEnding, name: "Turn End", onchange: "toggleInput(this);"});
+				
+				const turnCheckbox = $.Drag.VisualEvent.getInputParameters("checkbox", {id: "turn-valid-condition", value: conditionsData.turnValid, name: "Turn", onchange: "toggleInput(this);"});
+				const turnaInput = $.Drag.VisualEvent.getInputParameters("integer", {id: "turna-value-condition", value: conditionsData.turnA, disabled: !conditionsData.turnValid});
+				const turnbInput = $.Drag.VisualEvent.getInputParameters("integer", {id: "turnb-value-condition", value: conditionsData.turnB, disabled: !conditionsData.turnValid});
+				
+				const enemyhpCheckbox = $.Drag.VisualEvent.getInputParameters("checkbox", {id: "enemyhp-valid-condition", value: conditionsData.enemyValid, name: "Enemy HP", onchange: "toggleInput(this);"});
+				const membersName = data.eventData.members.map((member, index) => `#${index + 1} ${$.$dataEnemies[member.enemyId].name}`);
+				const enemyOptions = new Array(8).fill(null).map((item, index) => membersName[index] ? membersName[index] : `#${index + 1} ?`);
+				const enemyInput = $.Drag.VisualEvent.getInputParameters("select", {id: "enemy-id-condition", options: enemyOptions, value: conditionsData.enemyIndex, disabled: !conditionsData.enemyValid});
+				const enemyValue = $.Drag.VisualEvent.getInputParameters("percentage", {id: "enemy-value-condition", value: conditionsData.enemyHp, disabled: !conditionsData.enemyValid});
+				
+				const actorhpCheckbox = $.Drag.VisualEvent.getInputParameters("checkbox", {id: "actorhp-valid-condition", value: conditionsData.actorValid, name: "Actor HP", onchange: "toggleInput(this);"});
+				const actorInput = $.Drag.VisualEvent.getInputParameters("actor", {id: "actor-id-condition", value: conditionsData.actorId, disabled: !conditionsData.actorValid});
+				const actorValue = $.Drag.VisualEvent.getInputParameters("percentage", {id: "actor-value-condition", value: conditionsData.actorHp, disabled: !conditionsData.actorValid});
+				
+				const switchCheckbox = $.Drag.VisualEvent.getInputParameters("checkbox", {id: "switch-valid-condition", value: conditionsData.switchValid, name: "Switch", onchange: "toggleInput(this);"});
+				const switchInput = $.Drag.VisualEvent.getInputParameters("switch", {id: "switch-value-condition", value: conditionsData.switchId, disabled: !conditionsData.switchValid});
+				
+				const conditionsContainer = document.querySelector('#conditions-container');
+				conditionsContainer.innerHTML = `
+					<span>Troop Event Conditions :</span>
+					<div id="turnend-condition-container">
+						${$.Drag.VisualEvent.getInputField(turnendCheckbox)}
+					</div>
+					<div id="turn-condition-container">
+						${$.Drag.VisualEvent.getInputField(turnCheckbox)}
+						${$.Drag.VisualEvent.getInputField(turnaInput)}
+						<span>+</span>
+						${$.Drag.VisualEvent.getInputField(turnbInput)}
+						<span>* X</span>
+					</div>
+					<div id="enemyhp-condition-container">
+						${$.Drag.VisualEvent.getInputField(enemyhpCheckbox)}
+						${$.Drag.VisualEvent.getInputField(enemyInput)}
+						<span>is <=</span>
+						${$.Drag.VisualEvent.getInputField(enemyValue)}
+					</div>
+					<div id="actorhp-condition-container">
+						${$.Drag.VisualEvent.getInputField(actorhpCheckbox)}
+						${$.Drag.VisualEvent.getInputField(actorInput)}
+						<span>is <=</span>
+						${$.Drag.VisualEvent.getInputField(actorValue)}
+					</div>
+					<div id="switch-condition-container">
+						${$.Drag.VisualEvent.getInputField(switchCheckbox)}
+						${$.Drag.VisualEvent.getInputField(switchInput)}
+						<span>is ON</span>
+					</div>
+				`;
+			};
+			
+			function toggleInput(checkbox) {
+				const container = checkbox.parentElement.parentElement;
+				for (const input of container.querySelectorAll('input:not([type="checkbox"])'))
+					input.disabled = !checkbox.checked;
+				for (const select of container.querySelectorAll('select'))
+					select.disabled = !checkbox.checked;
+				for (const textarea of container.querySelectorAll('textarea'))
+					textarea.disabled = !checkbox.checked;
+			};
+			
+			function selectPage(element) {	
+				savePageConditions();
+				
+				for (const selected of document.querySelectorAll('.selected-page'))
+					selected.classList.remove('selected-page');
+				element.classList.add('selected-page');
+				
+				const pageId = parseInt(element.getAttribute('data-pageId'));
+				data.pageId = pageId;
+				showPageConditions();
+			};
+			
+			function savePageConditions() {
+				const val = gatherConditions();
+				data._conditions[data.pageId] = val;
+			};
+			
+			function gatherConditions() {
+				switch (data.eventType) {
+					case "Map Event":
+						return gatherMapEventConditions();
+						break;
+					case "Troop Event":
+						return gatherTroopEventConditions();
+						break;
+					default:
+						console.error(`Unrecognized event type ${data.eventType}`);
+				}
+			};
+			
+			function gatherMapEventConditions() {
+				const conditionsContainer = document.querySelector('#conditions-container');
+				return {
+					actorId: Number(conditionsContainer.querySelector('#actor-condition-container #actor-value-condition').getAttribute('data-value')) || 0,
+					actorValid: Boolean(conditionsContainer.querySelector('#actor-condition-container #actor-valid-condition').checked),
+					itemId: Number(conditionsContainer.querySelector('#item-condition-container #item-value-condition').getAttribute('data-value')) || 0,
+					itemValid: Boolean(conditionsContainer.querySelector('#item-condition-container #item-valid-condition').checked),
+					selfSwitchCh: conditionsContainer.querySelector('#selfswitch-condition-container #selfswitch-value-condition').value || "A",
+					selfSwitchValid: Boolean(conditionsContainer.querySelector('#selfswitch-condition-container #selfswitch-valid-condition').checked),
+					switch1Id: Number(conditionsContainer.querySelector('#switch1-condition-container #switch1-value-condition').getAttribute('data-value')) || 0,
+					switch1Valid: Boolean(conditionsContainer.querySelector('#switch1-condition-container #switch1-valid-condition').checked),
+					switch2Id: Number(conditionsContainer.querySelector('#switch2-condition-container #switch2-value-condition').getAttribute('data-value')) || 0,
+					switch2Valid: Boolean(conditionsContainer.querySelector('#switch2-condition-container #switch2-valid-condition').checked),
+					variableId: Number(conditionsContainer.querySelector('#variable-condition-container #variable-id-condition').getAttribute('data-value')) || 0,
+					variableValid: Boolean(conditionsContainer.querySelector('#variable-condition-container #variable-valid-condition').checked),
+					variableValue: Number(conditionsContainer.querySelector('#variable-condition-container #variable-value-condition').value) || 0,
+				};
+			};
+			
+			function gatherTroopEventConditions() {
+				const conditionsContainer = document.querySelector('#conditions-container');
+				return {
+					actorHp: Number(conditionsContainer.querySelector('#actorhp-condition-container #actor-value-condition').value) || 0,
+					actorId: Number(conditionsContainer.querySelector('#actorhp-condition-container #actor-id-condition').getAttribute('data-value')) || 0,
+					actorValid: Boolean(conditionsContainer.querySelector('#actorhp-condition-container #actorhp-valid-condition').checked),
+					enemyHp: Number(conditionsContainer.querySelector('#enemyhp-condition-container #enemy-value-condition').value) || 0,
+					enemyIndex: Number(conditionsContainer.querySelector('#enemyhp-condition-container #enemy-id-condition').value) || 0,
+					enemyValid: Boolean(conditionsContainer.querySelector('#enemyhp-condition-container #enemyhp-valid-condition').checked),
+					switchId: Number(conditionsContainer.querySelector('#switch-condition-container #switch-value-condition').getAttribute('data-value')) || 0,
+					switchValid: Boolean(conditionsContainer.querySelector('#switch-condition-container #switch-valid-condition').checked),
+					turnA: Number(conditionsContainer.querySelector('#turn-condition-container #turna-value-condition').value) || 0,
+					turnB: Number(conditionsContainer.querySelector('#turn-condition-container #turnb-value-condition').value) || 0,
+					turnEnding: Boolean(conditionsContainer.querySelector('#turnend-condition-container #turnend-valid-condition').checked),
+					turnValid: Boolean(conditionsContainer.querySelector('#turn-condition-container #turn-valid-condition').checked),
+				};
+			};
+
+			function ok() {
+				savePageConditions();
+				data.editor.saveEventPagesConditionsInCache(data._conditions, data.input);
+				// for (const [pageId, page] of data.eventData.pages.entries()) 
+					// page.conditions = data._conditions[pageId];
+				data.input.dispatchEvent(new Event('change', {bubbles: true}));
+				quit();
+			};
+
+			function quit() {
+				window.close();
+			};
+
+			main();
+
+		</script>
+	</body>
+</html>

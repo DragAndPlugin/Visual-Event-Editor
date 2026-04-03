@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="viewport" content="user-scalable=no">
+        <link rel="icon" href="../../icon/icon.png" type="image/png">
+        <link rel="apple-touch-icon" href="../../icon/icon.png">
+		<link href="../css/Drag_DevTools.css" rel="stylesheet">
+		<style>
+			html {
+				overflow-y: auto;
+			}
+
+			#content {
+				height: 100%;
+				margin: 0;
+				overflow: hidden;
+			}
+			
+			#list-panel {
+				box-sizing: border-box;
+				border-right: 0.125em solid rebeccapurple;
+				display: flex;
+				flex-direction: column;
+				float: left;
+				width: 40%;
+				height: calc(100% - 3.125em);
+			}
+			
+			#list-panel > * {
+				margin-bottom: 1em;
+			}
+			
+			#list-panel > h3 {
+				background: rgb(0 0 0 / 0.3);
+				margin: 0;
+				border-bottom: 0.0625em solid rebeccapurple;
+				text-transform: capitalize;
+				text-align: center;
+				font-size: 1.75em;
+				padding: 0.75em 1.5em;
+			}
+			
+			.search {
+				padding: 0.5em;
+				cursor: pointer;
+				border: 0.125em solid transparent;
+				display: flex;
+				align-items: center;
+				justify-content: flex-start;
+			}
+			
+			.search > * {
+				margin-right: 0.25em;
+			}
+			
+			.search > *:last-child {
+				margin-right: 0em;
+			}
+			
+			.search > svg {
+				min-width: 1.5625em;
+				min-height: 1.5625em;
+				width: 1.5em;
+				height: 1.5em;
+			}
+			
+			.selected {
+				border: 0.0625em solid white !important;
+			}
+			
+			#item-list {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				font-size: 1em;
+				overflow-y: auto;
+				flex-grow: 1;
+				flex-shrink: 1;
+			}
+			
+			#item-list > * {
+				padding: 0.625em 0px;
+				width: 100%;
+				text-align: center;
+				box-sizing: border-box;
+				cursor: pointer;
+				border: 0.0625em solid transparent;
+			}
+			
+			#item-list > *:nth-child(odd) {
+				background: rgb(0 0 0 / .15);
+			}
+			
+			#item-list > *:nth-child(even) {
+				background: rgb(255 255 255 / 0.15);
+			}
+			
+			#item-list > *:hover {
+				border: 0.0625em solid white;
+			}
+			
+			#item-maximum {
+				margin-bottom: 0.3125em;
+				margin-left: 0.3125em;
+			}
+			
+			#item-maximum > div {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-evenly;
+			}
+			
+			#rename-panel {
+				text-align: center;
+				position: relative;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				overflow-y: auto;
+				float: left;
+				width: 60%;
+				height: calc(100% - 3.125em);
+			}
+			
+			#rename-panel > * {
+				display: flex;
+				width: 100%;
+				align-items: center;
+				justify-content: space-evenly;
+				padding: 0.125em 0px;
+				box-sizing: border-box;
+				height: calc(5%);
+			}
+			
+			#rename-panel > *:nth-child(odd) {
+				background: rgb(0 0 0 / .15);
+			}
+			
+			#rename-panel > *:nth-child(even) {
+				background: rgb(255 255 255 / 0.05);
+			}
+			
+			#rename-panel label {
+				font-size: 1em;
+			}
+			
+			#rename-panel input {
+				width: 60%;
+				font-size: 0.875em;
+			}
+			
+			#bottom-container {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				padding: 0.5em 1em;
+				border-top: 0.125em solid rebeccapurple;
+				background-color: var(--background-color);
+				display: flex;
+				justify-content: flex-end;
+				height: 3.125em;
+				box-sizing: border-box;
+			}
+			
+			#bottom-container > * {
+				margin-right: 1.5em;
+			}
+			
+			#bottom-container > *:last-child {
+				margin-right: 0em;
+			}
+
+			#bottom-container > button {
+				cursor: pointer;
+				padding: 0.5em 2em;
+			}
+		</style>
+    </head>
+    <body style="height: 100%">
+		<div id="content">
+			<div id="list-panel">
+				<h3></h3>
+				<div class="search">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="25px" height="25px">
+						<circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/>
+						<line x1="16.5" y1="16.5" x2="22" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+					</svg>
+					<input type="text" placeholder="Search by id/name..." onchange="searchItems(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</div>
+				<div id="item-list"></div>
+				<div id="item-maximum">
+					<label>Change Maximum: </label>
+					<div>
+						<div class="relative">
+							<input type="number" value="0" max="9999" min="0" onchange="$.Drag.VisualEvent.sanitizeInput(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();" 
+								id="item-maximum-input" data-isinputinteger="true" data-inputtype="integer" data-defaultvalue="">
+						</div>
+						<button onclick="changeMaximumItems();" style="padding: 0.5em 2em;">Ok</button>
+					</div>
+				</div>
+			</div>
+			<div id="rename-panel"></div>
+			<div id="bottom-container">
+				<button onclick="ok()">OK</button>
+				<button onclick="quit();">Cancel</button>
+			</div>
+		</div>
+		<script type="text/javascript">
+			function main() {
+				document.title = `Drag_DevTools_${data.type === "switch" ? "Switches" : "Variables"}Menu`;
+				loadDataMainWindow();
+				$.Drag.VisualEvent.setLightMode(document);
+				document.querySelector('h3').innerHTML = data.type === "switch" ? "Rename Switches" : "Rename Variables";
+				
+				data._id = $.Drag.VisualEvent.getInputValue(data.input);
+				$.Drag.VisualEvent.loadDataFile("System", onDataLoaded);
+			};
+
+			function loadDataMainWindow() {
+				$ = window.opener;
+			};
+			
+			function onDataLoaded(data) {
+				window.data.system = data;
+				
+				makeList();
+				
+				const defaultSelected = document.querySelector('[data-_defaultSelected="true"]')
+				if (defaultSelected)
+					defaultSelected.dispatchEvent(new Event('click', {bubbles: true}));
+			};
+			
+			function makeList() {
+				const list = document.querySelector('#item-list');
+				list.innerHTML = '';
+				
+				const items = data.type === "switch" ? window.data.system.switches : window.data.system.variables;
+				for (let i = 0; i < items.length - 1; i += 20) {
+					const max = Math.min(items.length - 1, i + 20);
+					const min = i + 1;
+					
+					const item = document.createElement('div');
+					item.innerHTML = `[ ${String(min).padStart(4, '0')} - ${String(max).padStart(4, '0')} ]`;
+					item.setAttribute('data-min', min);
+					item.setAttribute('data-max', max);
+					item.addEventListener('click', showItemRenameInputs);
+					
+					if (min <= data._id && data._id <= max)
+						item.setAttribute('data-_defaultSelected', 'true');
+					
+					list.appendChild(item);
+				}
+				
+				document.querySelector('#item-maximum-input').value = items.length - 1;
+				startUpdating();
+			};
+			
+			function startUpdating() {
+				setInterval(update, 10);
+			};
+			
+			function update() {
+				const renamePanelChilds = Array.from(document.querySelectorAll('#rename-panel > div'));
+				for (child of renamePanelChilds) {
+					const id = parseInt(child.getAttribute('data-id'));
+					const label = child.querySelector('label');
+					const currentValue = getItemValue(id);
+					const newHtml = `${String(id).padStart(4, '0')} (${currentValue}):`;
+					if (label.innerHTML !== newHtml);
+						label.innerHTML = newHtml;
+				}
+			};
+			
+			function changeMaximumItems() {
+				const input = document.querySelector('#item-maximum-input');
+				const maximum = parseInt(input.value);
+				let items = data.type === "switch" ? window.data.system.switches : window.data.system.variables;
+				
+				if (maximum < items.length)
+					items.length = maximum + 1;
+				else
+					if (data.type === "switch")
+						window.data.system.switches = items.concat(Array(maximum - items.length + 1).fill(""));
+					else
+						window.data.system.variables = items.concat(Array(maximum - items.length + 1).fill(""));
+				
+				makeList();
+				showItemRenameInputs();
+			};
+			
+			function showItemRenameInputs(event) {
+				const renamePanel = document.querySelector('#rename-panel');
+				renamePanel.innerHTML = "";
+				
+				let target = this;
+				if (!event)
+					target = document.querySelector('.selected');
+				
+				if (!target)
+					return;
+				
+				const items = data.type === "switch" ? window.data.system.switches : window.data.system.variables;
+				const min = parseInt(target.getAttribute('data-min'));
+				const max = parseInt(target.getAttribute('data-max'));
+				
+				for (const selected of document.querySelectorAll('.selected'))
+					selected.classList.remove('selected');
+				target.classList.add('selected');
+				
+				for (let i = min; i <= max; i++) {
+					const item = document.createElement('div');
+					const currentValue = getItemValue(i);
+					item.innerHTML = `<label>${String(i).padStart(4, '0')} (${currentValue}):</label>` + $.Drag.VisualEvent.getInputField({type: "string", value: items[i], default: "", placeholder: "Enter a name...", data: `data-id="${i}"`, onchange: "updateItemName(this);"});
+					item.setAttribute('data-id', i);
+					
+					renamePanel.appendChild(item);
+				}
+			};
+			
+			function getItemValue(id) {
+				if (data.type === "switch")
+					return $.$gameSwitches.value(id) ? "<span class='green'>ON</span>" : "<span class='red'>OFF</span>";
+				else
+					return $.$gameVariables.value(id);
+			};
+			
+			function updateItemName(input) {
+				const name = input.value;
+				const id = parseInt(input.getAttribute('data-id'));
+				if (data.type === "switch")
+					window.data.system.switches[id] = name;
+				else 
+					window.data.system.variables[id] = name;
+			};
+			
+			function searchItems(input) {
+				const filter = input.value;
+				const idFilter = !isNaN(parseInt(input.value)) ? parseInt(input.value) : -1;
+				const items = data.type === "switch" ? window.data.system.switches : window.data.system.variables;
+				const filtered = items.map((item, index) => item.includes(filter) || index === idFilter ? index : 0).filter(item => item);
+				
+				for (const listItem of document.querySelectorAll('#item-list > *')) {
+					const min = parseInt(listItem.getAttribute('data-min'));
+					const max = parseInt(listItem.getAttribute('data-max'));
+					
+					if (filtered.find(item => min <= item && item <= max))
+						listItem.classList.remove('hidden');
+					else
+						listItem.classList.add('hidden');
+				}
+			};
+
+			function ok() {
+				$.Drag.VisualEvent.requestBackup('data/', 'System', 'json', "", "", save);
+			};
+			
+			function save() {
+				$.Drag.VisualEvent.writeJSON(`data/System.json`, data.system);
+				const editor = $.Drag.VisualEvent.getEditor();
+				if (editor) {
+					editor.data.$dataSystem.switches = $.Drag.VisualEvent.deepCopyJSON(window.data.system.switches);
+					editor.data.$dataSystem.variables = $.Drag.VisualEvent.deepCopyJSON(window.data.system.variables);
+					
+					for (const input of editor.document.querySelectorAll('[data-inputType="switch"]'))
+						$.Drag.VisualEvent.refreshDatabaseInputOptions(input);
+					for (const input of editor.document.querySelectorAll('[data-inputType="variable"]'))
+						$.Drag.VisualEvent.refreshDatabaseInputOptions(input);
+				}
+				quit();
+			};
+
+			function quit() {
+				window.close();
+			};
+
+			main();
+
+		</script>
+	</body>
+</html>

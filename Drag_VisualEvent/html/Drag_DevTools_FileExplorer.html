@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="viewport" content="user-scalable=no">
+        <link rel="icon" href="../../icon/icon.png" type="image/png">
+        <link rel="apple-touch-icon" href="../../icon/icon.png">
+		<link href="../css/Drag_DevTools.css" rel="stylesheet">
+		<style>
+			#content {
+				display: grid; 
+				height: 100%; 
+				margin: 0;
+			}
+			
+			#file-folder-container {
+				box-sizing: border-box;
+				border-right: 0.125em solid rebeccapurple;
+				overflow-y: auto;
+				padding-bottom: 3.125em;
+				display: grid;
+			}
+			
+			#folder-content {
+				overflow: auto;
+				border-right: 0.0625em solid rebeccapurple;
+				height: 100%;
+			}
+			
+			#content-preview {
+				text-align: center;
+			}
+			
+			#content-preview > div > img {
+				height: auto;
+				max-width: 100%;
+			}
+			
+			#content-preview > div > img + img {
+				position: absolute;
+				top: 0;
+				left: 0;
+			}
+			
+			.file, .folder, .search {
+				padding: 0.5em;
+				cursor: pointer;
+				border: 0.125em solid transparent;
+				display: flex;
+				align-items: center;
+				justify-content: flex-start;
+			}
+			
+			.file > *, .folder > *, .search > * {
+				margin-right: 0.75em;
+			}
+			
+			.file > *:last-child, .folder > *:last-child, .search > *:last-child {
+				margin-right: 0em;
+			}
+			
+			.selected {
+				border: 0.125em solid white !important;
+			}
+			
+			.file:hover, .folder:hover, .sub-selection:hover {
+				border: 0.125em solid white !important;
+			}
+			
+			#bottom-container {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				padding: 0.5em;
+				max-height: 3.125em;
+				border-top: 0.125em solid rebeccapurple;
+				background-color: var(--background-color);
+				display: flex;
+				justify-content: flex-end;
+				box-sizing: border-box;
+			}
+			
+			#bottom-container > * {
+				margin-right: 1.5em;
+			}
+			
+			#bottom-container > *:last-child {
+				margin-right: 0em;
+			}
+			
+			#bottom-container > button {
+				cursor: pointer;
+				padding: 0.5em 2em;
+			}
+		</style>
+    </head>
+    <body style="height: 100%">
+		<div id="content">
+			<div id="file-folder-container"></div>
+			<div id="content-preview">
+				<div style="position: relative; display: inline-block; line-height: 0;"></div>
+			</div>
+			<div id="bottom-container">
+				<button onclick="ok()">OK</button>
+				<button onclick="quit();">Cancel</button>
+			</div>
+		</div>
+		<script type="text/javascript">
+			function main() {
+				document.title = "Drag_DevTools_FileExplorer";
+				loadDataMainWindow();
+				$.Drag.VisualEvent.setLightMode(document);
+				
+				setup();
+				showDirectoryContent();
+			};
+			
+			function loadDataMainWindow() {
+				$ = window.opener;
+			};
+			
+			function setup() {
+				if (!data.src) 
+					data.src = [];
+				
+				if (!Array.isArray(data.src))
+					data.src = data.src.split("/");
+				else 
+					data.src = data.src.map(src => src.split("/"));
+					
+				if (!data.exitFolder)
+					data.restrictedFolder = getFolder();
+				
+				if (data.allowSearch === undefined)
+					data.allowSearch = true;
+				
+				if (hasSubSelection())
+					data.value = data.value.split(",");
+				else
+					data.value = [data.value];
+				
+				if (data.fileCount > 1) {
+					data.fileValue = [...data.value[0]];
+				} else {
+					data.value[0] = data.value[0].split("/");
+					if (data.value[0].length > 1)
+						data.src = data.src.concat(data.value[0].slice(0, -1));
+					
+					data.fileValue = [data.value[0][data.value[0].length - 1]];
+				}
+				
+				data.src = data.src.filter(item => item);
+				
+				data.selectedFile = [];
+				
+				document.querySelector('#content').style.gridTemplateColumns = `${data.fileCount * 0.3}fr 0.7fr`;
+				document.querySelector('#file-folder-container').style.gridTemplateColumns = data.fileCount > 1 ? `repeat(${data.fileCount}, 0.5fr)` : "1fr"; //try remove
+			};
+			
+			function showDirectoryContent(hasSelect = true, hasPreview = true) {
+				const allowFolders = data.allowSubFolder;
+				const files = getFileList();
+				const folders = allowFolders ? getFolderList() : [];
+				
+				const container = document.querySelector('#file-folder-container');
+				let content = '';
+				for (let i = 0; i < data.fileCount; i++) {
+					content += `<div id="folder-content" data-id="${i}"></div>`;
+				}
+				container.innerHTML = content;
+				
+				for (const [i, folderContent] of Array.from(container.querySelectorAll('#folder-content')).entries()) {
+					content = '';
+					let count = 0;
+					
+					if (data.allowSearch) {
+						content += `
+							<div class="search">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="25px" height="25px" style="width: 1.5em; height: 1.5em;">
+									<circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/>
+									<line x1="16.5" y1="16.5" x2="22" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+								</svg>
+								<input type="text" placeholder="Search..." onchange="searchFileFolder(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+							</div>`;
+						count++;
+					}
+						
+					if ((!data.restrictedFolder || getFolder() !== data.restrictedFolder) && getSrc()[i] !== "./") {
+						content += `
+							<div class="folder" data-src=".." onclick="selectFolder(this)" style="${count % 2 === 0 ? '' : 'background-color: #ffffff17;'}">
+								<svg width="25" height="25" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="fill: gold; width: 1.5em; height: 1.5em;">
+									<path d="M10 4L4 4C2.9 4 2 4.9 2 6L2 18C2 19.1 2.9 20 4 20L20 20C21.1 20 22 19.1 22 18L22 8C22 6.9 21.1 6 20 6L12 6L10 4Z"/>
+								</svg>
+								<span>..</span>
+							</div>`;
+						count++;
+					}
+							
+					if (folders[i])
+						for (const folder of folders[i]) {
+							content += `
+								<div class="folder" style="${count % 2 === 0 ? '' : 'background-color: #ffffff17;'}" data-src="${folder}" onclick="selectFolder(this)">
+									<svg width="25" height="25" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="fill: gold; width: 1.5em; height: 1.5em;">
+										<path d="M10 4L4 4C2.9 4 2 4.9 2 6L2 18C2 19.1 2.9 20 4 20L20 20C21.1 20 22 19.1 22 18L22 8C22 6.9 21.1 6 20 6L12 6L10 4Z"/>
+									</svg>
+									<span>${folder}</span>
+								</div>`;
+							count++;
+						}
+						
+						
+					const fileTypes = getAllowedFilesTypes();
+					const selectedValues = fileTypes !== "*" ? fileTypes.map(item => data.fileValue[i] + item) : data.fileValue[i];
+					let selectedIndex = files[i].findIndex(item => fileTypes !== "*" ? selectedValues.includes(item) : item.split(".")[0] === selectedValues);
+					
+					if (data.allowNone) { //${(files.length === 0 || selectedIndex === -1) && hasSelect ? 'selected' : ''}"
+						content += `
+							<div class="file" style="${count % 2 === 0 ? '' : 'background-color: #ffffff17;'}" data-src="" onclick="selectFile(this)">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
+									style="stroke: dimgray; width: 1.5em; height: 1.5em;"
+								>
+									<rect x="4" y="4" width="16" height="16" rx="2" ry="2" fill="none"></rect>
+									<line x1="4" y1="4" x2="20" y2="20"></line>
+								</svg>
+								<span>None</span>
+							</div>
+						`;
+						count++;
+					}
+					
+					for (const [j, file] of files[i].entries()) {
+						data.selectedFile[i] = j === selectedIndex ? file : data.selectedFile[i];
+						content += `
+							<div class="file ${j === selectedIndex && hasSelect ? 'selected' : ''}" style="${count % 2 === 0 ? '' : 'background-color: #ffffff17;'}" data-src="${file}" onclick="selectFile(this)">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--color)" width="25" height="25" style="width: 1.5em; height: 1.5em;">
+									<path d="M6 2C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2H6ZM13 9V3.5L18.5 9H13Z"></path>
+								</svg>
+								<span>${file}</span>
+							</div>
+						`;
+						count++;
+					}
+					
+					if (data.allowTilesetSelection && data.tilesetNames) {
+						const tilesetIndex = $.Drag.VisualEvent.getTilesetIndex(parseInt(data.value[1])) - 5;
+						if (data.tilesetNames[0])
+							content += `
+								<div class="file ${data.tilesetNames[0] === data.fileValue[0] && tilesetIndex === 0 && hasSelect ? 'selected' : ''}" style="${count % 2 === 0 ? '' : 'background-color: #ffffff17;'}" 
+									onclick="selectTileset(this)" data-src="${data.tilesetNames[0]}" data-tileset="0" data-tilesetLetter="B"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--color)" width="25" height="25" style="width: 1.5em; height: 1.5em;">
+										<path d="M6 2C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2H6ZM13 9V3.5L18.5 9H13Z"></path>
+									</svg>
+									<span>Tileset B (${data.tilesetNames[0]})</span>
+								</div>
+							`;
+						if (data.tilesetNames[1])
+							content += `
+								<div class="file ${data.tilesetNames[1] === data.fileValue[0] && tilesetIndex === 1 && hasSelect ? 'selected' : ''}" style="${(count + 1) % 2 === 0 ? '' : 'background-color: #ffffff17;'}" 
+									onclick="selectTileset(this)" data-src="${data.tilesetNames[1]}" data-tileset="1" data-tilesetLetter="C"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--color)" width="25" height="25" style="width: 1.5em; height: 1.5em;">
+										<path d="M6 2C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2H6ZM13 9V3.5L18.5 9H13Z"></path>
+									</svg>
+									<span>Tileset C (${data.tilesetNames[1]})</span>
+								</div>
+							`;
+						if (data.tilesetNames[2])
+							content += `
+								<div class="file ${data.tilesetNames[2] === data.fileValue[0] && tilesetIndex === 2 && hasSelect ? 'selected' : ''}" style="${(count + 2) % 2 === 0 ? '' : 'background-color: #ffffff17;'}" 
+									onclick="selectTileset(this)" data-src="${data.tilesetNames[2]}" data-tileset="2" data-tilesetLetter="D"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--color)" width="25" height="25" style="width: 1.5em; height: 1.5em;">
+										<path d="M6 2C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2H6ZM13 9V3.5L18.5 9H13Z"></path>
+									</svg>
+									<span>Tileset D (${data.tilesetNames[2]})</span>
+								</div>
+							`;
+						if (data.tilesetNames[3])
+							content += `
+								<div class="file ${data.tilesetNames[3] === data.fileValue[0] && tilesetIndex === 3 && hasSelect ? 'selected' : ''}" style="${(count + 3) % 2 === 0 ? '' : 'background-color: #ffffff17;'}" 
+									onclick="selectTileset(this)" data-src="${data.tilesetNames[3]}" data-tileset="3" data-tilesetLetter="E"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--color)" width="25" height="25" style="width: 1.5em; height: 1.5em;">
+										<path d="M6 2C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2H6ZM13 9V3.5L18.5 9H13Z"></path>
+									</svg>
+									<span>Tileset E (${data.tilesetNames[3]})</span>
+								</div>
+							`;
+					}
+					
+					folderContent.innerHTML = content;
+					
+					// if (data.previewType && hasPreview && files.length > 0 && data.selectedFile[i] && selectedIndex > -1)
+						// showFilePreview(files[i][selectedIndex], i);
+					// else 
+					if (folderContent.querySelector('.selected'))
+						folderContent.querySelector('.selected').onclick();
+					else 
+						folderContent.querySelector('.file').onclick();
+				}
+			};
+			
+			function searchFileFolder(input) {
+				const search = input.value.toLowerCase().trim();
+				const container = input.parentElement.parentElement;
+				let count = 0;
+				
+				for (const file of container.querySelectorAll('.file')) {
+					if (file.getAttribute('data-src').toLowerCase().includes(search)) {
+						file.classList.remove('hidden');
+						count++;
+					} else 
+						file.classList.add('hidden');
+					
+					file.style.backgroundColor = count % 2 === 0 ? '' : '#ffffff17';
+				}
+					
+				for (const folder of container.querySelectorAll('.folder')) {
+					if (folder.getAttribute('data-src').toLowerCase().includes(search)) {
+						folder.classList.remove('hidden');
+						count++;
+					} else 
+						folder.classList.add('hidden');
+					
+					folder.style.backgroundColor = count % 2 === 0 ? '' : '#ffffff17';
+				}
+			};
+			
+			function selectTileset(element) {
+				const container = element.parentElement;
+				const tilesetId = parseInt(element.getAttribute('data-tileset'));
+				const tilesetLetter = element.getAttribute('data-tilesetLetter');
+				showTilesetPreview(data.tilesetNames[tilesetId], tilesetLetter);
+				
+				for (const selected of container.querySelectorAll('.file.selected'))
+					selected.classList.remove('selected');
+				element.classList.add('selected');
+				data.selectedFile[0] = element.getAttribute('data-src');
+			};
+			
+			function selectFile(element) {
+				const container = element.parentElement;
+				const containerId = parseInt(element.parentElement.getAttribute('data-id'));
+				const src = element.getAttribute('data-src');
+				if (data.previewType && src)
+					showFilePreview(src, containerId);
+				else
+					hideFilePreview();
+				
+				for (const selected of container.querySelectorAll('.file.selected'))
+					selected.classList.remove('selected');
+				element.classList.add('selected');
+				data.selectedFile[containerId] = element.getAttribute('data-src');
+			};
+			
+			function selectFolder(element) {
+				const container = element.parentElement;
+				const containerId = parseInt(element.parentElement.getAttribute('data-id'));
+				const src = element.getAttribute('data-src');
+				
+				if (src === "..")
+					data.fileCount > 1 ? data.src[containerId].pop() : data.src.pop();
+				else
+					data.fileCount > 1 ? data.src[containerId].push(src) : data.src.push(src);
+				
+				showDirectoryContent(false, false);
+			};
+			
+			function showTilesetPreview(file, tilesetLetter) {
+				const contentPreview = document.querySelector('#content-preview > div');
+				contentPreview.classList.remove('hidden');
+				
+				data._isTilesetPreview = true;
+				data._tilesetLetter = tilesetLetter;
+				
+				let image = contentPreview.querySelector(`img[data-id='0']`);
+				if (!image) {
+					image = document.createElement('img');
+					image.id = "preview-file";
+					image.src = `../../img/tilesets/${file}.png`;
+					image.onload = hasSubSelection() ? setupSubSelection.bind(this, image) : '';
+					image.setAttribute('data-id', 0);
+					
+					contentPreview.appendChild(image);
+				} else 
+					image.src = `../../img/tilesets/${file}.png`;
+				
+				
+				if (hasSubSelection() && !document.querySelector('#sub-selection-container')) {
+					const subSelectionContainer = document.createElement('div');
+					subSelectionContainer.id = "sub-selection-container";
+					contentPreview.appendChild(subSelectionContainer);
+				}
+			};
+			
+			function showFilePreview(file, id = 0) {
+				const contentPreview = document.querySelector('#content-preview > div');
+				contentPreview.classList.remove('hidden');
+				
+				data._isTilesetPreview = false;
+				
+				const directoryPath = getSrc()[id];
+				
+				if (data.previewType === "image") {
+					let image = contentPreview.querySelector(`img[data-id='${id}']`);
+					if (!image) {
+						image = document.createElement('img');
+						image.id = "preview-file";
+						image.src = `../../${directoryPath}/${file}`;
+						image.onload = hasSubSelection() ? setupSubSelection.bind(this, image) : '';
+						image.setAttribute('data-id', id);
+						if (id > 0)
+							image.style.zIndex = `-${id}`;
+						
+						if (id >= contentPreview.children.length)
+							contentPreview.appendChild(image);
+						else
+							contentPreview.insertBefore(image, contentPreview.children[id]);
+					} else 
+						image.src = `../../${directoryPath}/${file}`;
+					
+					
+					if (hasSubSelection() && !document.querySelector('#sub-selection-container')) {
+						const subSelectionContainer = document.createElement('div');
+						subSelectionContainer.id = "sub-selection-container";
+						contentPreview.appendChild(subSelectionContainer);
+					}
+				}
+				
+				if (data.previewType === "video") {
+					const video = file ? `
+						<video controls autoplay loop muted style="max-width: 100%; height: auto;">
+							<source src="../../${directoryPath}/${file}" type="video/webm" />
+							<source src="../../${directoryPath}/${file}" type="video/mp4" />
+						</video>` 
+						: "";
+					let content = `${video}`;
+					contentPreview.innerHTML = content;
+				}
+			};
+			
+			function hideFilePreview() {
+				const contentPreview = document.querySelector('#content-preview > div').classList.add("hidden");
+			};
+			
+			function setupSubSelection(element, ev) {
+				const container = document.querySelector('#sub-selection-container');
+				const targetWidth = element.naturalWidth;
+				const targetHeight = element.naturalHeight;
+
+				const isBigSelection = data.selectedFile[0][0] === "$" || data.selectedFile[0][1] === "$";
+				const startingIndex = data._isTilesetPreview ? $.Drag.VisualEvent.getTilesetStartingId(data._tilesetLetter) : 0;
+
+				const subSelectionWidth = data._isTilesetPreview ? targetWidth / 16 : (data.isCharacterSheet ? isBigSelection ? targetWidth / 3 : targetWidth / 12 : data.subImageSize[0]) * (data.isFullCharacterSheet ? 3 : 1);
+				const subSelectionHeight = data._isTilesetPreview ? targetHeight / 16 : (data.isCharacterSheet ? isBigSelection ? targetHeight / 4 : targetHeight / 8 : data.subImageSize[1]) * (data.isFullCharacterSheet ? 4 : 1);
+				const width = 100 / (targetWidth / subSelectionWidth);
+				const height = 100 / (targetHeight / subSelectionHeight);
+				
+				data.selectedIndex = data.value[1] !== undefined ? parseInt(data.value[1]) : 0;
+				
+				let tWidth = 0;
+				let tHeight = 0;
+				let count = 0;
+				let row = 0
+				let col = 0;
+				let content = '';
+				while (row < 100 / height) {
+					while (col < 100 / width) {
+						const index = !data._isTilesetPreview ? count : Math.floor(col / 8) * 128 + col % 8 + row * 8 + startingIndex;
+						const isSelected = index === data.selectedIndex;
+						content += `
+							<div class="sub-selection ${isSelected ? 'selected' : ''}" onclick="selectSubSelection(this);" data-index="${index}" 
+								style="cursor: pointer; box-sizing: border-box; position: absolute; left: ${tWidth}%; top: ${tHeight}%; width: ${width}%; height: ${height}%">
+							</div>
+						`;
+						tWidth += width;
+						count++;
+						col++;
+					}
+					col = 0;
+					tWidth = 0;
+					tHeight += height;
+					row++;
+				}
+				container.innerHTML = content;
+			};
+			
+			function selectSubSelection(element) {
+				for (const selected of document.querySelectorAll('.sub-selection.selected'))
+					selected.classList.remove('selected');
+				element.classList.add('selected');
+				data.selectedIndex = element.getAttribute('data-index');
+			};
+			
+			function getFileList() {
+				const fs = require('fs');
+				const path = require('path');
+				const directoryPath = getSrc();
+				
+				const types = getAllowedFilesTypes();			
+				const files = directoryPath.map(dirPath => {
+					const filesAndFolders = fs.readdirSync(dirPath);
+					const files = filesAndFolders.filter((item) => {
+						const itemPath = path.join(dirPath, item);
+						const extName = path.extname(itemPath);
+						const stats = fs.statSync(itemPath);
+						return stats.isFile() && (types.includes(extName) || types === '*');
+					});
+					
+					return files;
+				});
+
+				return files;
+			};
+			
+			function getAllowedFilesTypes() {
+				return data.fileTypes ? data.fileTypes.split(",").map(type => type.charCodeAt(0) === '.' ? type : `.${type}`) : '*';
+			};
+			
+			function getFolderList() {
+				const fs = require('fs');
+				const path = require('path');
+				const directoryPath = getSrc();
+				
+				const folders = directoryPath.map(dirPath => {
+					const filesAndFolders = fs.readdirSync(dirPath);
+					const folders = filesAndFolders.filter((item) => {
+						const itemPath = path.join(dirPath, item);
+						const stats = fs.statSync(itemPath);
+						return stats.isDirectory();
+					});
+					
+					return folders;
+				});
+				
+				return folders;
+			};
+			
+			function getSrc() {
+				const src = data.fileCount > 1 ? data.src.map(src => src.join("/") || "./") : [(data.src.join("/") || "./")];
+				return src.map(item => item.replace("//", "/"));
+			};
+			
+			function getFolder() {
+				return data.src[data.src.length - 1];
+			};
+			
+			function hasSubSelection() {
+				return data.isCharacterSheet || (Array.isArray(data.subImageSize) && data.subImageSize[0] > 0 && data.subImageSize[1] > 0);
+			};
+			
+			function ok() {
+				const path = require('path');	
+				if (data && data.selectedFile !== undefined && (!hasSubSelection() || data.selectedIndex !== undefined) && data.src !== undefined) {
+					let value = "";
+					data.selectedFile = data.selectedFile.map(file => file !== undefined ? file : "");
+					for (const file of data.selectedFile) {
+						const selectedFile = path.parse(file).name;
+						const src = selectedFile ? data.src.splice(data.src.indexOf(data.restrictedFolder) + 1).join("/") : "";
+					
+						if (hasSubSelection())
+							value += (src !== "" ? src + "/" : "") + selectedFile + "," + (selectedFile !== "" ? data.selectedIndex : "");
+						else 
+							value += (src !== "" ? src + "/" : "") + selectedFile;
+						
+						value += ",";
+					}
+					value = value.slice(0, -1); 
+					data.input.value = value;
+					data.input.dispatchEvent(new Event('change', {bubbles: true}));
+				}
+				window.close();
+			};
+			
+			function quit() {
+				window.close();
+			};
+			
+			main();
+			
+		</script>
+	</body>
+</html>
