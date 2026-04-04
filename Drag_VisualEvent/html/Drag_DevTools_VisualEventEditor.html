@@ -2203,10 +2203,10 @@
 				console.log(`Importing editor mods...`);
 				window._mods = {};
 				const RMName = $.Utils.RPGMAKER_NAME;
-				const filenames = $.Drag.VisualEvent.getFileList('./Drag_VisualEvent/html/mods').filter(file => file.endsWith(".js"));
+				const filenames = $.Drag.VisualEvent.getFileList('./Drag_VisualEvent/js/mods').filter(file => file.endsWith(".js"));
 				for (filename of filenames) {
 					const filenameWithoutExt = filename.replace('.js', '');
-					const mod = require(`./Drag_VisualEvent/html/mods/${filename}`);
+					const mod = require(`./Drag_VisualEvent/js/mods/${filename}`);
 					
 					if (!mod.engine)
 						mod.engine = ["MZ", "MV"];
@@ -5749,9 +5749,9 @@
 				//import custom Nodes
 				console.log(`Importing custom nodes...`);
 				window._customNodes = {};
-				const filenames = $.Drag.VisualEvent.getFileList('./Drag_VisualEvent/html/custom_nodes').filter(file => file.startsWith("node_") && file.endsWith(".js"));
+				const filenames = $.Drag.VisualEvent.getFileList('./Drag_VisualEvent/js/custom_nodes').filter(file => file.startsWith("node_") && file.endsWith(".js"));
 				for (filename of filenames) {
-					const customNodes = require(`./Drag_VisualEvent/html/custom_nodes/${filename.replace('.js', '')}`);
+					const customNodes = require(`./Drag_VisualEvent/js/custom_nodes/${filename.replace('.js', '')}`);
 					for (const customNode of Array.isArray(customNodes) ? customNodes : [customNodes]) {
 						if (!customNode.id || !customNode.engine)
 							continue;
