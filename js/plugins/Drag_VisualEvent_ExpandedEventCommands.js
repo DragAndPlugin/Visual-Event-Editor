@@ -195,6 +195,19 @@ Drag.VisualEvent_ExpandedEventCommands.version = "1.0.0";
 		return true;
 	};
 	
+	// Center Picture 
+	Game_Interpreter.prototype.command_center_picture = function(params) {
+		const pictureId = params[0] === 0 ? params[1] : $gameVariables.value(params[1]);
+		const picture = $gameScreen.picture(pictureId);
+		if (picture) {
+			const duration = params[2] !== 0 ? params[2] : 1;
+			picture.move(1, Graphics._width / 2, Graphics._height / 2, picture._scaleX, picture._scaleY, picture._opacity, picture._blendMode, duration, params[4]);
+			if (params[3] && params[2])
+				this.wait(params[2]);
+		}
+		return true;
+	};
+	
 	// Common Event (variable)
 	Game_Interpreter.prototype.command_common_event_variable = function(params) {
 		const varId = params[0];
@@ -261,6 +274,24 @@ Drag.VisualEvent_ExpandedEventCommands.version = "1.0.0";
 	Game_Interpreter.prototype.command_set_gold = function(params) {
 		const value = params[0] === 0 ? params[1] : $gameVariables.value(params[1]);
 		$gameParty._gold = Math.min(Math.max(value, 0), $gameParty.maxGold());
+		return true;
+	};
+	
+	// Open Item Screen
+	Game_Interpreter.prototype.command_open_item_screen = function(params) {
+		SceneManager.push(Scene_Item);
+		return true;
+	};
+	
+	// Open Item Screen
+	Game_Interpreter.prototype.command_open_options_screen = function(params) {
+		SceneManager.push(Scene_Options);
+		return true;
+	};
+	
+	// Open Item Screen
+	Game_Interpreter.prototype.command_open_load_screen = function(params) {
+		SceneManager.push(Scene_Load);
 		return true;
 	};
 	

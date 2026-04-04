@@ -55,7 +55,7 @@ Drag.VisualEvent.version = "0.1.047";
 		if (!Drag.VisualEvent.inputs)
 			Drag.VisualEvent.inputs = {};
 		
-		const data = require(`./Drag_VisualEvent/js/${filename}`)(Utils.RPGMAKER_NAME);
+		const data = require(`./Drag_VisualEvent/js/data/${filename}`)(Utils.RPGMAKER_NAME);
 		for (const key in data)
 			if (!Drag.VisualEvent.inputs[key])
 				Drag.VisualEvent.inputs[key] = data[key];
@@ -66,7 +66,7 @@ Drag.VisualEvent.version = "0.1.047";
 		if (!Drag.VisualEvent.interactiveInputs)
 			Drag.VisualEvent.interactiveInputs = {};
 		
-		const data = require(`./Drag_VisualEvent/js/${filename}`)(Drag, Utils.RPGMAKER_NAME);
+		const data = require(`./Drag_VisualEvent/js/data/${filename}`)(Drag, Utils.RPGMAKER_NAME);
 		for (const key in data)
 			if (!Drag.VisualEvent.interactiveInputs[key])
 				Drag.VisualEvent.interactiveInputs[key] = data[key];
@@ -75,8 +75,8 @@ Drag.VisualEvent.version = "0.1.047";
 	
 	try {
 		require(`./Drag_VisualEvent/js/mz_plugin_command.js`)(Drag.VisualEvent, Utils.RPGMAKER_NAME);
-		require(`./Drag_VisualEvent/js/command_data.js`)(Drag.VisualEvent, Utils.RPGMAKER_NAME);
-		require(`./Drag_VisualEvent/js/event_data.js`)(Drag.VisualEvent, Utils.RPGMAKER_NAME);
+		require(`./Drag_VisualEvent/js/data/command_data.js`)(Drag.VisualEvent, Utils.RPGMAKER_NAME);
+		require(`./Drag_VisualEvent/js/data/event_data.js`)(Drag.VisualEvent, Utils.RPGMAKER_NAME);
 	} catch(error) {
 		console.error(error);
 	}
@@ -195,7 +195,7 @@ Drag.VisualEvent.version = "0.1.047";
 		}
 	};
 	
-	// Insert item at index in this array
+	// insert item at index in this array
 	Drag.VisualEvent.insert = function(arr, index, item) {
 		if (!Array.isArray(arr))
 			return;
@@ -204,15 +204,13 @@ Drag.VisualEvent.version = "0.1.047";
 		return arr;
 	};
 
-	// Add array 2 to the end of array 1
+	// add array 2 to the end of array 1
 	Drag.VisualEvent.append = function(arr1, arr2) {
 		if (!Array.isArray(arr1) || !Array.isArray(arr2))
 			return;
 		
 		for (let i = 0; i < arr2.length; i++)
-		{
 			arr1.push(arr2[i]);
-		}
 
 		return arr1;
 	};
@@ -265,12 +263,12 @@ Drag.VisualEvent.version = "0.1.047";
 		return JSON.parse(JSON.stringify(obj));
 	};
 	
+	//slower than deep copy json, not used
 	Drag.VisualEvent.deepCopy = function(obj) {
 		if (Array.isArray(obj))
 			return obj.map(item => Drag.VisualEvent.deepCopy(item));
 		else if (obj && typeof obj === "object")
 			return Drag.VisualEvent.objectFromEntries(Object.entries(obj).map(entry => [entry[0], Drag.VisualEvent.deepCopy(entry[1])]));
-			// return Object.fromEntries(Object.entries(obj).map(entry => [entry[0], Drag.VisualEvent.deepCopy(entry[1])]));
 		else
 			return obj;
 	};
@@ -752,20 +750,88 @@ Drag.VisualEvent.version = "0.1.047";
 		);
 	};
 	
+	
+	
+	//---------------------------------------------------------------------------------------------------------
+	// Scene Boot
+	
+	Drag.VisualEvent.alias._Scene_Boot_start = Scene_Boot.prototype.start;
+	Scene_Boot.prototype.start = function() {
+		Drag.VisualEvent.alias._Scene_Boot_start.call(this);
+		Drag.VisualEvent.openEditor();
+	};
+	
+	//---------------------------------------------------------------------------------------------------------
+	// Game Switches
+
+	Game_Switches.prototype.getName = function(switchId) {
+		if (!$dataSystem)
+			return ``;
+		return $dataSystem.switches[switchId] || '';
+	};
+	
+	//---------------------------------------------------------------------------------------------------------
+	// Game Variables
+	
+	Game_Variables.prototype.getName = function(varId) {
+		if (!$dataSystem)
+			return ``;
+		return $dataSystem.variables[varId] || '';
+	};
+	
+	Game_Variables.prototype.valueByName = function(name = '') {
+		if (!$dataSystem)
+			return ``;
+		return $gameVariables.value($dataSystem.variables.indexOf(name) || 0);
+	};
+	
+	//------------------------------------------------------------------------------------------------------------
+	// Editor cache
+	
+	Drag.VisualEvent.cacheFilepath = "./Drag_VisualEvent/cache/cache.json";
+	Drag.VisualEvent.loadEditorCache = function() {
+		const xhr = new XMLHttpRequest();
+		xhr.open("GET", Drag.VisualEvent.cacheFilepath);
+		xhr.overrideMimeType("application/json");
+		xhr.onload = () => this.onEditorCacheLoad(xhr);
+		xhr.onerror = () => this.onEditorCacheError();
+		xhr.send();
+	};
+	
+	Drag.VisualEvent.saveEditorCache = function(cache, callback) {
+		Drag.VisualEvent.writeJSON(Drag.VisualEvent.cacheFilepath, cache, callback);
+	};
+	
+	Drag.VisualEvent.onEditorCacheLoad = function(xhr) {
+		if (xhr.status < 400) {
+			try { 
+				const data = JSON.parse(xhr.responseText);
+				Drag.VisualEvent.getEditor().onCacheLoaded(data);
+			} catch(err) {
+				Drag.VisualEvent.getEditor().onCacheLoadError();
+			}
+		} else
+			this.onEditorCacheError();
+	};
+	
+	Drag.VisualEvent.onEditorCacheError = function() {
+		Drag.VisualEvent.getEditor().onCacheLoadError();
+	};
+	
 	//---------------------------------------------------------------------------------------------------------
 	// Map Image
 	// Big thanks to Hudell and Arthran for their Orange Mapshot MZ (License CC0 1.0) that I modified and used as a base for this part
-	
+
 	Drag.VisualEvent.getMapData = function(map, callback) {
 		Drag.VisualEvent.loadDataFile(map.replace('.json', ''), callback);
-    };
-	
+	};
+
 	Drag.VisualEvent.getMapUrlData = function(data, images) {
 		Drag.VisualEvent.createTilemap(data, images);
 	};
-	
+
 	Drag.VisualEvent.createTilemap = function(data, images) {
-		const tilemap = new Tilemap();
+		const tilemap = new MapImage();
 		tilemap.tileWidth = $dataSystem.tileSize || 48;
 		tilemap._tileWidth = tilemap.tileWidth;
 		tilemap.tileHeight = $dataSystem.tileSize || 48;
@@ -778,7 +844,7 @@ Drag.VisualEvent.version = "0.1.047";
 		Drag.VisualEvent.createCharacters(data, tilemap, images);
 		return tilemap;
 	};
-	
+
 	Drag.VisualEvent.loadTileset = function(tilemap, tilesetId, data, images) {
 		const tileset = $dataTilesets[tilesetId];
 		if (tileset) {
@@ -808,7 +874,7 @@ Drag.VisualEvent.version = "0.1.047";
 			}			
 		}
 	};
-	
+
 	Drag.VisualEvent.createCharacters = function(data, tilemap, images) {
 		const characterSprites = [];
 		for (const event of data.events) {
@@ -883,7 +949,7 @@ Drag.VisualEvent.version = "0.1.047";
 
 		tilemap.addChild(spriteChar);
 	};
-	
+
 	Drag.VisualEvent.paintLayered = function(data, images, tilemap) {
 		if (!tilemap._isTilesetReady || !tilemap._areCharactersReady)
 			return;
@@ -906,415 +972,345 @@ Drag.VisualEvent.version = "0.1.047";
 			bitmap.addLoadListener(() => {
 				images[i].src = bitmap.canvas.toDataURL('image/png', 1);
 			});
-    };
-	
-	Tilemap.prototype._paintLayered = function (data, groundBitmap, ground2Bitmap, lowerBitmap, upperLayer, shadowBitmap, lowerEvents, normalEvents, upperEvents) {
+	};
+
+	function MapImage() {
+		Tilemap.prototype.initialize.call(this);
+	};
+
+	MapImage.prototype = Object.create(Tilemap.prototype);
+	MapImage.prototype.constructor = Tilemap;
+
+	MapImage.prototype._paintLayered = function(data, groundBitmap, ground2Bitmap, lowerBitmap, upperLayer, shadowBitmap, lowerEvents, normalEvents, upperEvents) {
 		const tileCols = data.width;
-        const tileRows = data.height;
+		const tileRows = data.height;
 		
 		//paint map && shadows
-        for (let y = 0; y < tileRows; y++)
-            for (let x = 0; x < tileCols; x++)
-                this._paintTileOnLayers(groundBitmap, ground2Bitmap, lowerBitmap, upperLayer, shadowBitmap, x, y);
+		for (let y = 0; y < tileRows; y++)
+			for (let x = 0; x < tileCols; x++)
+				this._paintTileOnLayers(groundBitmap, ground2Bitmap, lowerBitmap, upperLayer, shadowBitmap, x, y);
 
-		//pain events
-        this._paintCharacters(lowerEvents, 0);
-        this._paintCharacters(normalEvents, 1);
-        this._paintCharacters(upperEvents, 2);
-    };
+		//paint events
+		this._paintCharacters(lowerEvents, 0);
+		this._paintCharacters(normalEvents, 1);
+		this._paintCharacters(upperEvents, 2);
+	};
 
-    Tilemap.prototype._paintCharacters = function (bitmap, priority) {
-		for (const child of this.children) { //.filter(child => child && child._character && child._character._priorityType === priority)
-            if (child instanceof Sprite_Character) {
-                if (child._character !== null)
-                    if (child._character instanceof Game_Player || child._character instanceof Game_Follower || child._character instanceof Game_Vehicle) continue;
+	MapImage.prototype._paintCharacters = function (bitmap, priority) {
+		for (const child of this.children) {
+			if (child instanceof Sprite_Character) {
+				if (child._character !== null)
+					if (child._character instanceof Game_Player || child._character instanceof Game_Follower || child._character instanceof Game_Vehicle) continue;
 				
-                if (child._characterName === '' && child._tileId === 0) continue;
-                if (priority !== undefined && child._character._priorityType !== priority) continue;
+				if (child._characterName === '' && child._tileId === 0) continue;
+				if (priority !== undefined && child._character._priorityType !== priority) continue;
 				
-                const x = child.x * this.tileWidth;
-                const y = child.y * this.tileHeight;
+				const x = child.x * this.tileWidth;
+				const y = child.y * this.tileHeight;
 				
-                bitmap.blt(child.bitmap, child._frame.x, child._frame.y, child._frame.width, child._frame.height, x, y, child._frame.width, child._frame.height);
+				bitmap.blt(child.bitmap, child._frame.x, child._frame.y, child._frame.width, child._frame.height, x, y, child._frame.width, child._frame.height);
 			}
-        }
-    };
+		}
+	};
 
-    Tilemap.prototype._paintTileOnLayers = function (groundBitmap, ground2Bitmap, lowerBitmap, upperBitmap, shadowBitmap, x, y) {
-        const tableEdgeVirtualId = 10000;
-        const mx = x;
-        const my = y;
-		// var dx = (mx * this._tileWidth).mod(this._layerWidth);
-		// var dy = (my * this._tileHeight).mod(this._layerHeight);
-        const dx = (mx * this.tileWidth);
-        const dy = (my * this.tileHeight);
-        const lx = dx / this.tileWidth;
-        const ly = dy / this.tileHeight;
-        const tileId0 = this._readMapData(mx, my, 0);
-        const tileId1 = this._readMapData(mx, my, 1);
-        const tileId2 = this._readMapData(mx, my, 2);
-        const tileId3 = this._readMapData(mx, my, 3);
-        const shadowBits = this._readMapData(mx, my, 4);
-        const upperTileId1 = this._readMapData(mx, my - 1, 1);
+	MapImage.prototype._paintTileOnLayers = function (groundBitmap, ground2Bitmap, lowerBitmap, upperBitmap, shadowBitmap, x, y) {
+		const tableEdgeVirtualId = 10000;
+		const mx = x;
+		const my = y;
+		const dx = (mx * this.tileWidth);
+		const dy = (my * this.tileHeight);
+		const lx = dx / this.tileWidth;
+		const ly = dy / this.tileHeight;
+		const tileId0 = this._readMapData(mx, my, 0);
+		const tileId1 = this._readMapData(mx, my, 1);
+		const tileId2 = this._readMapData(mx, my, 2);
+		const tileId3 = this._readMapData(mx, my, 3);
+		const shadowBits = this._readMapData(mx, my, 4);
+		const upperTileId1 = this._readMapData(mx, my - 1, 1);
 
-        if (groundBitmap !== undefined)
-            groundBitmap.clearRect(dx, dy, this.tileWidth, this.tileHeight);
+		if (groundBitmap !== undefined)
+			groundBitmap.clearRect(dx, dy, this.tileWidth, this.tileHeight);
 
-        if (ground2Bitmap !== undefined)
-            ground2Bitmap.clearRect(dx, dy, this.tileWidth, this.tileHeight);
+		if (ground2Bitmap !== undefined)
+			ground2Bitmap.clearRect(dx, dy, this.tileWidth, this.tileHeight);
 
-        if (lowerBitmap !== undefined)
-            lowerBitmap.clearRect(dx, dy, this.tileWidth, this.tileHeight);
+		if (lowerBitmap !== undefined)
+			lowerBitmap.clearRect(dx, dy, this.tileWidth, this.tileHeight);
 
-        if (upperBitmap !== undefined)
-            upperBitmap.clearRect(dx, dy, this.tileWidth, this.tileHeight);
+		if (upperBitmap !== undefined)
+			upperBitmap.clearRect(dx, dy, this.tileWidth, this.tileHeight);
 
-        if (shadowBitmap !== undefined)
-            shadowBitmap.clearRect(dx, dy, this.tileWidth, this.tileHeight);
+		if (shadowBitmap !== undefined)
+			shadowBitmap.clearRect(dx, dy, this.tileWidth, this.tileHeight);
 
-        const me = this;
+		const me = this;
 
-        function drawTiles(bitmap, tileId, shadowBits, upperTileId1) {
-            if (tileId < 0) {
-                // if (shadowBits !== undefined) {
-                    // MapShotTileMap.prototype._drawShadow.call(me, bitmap, shadowBits, dx, dy);
-                // }
-            } else if (tileId >= tableEdgeVirtualId) {
-                MapShotTileMap.prototype._drawTableEdge.call(me, bitmap, upperTileId1, dx, dy);
-            } else {
-                me._drawTileOldStyle(bitmap, tileId, dx, dy);
-            }
-        }
+		function drawTiles(bitmap, tileId, shadowBits, upperTileId1) {
+			if (tileId < 0)
+				return;
+			
+			if (tileId >= tableEdgeVirtualId)
+				MapImage.prototype._drawTableEdge.call(me, bitmap, upperTileId1, dx, dy);
+			else
+				me._drawTileOldStyle(bitmap, tileId, dx, dy);
+		}
 
-        if (groundBitmap !== undefined) {
-            drawTiles(groundBitmap, tileId0, undefined, upperTileId1);
+		if (groundBitmap !== undefined) {
+			drawTiles(groundBitmap, tileId0, undefined, upperTileId1);
 
-            if (shadowBitmap !== undefined && tileId0 < 0)
-                drawTiles(shadowBitmap, tileId0, shadowBits, upperTileId1);
-        }
+			if (shadowBitmap !== undefined && tileId0 < 0)
+				drawTiles(shadowBitmap, tileId0, shadowBits, upperTileId1);
+		}
 
-        if (ground2Bitmap !== undefined) {
-            drawTiles(ground2Bitmap, tileId1, undefined, upperTileId1);
+		if (ground2Bitmap !== undefined) {
+			drawTiles(ground2Bitmap, tileId1, undefined, upperTileId1);
 
-            if (shadowBitmap !== undefined && tileId1 < 0)
-                drawTiles(shadowBitmap, tileId1, shadowBits, upperTileId1);
-        }
+			if (shadowBitmap !== undefined && tileId1 < 0)
+				drawTiles(shadowBitmap, tileId1, shadowBits, upperTileId1);
+		}
 
-        if (lowerBitmap !== undefined) {
-            drawTiles(lowerBitmap, tileId2, undefined, upperTileId1);
+		if (lowerBitmap !== undefined) {
+			drawTiles(lowerBitmap, tileId2, undefined, upperTileId1);
 
-            if (shadowBitmap !== undefined && tileId2 < 0)
-                drawTiles(shadowBitmap, tileId2, shadowBits, upperTileId1);
-        }
+			if (shadowBitmap !== undefined && tileId2 < 0)
+				drawTiles(shadowBitmap, tileId2, shadowBits, upperTileId1);
+		}
 
-        if (upperBitmap !== undefined) {
-            drawTiles(upperBitmap, tileId3, shadowBits, upperTileId1);
+		if (upperBitmap !== undefined) {
+			drawTiles(upperBitmap, tileId3, shadowBits, upperTileId1);
 
-            if (shadowBitmap !== undefined && tileId3 < 0)
-                drawTiles(shadowBitmap, tileId3, shadowBits, upperTileId1);
-        }
+			if (shadowBitmap !== undefined && tileId3 < 0)
+				drawTiles(shadowBitmap, tileId3, shadowBits, upperTileId1);
+		}
 		
 		if (shadowBitmap !== undefined && shadowBits !== undefined)
-			MapShotTileMap.prototype._drawShadow.call(this, shadowBitmap, shadowBits, dx, dy);
-    };
-	
-	Tilemap.prototype._paintTilesOnBitmap = function (data, lowerBitmap, upperBitmap, x, y) {
-        const tableEdgeVirtualId = 10000;
-        const mx = x;
-        const my = y;
-        const dx = (mx * this.tileWidth);
-        const dy = (my * this.tileHeight);
-        const lx = dx / this.tileWidth;
-        const ly = dy / this.tileHeight;
+			MapImage.prototype._drawShadow.call(this, shadowBitmap, shadowBits, dx, dy);
+	};
+
+	MapImage.prototype._paintTilesOnBitmap = function (data, lowerBitmap, upperBitmap, x, y) {
+		const tableEdgeVirtualId = 10000;
+		const mx = x;
+		const my = y;
+		const dx = (mx * this.tileWidth);
+		const dy = (my * this.tileHeight);
+		const lx = dx / this.tileWidth;
+		const ly = dy / this.tileHeight;
 		const tileId0 = this._readMapData(mx, my, 0);
-        const tileId1 = this._readMapData(mx, my, 1);
-        const tileId2 = this._readMapData(mx, my, 2);
-        const tileId3 = this._readMapData(mx, my, 3);
-        const shadowBits = this._readMapData(mx, my, 4);
-        const upperTileId1 = this._readMapData(mx, my - 1, 1);
-        const lowerTiles = [];
-        const upperTiles = [];
+		const tileId1 = this._readMapData(mx, my, 1);
+		const tileId2 = this._readMapData(mx, my, 2);
+		const tileId3 = this._readMapData(mx, my, 3);
+		const shadowBits = this._readMapData(mx, my, 4);
+		const upperTileId1 = this._readMapData(mx, my - 1, 1);
+		const lowerTiles = [];
+		const upperTiles = [];
 
-        if (this._isHigherTile(tileId0))
-            upperTiles.push(tileId0);
-        else
-            lowerTiles.push(tileId0);
-        
-        if (this._isHigherTile(tileId1))
-            upperTiles.push(tileId1);
-        else
-            lowerTiles.push(tileId1);
-        
+		if (this._isHigherTile(tileId0))
+			upperTiles.push(tileId0);
+		else
+			lowerTiles.push(tileId0);
+		
+		if (this._isHigherTile(tileId1))
+			upperTiles.push(tileId1);
+		else
+			lowerTiles.push(tileId1);
+		
 
-        lowerTiles.push(-shadowBits);
+		lowerTiles.push(-shadowBits);
 
-        if (this._isTableTile(upperTileId1) && !this._isTableTile(tileId1))
-            if (!Tilemap.isShadowingTile(tileId0))
-                lowerTiles.push(tableEdgeVirtualId + upperTileId1);
+		if (this._isTableTile(upperTileId1) && !this._isTableTile(tileId1))
+			if (!Tilemap.isShadowingTile(tileId0))
+				lowerTiles.push(tableEdgeVirtualId + upperTileId1);
 
-        if (this._isOverpassPosition(mx, my)) {
-            upperTiles.push(tileId2);
-            upperTiles.push(tileId3);
-        } else {
-            if (this._isHigherTile(tileId2))
-                upperTiles.push(tileId2);
-            else
-                lowerTiles.push(tileId2);
-            
-            if (this._isHigherTile(tileId3))
-                upperTiles.push(tileId3);
-            else
-                lowerTiles.push(tileId3);
-            
-        }
+		if (this._isOverpassPosition(mx, my)) {
+			upperTiles.push(tileId2);
+			upperTiles.push(tileId3);
+		} else {
+			if (this._isHigherTile(tileId2))
+				upperTiles.push(tileId2);
+			else
+				lowerTiles.push(tileId2);
+			
+			if (this._isHigherTile(tileId3))
+				upperTiles.push(tileId3);
+			else
+				lowerTiles.push(tileId3);
+			
+		}
 
-        lowerBitmap.clearRect(dx, dy, this.tileWidth, this.tileHeight);
-        upperBitmap.clearRect(dx, dy, this.tileWidth, this.tileHeight);
+		lowerBitmap.clearRect(dx, dy, this.tileWidth, this.tileHeight);
+		upperBitmap.clearRect(dx, dy, this.tileWidth, this.tileHeight);
 
-        for (let i = 0; i < lowerTiles.length; i++) {
-            const lowerTileId = lowerTiles[i];
-            if (lowerTileId < 0) {
-                // if ($.Param.drawAutoShadows) {
-                    // MapShotTileMap.prototype._drawShadow.call(this, lowerBitmap, shadowBits, dx, dy);
-                // }
-            } else if (lowerTileId >= tableEdgeVirtualId)
-                MapShotTileMap.prototype._drawTableEdge.call(this, lowerBitmap, upperTileId1, dx, dy);
-            else
-                this._drawTileOldStyle(lowerBitmap, lowerTileId, dx, dy);
-        }
+		for (let i = 0; i < lowerTiles.length; i++) {
+			const lowerTileId = lowerTiles[i];
+			if (lowerTileId < 0)
+				continue;
+			
+			if (lowerTileId >= tableEdgeVirtualId)
+				MapImage.prototype._drawTableEdge.call(this, lowerBitmap, upperTileId1, dx, dy);
+			else
+				this._drawTileOldStyle(lowerBitmap, lowerTileId, dx, dy);
+		}
 
-        for (let j = 0; j < upperTiles.length; j++)
-            this._drawTileOldStyle(upperBitmap, upperTiles[j], dx, dy);
-    };
-	
-	Tilemap.prototype._drawTileOldStyle = function (bitmap, tileId, dx, dy) {
-        if (Tilemap.isVisibleTile(tileId)) {
-            if (Tilemap.isAutotile(tileId))
-				MapShotTileMap.prototype._drawAutotile.call(this, bitmap, tileId, dx, dy);
-            else
-                MapShotTileMap.prototype._drawNormalTile.call(this, bitmap, tileId, dx, dy);
-        }
-    };
-	
-	function MapShotTileMap() {}
-
-    MapShotTileMap.prototype = Object.create(Tilemap.prototype);
-    MapShotTileMap.prototype.constructor = MapShotTileMap;
-
-    MapShotTileMap.prototype._drawAutotile = function (bitmap, tileId, dx, dy) {
-        let autotileTable = Tilemap.FLOOR_AUTOTILE_TABLE;
-        const kind = Tilemap.getAutotileKind(tileId);
-        const shape = Tilemap.getAutotileShape(tileId);
-        const tx = kind % 8;
-        const ty = Math.floor(kind / 8);
-        let bx = 0;
-        let by = 0;
-        let setNumber = 0;
-        let isTable = false;
-
-        if (Tilemap.isTileA1(tileId)) {
-            const waterSurfaceIndex = [0, 1, 2, 1][(this.animationFrame || 1) % 4];
-            setNumber = 0;
-            if (kind === 0) {
-                bx = waterSurfaceIndex * 2;
-                by = 0;
-            } else if (kind === 1) {
-                bx = waterSurfaceIndex * 2;
-                by = 3;
-            } else if (kind === 2) {
-                bx = 6;
-                by = 0;
-            } else if (kind === 3) {
-                bx = 6;
-                by = 3;
-            } else {
-                bx = Math.floor(tx / 4) * 8;
-                by = ty * 6 + Math.floor(tx / 2) % 2 * 3;
-                if (kind % 2 === 0) {
-                    bx += waterSurfaceIndex * 2;
-                } else {
-                    bx += 6;
-                    autotileTable = Tilemap.WATERFALL_AUTOTILE_TABLE;
-                    by += (this.animationFrame || 1) % 3;
-                }
-            }
-        } else if (Tilemap.isTileA2(tileId)) {
-            setNumber = 1;
-            bx = tx * 2;
-            by = (ty - 2) * 3;
-            isTable = this._isTableTile(tileId);
-        } else if (Tilemap.isTileA3(tileId)) {
-            setNumber = 2;
-            bx = tx * 2;
-            by = (ty - 6) * 2;
-            autotileTable = Tilemap.WALL_AUTOTILE_TABLE;
-        } else if (Tilemap.isTileA4(tileId)) {
-            setNumber = 3;
-            bx = tx * 2;
-            by = Math.floor((ty - 10) * 2.5 + (ty % 2 === 1 ? 0.5 : 0));
-            if (ty % 2 === 1) {
-                autotileTable = Tilemap.WALL_AUTOTILE_TABLE;
-            }
-        }
-
-        const table = autotileTable[shape];
-        const source = this._bitmaps ? this._bitmaps[setNumber] : this.bitmaps[setNumber];
-
-        if (table && source) {
-            const w1 = this.tileWidth / 2;
-            const h1 = this.tileHeight / 2;
-            for (let i = 0; i < 4; i++) {
-                const qsx = table[i][0];
-                const qsy = table[i][1];
-                const sx1 = (bx * 2 + qsx) * w1;
-                const sy1 = (by * 2 + qsy) * h1;
-                const dx1 = dx + (i % 2) * w1;
-                let dy1 = dy + Math.floor(i / 2) * h1;
-                if (isTable && (qsy === 1 || qsy === 5)) {
-                    let qsx2 = qsx;
-                    const qsy2 = 3;
-                    if (qsy === 1)
-						qsx2 = (4 - qsx) % 4;
-                        // qsx2 = [0, 3, 2, 1][qsx];
-					
-                    const sx2 = (bx * 2 + qsx2) * w1;
-                    const sy2 = (by * 2 + qsy2) * h1;
-                    bitmap.blt(source, sx2, sy2, w1, h1, dx1, dy1, w1, h1);
-                    dy1 += h1 / 2;
-                    bitmap.blt(source, sx1, sy1, w1, h1 / 2, dx1, dy1, w1, h1 / 2);
-                } else {
-                    bitmap.blt(source, sx1, sy1, w1, h1, dx1, dy1, w1, h1);
-                }
-            }
-        }
-    };
-
-    MapShotTileMap.prototype._drawNormalTile = function(bitmap, tileId, dx, dy) {
-        let setNumber = 0;
-
-        if (Tilemap.isTileA5(tileId))
-            setNumber = 4;
-        else
-            setNumber = 5 + Math.floor(tileId / 256);
-
-        const w = this.tileWidth;
-        const h = this.tileHeight;
-        const sx = (Math.floor(tileId / 128) % 2 * 8 + tileId % 8) * w;
-        const sy = (Math.floor(tileId % 256 / 8) % 16) * h;
-
-        const source = this._bitmaps ? this._bitmaps[setNumber] : this.bitmaps[setNumber];
-        if (source)
-            bitmap.blt(source, sx, sy, w, h, dx, dy, w, h);
-    };
-
-    MapShotTileMap.prototype._drawTableEdge = function(bitmap, tileId, dx, dy) {
-        if (Tilemap.isTileA2(tileId)) {
-            const autotileTable = Tilemap.FLOOR_AUTOTILE_TABLE;
-            const kind = Tilemap.getAutotileKind(tileId);
-            const shape = Tilemap.getAutotileShape(tileId);
-            const tx = kind % 8;
-            const ty = Math.floor(kind / 8);
-            const setNumber = 1;
-            const bx = tx * 2;
-            const by = (ty - 2) * 3;
-            const table = autotileTable[shape];
-
-            if (table) {
-                const source = this._bitmaps ? this._bitmaps[setNumber] : this.bitmaps[setNumber];
-                const w1 = this.tileWidth / 2;
-                const h1 = this.tileHeight / 2;
-                for (let i = 0; i < 2; i++) {
-                    const qsx = table[2 + i][0];
-                    const qsy = table[2 + i][1];
-                    const sx1 = (bx * 2 + qsx) * w1;
-                    const sy1 = (by * 2 + qsy) * h1 + h1 / 2;
-                    const dx1 = dx + (i % 2) * w1;
-                    const dy1 = dy + Math.floor(i / 2) * h1;
-                    bitmap.blt(source, sx1, sy1, w1, h1 / 2, dx1, dy1, w1, h1 / 2);
-                }
-            }
-        }
-    };
-
-    MapShotTileMap.prototype._drawShadow = function(bitmap, shadowBits, dx, dy) {
-        if (shadowBits & 0x0f) {
-            const w1 = this.tileWidth / 2;
-            const h1 = this.tileHeight / 2;
-            const color = 'rgba(0,0,0,0.5)';
-            for (let i = 0; i < 4; i++) {
-                if (shadowBits & (1 << i)) {
-                    const dx1 = dx + (i % 2) * w1;
-                    const dy1 = dy + Math.floor(i / 2) * h1;
-                    bitmap.fillRect(dx1, dy1, w1, h1, color);
-                }
-            }
-        }
-    };
-	
-	//---------------------------------------------------------------------------------------------------------
-	// Scene Boot
-	
-	Drag.VisualEvent.alias._Scene_Boot_start = Scene_Boot.prototype.start;
-	Scene_Boot.prototype.start = function() {
-		Drag.VisualEvent.alias._Scene_Boot_start.call(this);
-		Drag.VisualEvent.openEditor();
+		for (let j = 0; j < upperTiles.length; j++)
+			this._drawTileOldStyle(upperBitmap, upperTiles[j], dx, dy);
 	};
-	
-	//---------------------------------------------------------------------------------------------------------
-	// Game Switches
 
-	Game_Switches.prototype.getName = function(switchId) {
-		if (!$dataSystem)
-			return ``;
-		return $dataSystem.switches[switchId] || '';
+	MapImage.prototype._drawTileOldStyle = function (bitmap, tileId, dx, dy) {
+		if (Tilemap.isVisibleTile(tileId)) {
+			if (Tilemap.isAutotile(tileId))
+				MapImage.prototype._drawAutotile.call(this, bitmap, tileId, dx, dy);
+			else
+				MapImage.prototype._drawNormalTile.call(this, bitmap, tileId, dx, dy);
+		}
 	};
-	
-	//---------------------------------------------------------------------------------------------------------
-	// Game Variables
-	
-	Game_Variables.prototype.getName = function(varId) {
-		if (!$dataSystem)
-			return ``;
-		return $dataSystem.variables[varId] || '';
-	};
-	
-	Game_Variables.prototype.valueByName = function(name = '') {
-		if (!$dataSystem)
-			return ``;
-		return $gameVariables.value($dataSystem.variables.indexOf(name) || 0);
-	};
-	
-	//------------------------------------------------------------------------------------------------------------
-	// Editor cache
-	
-	Drag.VisualEvent.cacheFilepath = "./Drag_VisualEvent/cache/cache.json";
-	Drag.VisualEvent.loadEditorCache = function() {
-		const xhr = new XMLHttpRequest();
-		xhr.open("GET", Drag.VisualEvent.cacheFilepath);
-		xhr.overrideMimeType("application/json");
-		xhr.onload = () => this.onEditorCacheLoad(xhr);
-		xhr.onerror = () => this.onEditorCacheError();
-		xhr.send();
-	};
-	
-	Drag.VisualEvent.saveEditorCache = function(cache, callback) {
-		Drag.VisualEvent.writeJSON(Drag.VisualEvent.cacheFilepath, cache, callback);
-	};
-	
-	Drag.VisualEvent.onEditorCacheLoad = function(xhr) {
-		if (xhr.status < 400) {
-			try { 
-				const data = JSON.parse(xhr.responseText);
-				Drag.VisualEvent.getEditor().onCacheLoaded(data);
-			} catch(err) {
-				Drag.VisualEvent.getEditor().onCacheLoadError();
+
+	MapImage.prototype._drawAutotile = function (bitmap, tileId, dx, dy) {
+		let autotileTable = Tilemap.FLOOR_AUTOTILE_TABLE;
+		const kind = Tilemap.getAutotileKind(tileId);
+		const shape = Tilemap.getAutotileShape(tileId);
+		const tx = kind % 8;
+		const ty = Math.floor(kind / 8);
+		let bx = 0;
+		let by = 0;
+		let setNumber = 0;
+		let isTable = false;
+
+		if (Tilemap.isTileA1(tileId)) {
+			const waterSurfaceIndex = [0, 1, 2, 1][(this.animationFrame || 1) % 4];
+			setNumber = 0;
+			if (kind === 0) {
+				bx = waterSurfaceIndex * 2;
+				by = 0;
+			} else if (kind === 1) {
+				bx = waterSurfaceIndex * 2;
+				by = 3;
+			} else if (kind === 2) {
+				bx = 6;
+				by = 0;
+			} else if (kind === 3) {
+				bx = 6;
+				by = 3;
+			} else {
+				bx = Math.floor(tx / 4) * 8;
+				by = ty * 6 + Math.floor(tx / 2) % 2 * 3;
+				if (kind % 2 === 0) {
+					bx += waterSurfaceIndex * 2;
+				} else {
+					bx += 6;
+					autotileTable = Tilemap.WATERFALL_AUTOTILE_TABLE;
+					by += (this.animationFrame || 1) % 3;
+				}
 			}
-		} else
-			this.onEditorCacheError();
+		} else if (Tilemap.isTileA2(tileId)) {
+			setNumber = 1;
+			bx = tx * 2;
+			by = (ty - 2) * 3;
+			isTable = this._isTableTile(tileId);
+		} else if (Tilemap.isTileA3(tileId)) {
+			setNumber = 2;
+			bx = tx * 2;
+			by = (ty - 6) * 2;
+			autotileTable = Tilemap.WALL_AUTOTILE_TABLE;
+		} else if (Tilemap.isTileA4(tileId)) {
+			setNumber = 3;
+			bx = tx * 2;
+			by = Math.floor((ty - 10) * 2.5 + (ty % 2 === 1 ? 0.5 : 0));
+			if (ty % 2 === 1) {
+				autotileTable = Tilemap.WALL_AUTOTILE_TABLE;
+			}
+		}
+
+		const table = autotileTable[shape];
+		const source = this._bitmaps ? this._bitmaps[setNumber] : this.bitmaps[setNumber];
+
+		if (table && source) {
+			const w1 = this.tileWidth / 2;
+			const h1 = this.tileHeight / 2;
+			for (let i = 0; i < 4; i++) {
+				const qsx = table[i][0];
+				const qsy = table[i][1];
+				const sx1 = (bx * 2 + qsx) * w1;
+				const sy1 = (by * 2 + qsy) * h1;
+				const dx1 = dx + (i % 2) * w1;
+				let dy1 = dy + Math.floor(i / 2) * h1;
+				if (isTable && (qsy === 1 || qsy === 5)) {
+					let qsx2 = qsx;
+					const qsy2 = 3;
+					if (qsy === 1)
+						qsx2 = (4 - qsx) % 4;
+					
+					const sx2 = (bx * 2 + qsx2) * w1;
+					const sy2 = (by * 2 + qsy2) * h1;
+					bitmap.blt(source, sx2, sy2, w1, h1, dx1, dy1, w1, h1);
+					dy1 += h1 / 2;
+					bitmap.blt(source, sx1, sy1, w1, h1 / 2, dx1, dy1, w1, h1 / 2);
+				} else {
+					bitmap.blt(source, sx1, sy1, w1, h1, dx1, dy1, w1, h1);
+				}
+			}
+		}
 	};
-	
-	Drag.VisualEvent.onEditorCacheError = function() {
-		Drag.VisualEvent.getEditor().onCacheLoadError();
+
+	MapImage.prototype._drawNormalTile = function(bitmap, tileId, dx, dy) {
+		let setNumber = 0;
+
+		if (Tilemap.isTileA5(tileId))
+			setNumber = 4;
+		else
+			setNumber = 5 + Math.floor(tileId / 256);
+
+		const w = this.tileWidth;
+		const h = this.tileHeight;
+		const sx = (Math.floor(tileId / 128) % 2 * 8 + tileId % 8) * w;
+		const sy = (Math.floor(tileId % 256 / 8) % 16) * h;
+
+		const source = this._bitmaps ? this._bitmaps[setNumber] : this.bitmaps[setNumber];
+		if (source)
+			bitmap.blt(source, sx, sy, w, h, dx, dy, w, h);
+	};
+
+	MapImage.prototype._drawTableEdge = function(bitmap, tileId, dx, dy) {
+		if (Tilemap.isTileA2(tileId)) {
+			const autotileTable = Tilemap.FLOOR_AUTOTILE_TABLE;
+			const kind = Tilemap.getAutotileKind(tileId);
+			const shape = Tilemap.getAutotileShape(tileId);
+			const tx = kind % 8;
+			const ty = Math.floor(kind / 8);
+			const setNumber = 1;
+			const bx = tx * 2;
+			const by = (ty - 2) * 3;
+			const table = autotileTable[shape];
+
+			if (table) {
+				const source = this._bitmaps ? this._bitmaps[setNumber] : this.bitmaps[setNumber];
+				const w1 = this.tileWidth / 2;
+				const h1 = this.tileHeight / 2;
+				for (let i = 0; i < 2; i++) {
+					const qsx = table[2 + i][0];
+					const qsy = table[2 + i][1];
+					const sx1 = (bx * 2 + qsx) * w1;
+					const sy1 = (by * 2 + qsy) * h1 + h1 / 2;
+					const dx1 = dx + (i % 2) * w1;
+					const dy1 = dy + Math.floor(i / 2) * h1;
+					bitmap.blt(source, sx1, sy1, w1, h1 / 2, dx1, dy1, w1, h1 / 2);
+				}
+			}
+		}
+	};
+
+	MapImage.prototype._drawShadow = function(bitmap, shadowBits, dx, dy) {
+		if (shadowBits & 0x0f) {
+			const w1 = this.tileWidth / 2;
+			const h1 = this.tileHeight / 2;
+			const color = 'rgba(0,0,0,0.5)';
+			for (let i = 0; i < 4; i++) {
+				if (shadowBits & (1 << i)) {
+					const dx1 = dx + (i % 2) * w1;
+					const dy1 = dy + Math.floor(i / 2) * h1;
+					bitmap.fillRect(dx1, dy1, w1, h1, color);
+				}
+			}
+		}
 	};
 	
 	//------------------------------------------------------------------------------------------------------------
