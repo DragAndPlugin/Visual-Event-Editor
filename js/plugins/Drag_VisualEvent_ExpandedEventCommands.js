@@ -208,6 +208,16 @@ Drag.VisualEvent_ExpandedEventCommands.version = "1.0.0";
 		return true;
 	};
 	
+	// Erase Pictures In Range
+	Game_Interpreter.prototype.command_erase_picture_range = function(params) {
+		let startPictureId = params[0] === 0 ? params[1] : $gameVariables.value(params[1]);
+		const endPictureId = params[2] === 0 ? params[3] : $gameVariables.value(params[3]);
+		for (startPictureId; startPictureId <= endPictureId; startPictureId++)
+			$gameScreen.erasePicture(startPictureId);
+		
+		return true;
+	};
+	
 	// Common Event (variable)
 	Game_Interpreter.prototype.command_common_event_variable = function(params) {
 		const varId = params[0];
@@ -225,11 +235,78 @@ Drag.VisualEvent_ExpandedEventCommands.version = "1.0.0";
 		const value = $gameVariables.value(params[0]);
 		const result = value === params[1];
 		this._branch[this._indent] = result;
-		if (this._branch[this._indent] === false) {
+		if (this._branch[this._indent] === false)
 			this.skipBranch();
-		}
+		
 		return true;
 	};
+	
+	// For Loop
+	Game_Interpreter.prototype.command_for_loop = function(params) {
+		// const startIndex = $gameVariables.value(params[0]);
+		// const endIndex = $gameVariables.value(params[2]);
+		// let result = false;
+		// switch (params[1]) {
+			// case 0:
+				// result = startIndex < endIndex;
+				// break;
+			// case 1:
+				// result = startIndex <= endIndex;
+				// break;
+			// case 2:
+				// result = startIndex >= endIndex;
+				// break;
+			// case 3:
+				// result = startIndex > endIndex;
+				// break;
+		// };
+
+		// this._branch[this._indent] = result;
+		// if (this._branch[this._indent] === false)
+			// this.skipBranch();
+		console.log(this._list);
+		return true;
+	};
+	
+	// End For Loop
+	Game_Interpreter.prototype.command_end_for_loop = function(params) {
+		let index = $gameVariables.value(params[0]);
+		index += params[3];
+		$gameVariables.setValue(params[0], index);
+		
+		const endIndex = $gameVariables.value(params[2]);
+		let result = false;
+		switch (params[1]) {
+			case 0:
+				result = index < endIndex;
+				break;
+			case 1:
+				result = index <= endIndex;
+				break;
+			case 2:
+				result = index >= endIndex;
+				break;
+			case 3:
+				result = index > endIndex;
+				break;
+		};
+		
+		if (result) {
+			console.log(this._index);
+			do {
+				this._index--;
+			} while (this.currentCommand().indent !== this._indent);
+			console.log(this._index);
+			// this._index--;
+		}
+
+		return true;
+	};
+
+	
+	
+	
+	
 	
 	// Control Variable Text 
 	Game_Interpreter.prototype.command_control_variable_text = function(params) {
