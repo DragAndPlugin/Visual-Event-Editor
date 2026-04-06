@@ -174,6 +174,20 @@ module.exports = [
 		}
 	}, 
 	{
+		category: "Picture", //string, category in node list 
+		name: "Erase Pictures In Range", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_erase_picture_range", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['startPictureId', 'endPictureId'], //array of string, list of inputs of the node
+		outputs: [], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => {
+			behaviors.push({code: '_erase_picture_range', indent: command.indent, parameters: command.parameters});
+		}
+	}, 
+	{
 		category: "Scene Control", //string, category in node list 
 		name: "Open Item Screen", //string, name of the node
 		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
@@ -241,7 +255,7 @@ module.exports = [
 		outputs: [], //array of string, list of outputs of the node
 		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
 			const list = command.parameters.splice(1, command.parameters.length);
-			const parameters = [command.parameters[0], list];
+			// const parameters = [command.parameters[0], list];
 			for (const [i, branch] of list.entries()) {
 				const branchConnection = editor.getNodeConnectionsById(node, i).output; 
 				if (editor.isConnectionConnected(branchConnection)) {
@@ -250,6 +264,35 @@ module.exports = [
 					behaviors.push(...editor.parseNodesBehavior(connectionConnectedNode, command.indent + 1, sequence[i]));
 				} 
 			}
+		}
+	}, 
+	{
+		category: "Flow Control", //string, category in node list 
+		name: "For Loop", //string, name of the node
+		engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
+		event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
+		id: "custom_node_for_loop", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
+		exec_input: true, //boolean, default true, define if node have input execution connection
+		exec_output: true, //boolean, default true, define if node have output execution connection
+		inputs: ['firstIndexVariable', 'selectForLoopCondition', 'lastIndexVariable', 'increment'], //array of string, list of inputs of the node
+		outputs: ['loopOutput'], //array of string, list of outputs of the node
+		parse: (editor, command, node, behaviors, inputs, sequence) => { //function, define what the node do when parsed within an event
+			behaviors.push({code: "_for_loop", indent: command.indent, parameters: command.parameters});
+			
+			//repeat branch
+			const loopConnection = editor.getNodeConnectionsById(node, 0).output; 
+			if (editor.isConnectionConnected(loopConnection)) {			
+				const connectionConnectedNode = editor.getConnectionConnectedNodes(loopConnection)[0];
+				behaviors.push(...editor.parseNodesBehavior(connectionConnectedNode, command.indent + 1, sequence[0]));
+			} else
+				behaviors.push({code: 0, indent: command.indent + 1, parameters: Array(0)});
+			
+			//end of loop
+			behaviors.push({ 
+				code: '_end_for_loop',
+				indent: command.indent,
+				parameters: command.parameters
+			});
 		}
 	}, 
 	{
