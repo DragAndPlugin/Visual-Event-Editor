@@ -15,6 +15,16 @@ module.exports = function(Drag, RPGMAKER_NAME) {
 			controller: Drag.VisualEvent.inputs.selectDirectVariable, 
 			dependances: [Drag.VisualEvent.inputs.int, Drag.VisualEvent.inputs.variable],
 		},
+		startPictureId: {
+			type: "interactive", name: "Start Picture ID", behavior: [0, 1],
+			controller: Drag.VisualEvent.inputs.selectDirectVariable, 
+			dependances: [(() => {const input = {...Drag.VisualEvent.inputs.int}; input.default = 1; return input;})(), Drag.VisualEvent.inputs.variable],
+		},
+		endPictureId: {
+			type: "interactive", name: "End Picture ID", behavior: [0, 1],
+			controller: Drag.VisualEvent.inputs.selectDirectVariable, 
+			dependances: [(() => {const input = {...Drag.VisualEvent.inputs.int}; input.default = 100; return input;})(), Drag.VisualEvent.inputs.variable],
+		},
 		xPicturePosition: {
 			type: "interactive", name: "x", behavior: [-1, 0, 1],
 			controller: Drag.VisualEvent.inputs.selectKeepDirectVariable, 
@@ -46,6 +56,6 @@ module.exports = function(Drag, RPGMAKER_NAME) {
 			type: "interactive", name: "Opacity", behavior: [0, 1],
 			controller: Drag.VisualEvent.inputs.selectDirectVariable, 
 			dependances: [Drag.VisualEvent.inputs.opacity, Drag.VisualEvent.inputs.variable],
-		},
+		}
 	};
 };
