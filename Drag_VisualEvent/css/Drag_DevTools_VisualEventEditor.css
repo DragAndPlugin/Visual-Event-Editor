@@ -1250,12 +1250,9 @@ b + .inputConnection.exec {
 /* } */
 
 #graphSVG {
-    pointer-events: none;
     position: absolute;
-    width: 5000000px;
-    height: 5000000px;
     overflow: visible;
-    contain: layout paint size;
+    pointer-events: none;
 }
 
 path {
