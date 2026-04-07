@@ -1,38 +1,70 @@
 //-------------------------------------------------------------------------------------------------------
 // GRAPH CURVES
 
-function drawCurve(from, to, curve, frag = null) {
+// function drawCurve(from, to, curve, frag = null) { version for #graphNodes & #graphSVG using position absolute and top,left for movement
+	// if (!from || !to)
+		// return;
+	
+	// const [xGraph, yGraph] = getGraphPosition();
+	// const scale = getGraphEditorScale();
+	// const scaleMult = 100 / (scale * 100);
+	
+	// const graphSVGLeft = window.innerWidth * (1 - scale) / 2 + xGraph * scale;
+	// const graphSVGTop = window.innerHeight * (1 - scale) / 2 + yGraph * scale;
+	
+	// const fromBoundingRect = !Array.isArray(from) ? from.getBoundingClientRect() : null;
+	// const toBoundingRect = !Array.isArray(to) ? to.getBoundingClientRect() : null;
+	
+	// const basefromx = fromBoundingRect ? fromBoundingRect.left + (fromBoundingRect.width / 2) : from[0];
+	// const fromx = (basefromx - graphSVGLeft) * scaleMult;
+	// const basefromy = fromBoundingRect ? fromBoundingRect.top + (fromBoundingRect.height / 2) : from[1];
+	// const fromy = (basefromy - graphSVGTop) * scaleMult;
+
+	// const basetox = toBoundingRect ? toBoundingRect.left + (toBoundingRect.width / 2) : to[0];
+	// const tox = (basetox - graphSVGLeft) * scaleMult;
+	// const basetoy = toBoundingRect ? toBoundingRect.top + (toBoundingRect.height / 2) : to[1];
+	// const toy = (basetoy - graphSVGTop) * scaleMult;
+
+	// if (!curve)
+		// curve = createCurve(from, to, frag ? frag : null);
+	
+	// const curveData = `M ${fromx},${fromy} ${makeCubicBezierCurve(fromx + 20, fromy, tox, toy)}`;
+	// curve.setAttribute('data-coords', `${fromx},${fromy},${tox},${toy}`);
+	
+	// curve.setAttributeNS(null, "d", curveData);
+// };
+
+function drawCurve(from, to, curve, frag = null) { //version with graph camera and transform translate3d
 	if (!from || !to)
 		return;
-	
-	const [xGraph, yGraph] = getGraphPosition();
-	const scale = getGraphEditorScale();
-	const scaleMult = 100 / (scale * 100);
-	
-	const graphSVGLeft = window.innerWidth * (1 - scale) / 2 + xGraph * scale;
-	const graphSVGTop = window.innerHeight * (1 - scale) / 2 + yGraph * scale;
-	
-	const fromBoundingRect = !Array.isArray(from) ? from.getBoundingClientRect() : null;
-	const toBoundingRect = !Array.isArray(to) ? to.getBoundingClientRect() : null;
-	
-	const basefromx = fromBoundingRect ? fromBoundingRect.left + (fromBoundingRect.width / 2) : from[0];
-	const fromx = (basefromx - graphSVGLeft) * scaleMult;
-	const basefromy = fromBoundingRect ? fromBoundingRect.top + (fromBoundingRect.height / 2) : from[1];
-	const fromy = (basefromy - graphSVGTop) * scaleMult;
 
-	const basetox = toBoundingRect ? toBoundingRect.left + (toBoundingRect.width / 2) : to[0];
-	const tox = (basetox - graphSVGLeft) * scaleMult;
-	const basetoy = toBoundingRect ? toBoundingRect.top + (toBoundingRect.height / 2) : to[1];
-	const toy = (basetoy - graphSVGTop) * scaleMult;
+	const scale = getGraphEditorScale();
+	const [cameraX, cameraY] = getGraphPosition();
+
+	const fromRect = !Array.isArray(from) ? from.getBoundingClientRect() : null;
+	const toRect = !Array.isArray(to) ? to.getBoundingClientRect() : null;
+
+	const screenFromX = fromRect ? fromRect.left + fromRect.width / 2 : from[0];
+	const screenFromY = fromRect ? fromRect.top + fromRect.height / 2 : from[1];
+
+	const screenToX = toRect ? toRect.left + toRect.width / 2 : to[0];
+	const screenToY = toRect ? toRect.top + toRect.height / 2 : to[1];
+
+	// convert screen → graph coordinates
+	const fromx = (screenFromX - cameraX) / scale;
+	const fromy = (screenFromY - cameraY) / scale;
+
+	const tox = (screenToX - cameraX) / scale;
+	const toy = (screenToY - cameraY) / scale;
 
 	if (!curve)
 		curve = createCurve(from, to, frag ? frag : null);
-	
+
 	const curveData = `M ${fromx},${fromy} ${makeCubicBezierCurve(fromx + 20, fromy, tox, toy)}`;
+
 	curve.setAttribute('data-coords', `${fromx},${fromy},${tox},${toy}`);
-	
 	curve.setAttributeNS(null, "d", curveData);
-};
+}
 
 function makeCubicBezierCurve(fromx, fromy, tox, toy) {
 	//https://codepen.io/explosion/pen/YGrpwd

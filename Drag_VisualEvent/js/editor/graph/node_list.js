@@ -146,10 +146,10 @@ function showNodeListMenu(e, exclusivity = "") {
 	nodeList.style.display = "block";
 	
 	const nodeListRect = nodeList.getBoundingClientRect();
-	window._nodeListx = e.x + nodeListRect.width > graphEditorRect.right ? e.x - graphEditorRect.x - (e.x + nodeListRect.width - graphEditorRect.right) : e.x - graphEditorRect.x;
-	window._nodeListy = e.y + nodeListRect.height > bottomPanelRect.top ? e.y - graphEditorRect.y - (e.y + nodeListRect.height - bottomPanelRect.top) : e.y - graphEditorRect.y;
-	nodeList.style.left = `${window._nodeListx}px`;
-	nodeList.style.top = `${window._nodeListy}px`;
+	window._nodeListx = e.x;
+	window._nodeListy = e.y;
+	nodeList.style.left = `${e.x + nodeListRect.width > graphEditorRect.right ? e.x - graphEditorRect.x - (e.x + nodeListRect.width - graphEditorRect.right) : e.x - graphEditorRect.x}px`;
+	nodeList.style.top = `${e.y + nodeListRect.height > bottomPanelRect.top ? e.y - graphEditorRect.y - (e.y + nodeListRect.height - bottomPanelRect.top) : e.y - graphEditorRect.y}px`;
 	
 	const nodeListPaste = nodeList.querySelector('#node-list-paste');
 	if (window._nodeClipboard && window._nodeClipboard.nodes.length > 0)
