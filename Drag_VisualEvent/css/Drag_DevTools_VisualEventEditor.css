@@ -747,14 +747,29 @@ div#functionList {
 	float: right;
 }
 
+#graph-camera {
+	transform: translate3d(-89.2687px, 270.376px, 0px) scale(1);
+    transform-origin: 0px 0px;
+    will-change: transform;
+}
+
+/* #graphNodes { */
+    /* position: absolute; */
+	/* height: 100%; */
+    /* width: 100%; */
+    /* left: 0px; */
+    /* top: 0px; */
+    /* pointer-events: none; */
+    /* transform: scale(var(--scaleGraphEditor)); */
+/* } */
+
 #graphNodes {
     position: absolute;
-	height: 100%;
-    width: 100%;
     left: 0px;
     top: 0px;
+	height: 100%;
+    width: 100%;
     pointer-events: none;
-    /* transform: scale(var(--scaleGraphEditor)); */
 }
 
 #graphNodes[data-culling-nodes-enabled="true"] #graphNode.culled-node {
@@ -1224,16 +1239,23 @@ b + .inputConnection.exec {
     font-style: italic;
 }
 
+/* #graphSVG { */
+	/* pointer-events: none; */
+    /* position: absolute; */
+    /* left: 0px; */
+    /* top: 0px; */
+    /* width: 100%; */
+    /* height: 100%; */
+    /* overflow: visible; */
+/* } */
+
 #graphSVG {
-	pointer-events: none;
+    pointer-events: none;
     position: absolute;
-    left: 0px;
-    top: 0px;
-    width: 100%;
-    height: 100%;
+    width: 5000000px;
+    height: 5000000px;
     overflow: visible;
-	/* transform: scale(1 - var(--scaleGraphEditor)); */
-    /* transform: scale(var(--scaleGraphEditor)); */
+    contain: layout paint size;
 }
 
 path {
