@@ -33,6 +33,9 @@ function init() {
 			if (window._cache.editor.options.uiScale)
 				setFontSize(window._cache.editor.options.uiScale);
 			
+			if (window._cache.editor.search && window._cache.editor.search.open)
+				toggleSearch();
+			
 			window.nodes = [];
 			loadDummyNodes();
 			
@@ -52,13 +55,13 @@ function init() {
 					focusPlayTestWindow();
 				}, 10);
 			
-			// registerScreenWidth();
 			window._saveCacheOnExit = true;
 		}
 	}, 10);
 };
 
 function checkNewVersionAvailable(data) {
+	console.log(data);
 	if (data === '404: Not Found')
 		return;
 	
@@ -249,16 +252,6 @@ function openItchLink() {
 
 function openDevTools() {
 	nw.Window.get().showDevTools();
-};
-
-function showLoading() {
-	// document.querySelector('#loading').classList.remove('hidden');
-	document.querySelector('#loading').style.left = 0;
-};
-
-function hideLoading() {
-	// document.querySelector('#loading').classList.add('hidden');
-	document.querySelector('#loading').style.left = "200%";
 };
 
 function toggleEditorOptionsMenu() {
@@ -1699,6 +1692,11 @@ function setupGraphEditorListeners() {
 		}
 	});
 	
+	window.addEventListener("mousedown", (event) => {
+		if (window._searchOpened && !event.path.map(element => element.id).includes('search-container'))
+			unfocusSearch();
+	});
+	
 	window.addEventListener("mouseup", (event) => {		
 		if (event.which === 3 && window.isMouseDownOnGraph && !window._graphEditorMoved && window.data.targetType && window.data.targetId)
 			showNodeListMenu(event);
@@ -1758,6 +1756,7 @@ function setupGraphEditorListeners() {
 		clearSelectionBox();
 		
 		window._isLeftPanelResizing = false;
+		window._draggingSearch = false;
 		
 		document.querySelector('#graphEditor').style.removeProperty('cursor');
 	});
@@ -1801,6 +1800,13 @@ function dispatchMouseMovementEvent(event) {
 		event.preventDefault();
 		event.stopPropagation();
 		resizeLeftPanel(event);
+		return false;
+	}
+	
+	if (window._draggingSearch) {
+		event.preventDefault();
+		event.stopPropagation();
+		moveSearch(event);
 		return false;
 	}
 	
@@ -1935,7 +1941,7 @@ document.addEventListener("DOMContentLoaded", function () {
 			if (event.keyCode === 46) // SUPPR
 				deleteSelectedNodes(true);
 				
-			if (event.keyCode === 27) { // ESC
+			else if (event.keyCode === 27) { // ESC
 				closeNodeContextMenu();
 				closeNodeListMenu();
 				hideCommonEventContextMenu();
@@ -1970,10 +1976,20 @@ document.addEventListener("DOMContentLoaded", function () {
 						redoNodes();
 						event.preventDefault();
 						return false;
+					case 70: //F
+						toggleSearch();
+						event.preventDefault();
+						return false;
 				}
 			}
-		} else
-			if (event.keyCode === 27)
+			
+			else if (event.keyCode === 70) { // F
+				const selectedNodes = getSelectedNodes();
+				if (selectedNodes.length > 0)
+					focusNode(null, selectedNodes[0]);
+			}
+			
+		} else if (event.keyCode === 27) // ESC
 				document.activeElement.blur();
 		
 		if (event.ctrlKey && event.keyCode === 83) // CTRL + SELECT
