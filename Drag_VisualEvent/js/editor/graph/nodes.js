@@ -221,6 +221,7 @@ function addNodeToGraphNode(node, saveInHistory = false, cache = false, nodeId =
 	nodeResizeObserver.observe(node);
 	node.onmousedown = onMouseDownGraphEditorNode.bind(null, node);
 	node.onmouseup = onMouseUpGraphEditorNode.bind(null, node);
+	node.addEventListener("dblclick", () => focusNode(null, node));
 	
 	//add && init
 	if (frag)
@@ -661,14 +662,36 @@ function getEventNodeName() {
 	return `${window.data.targetType.toUpperCase()} ${String(window.data.targetId).padStart(4, '0')}${window.data.targetType === "Troop Event" || window.data.targetType === "Map Event" ? ': Page ' + ((window.data.pageId || 0) + 1) : ''}`;
 };
 
-function focusNode(nodeId) {
-	const node = getNodeById(nodeId);
+// function focusNode(nodeId, node) {
+	// if (!node && nodeId)
+		// node = getNodeById(nodeId);
+	// if (!node)
+		// return;
+	
+	// const nodePosition = getNodePosition(node);
+	// setGraphPosition(-nodePosition[0] + (window.outerWidth / 2) - (node.offsetWidth / 2), -nodePosition[1] + (window.outerHeight / 2) - (node.offsetHeight / 2));
+// };
+
+function focusNode(nodeId, node) {
+	if (!node && nodeId)
+		node = getNodeById(nodeId);
 	if (!node)
 		return;
-	
-	const nodePosition = getNodePosition(node);
-	setGraphPosition(-nodePosition[0] + (window.outerWidth / 2) - (node.offsetWidth / 2), -nodePosition[1] + (window.outerHeight / 2) - (node.offsetHeight / 2));
-};
+
+	const [nodeX, nodeY] = getNodePosition(node);
+	const scale = getGraphEditorScale();
+
+	const graphEditor = document.querySelector('#graphEditor');
+	const rect = graphEditor.getBoundingClientRect();
+
+	const nodeCenterX = (nodeX + node.offsetWidth / 2) * scale;
+	const nodeCenterY = (nodeY + node.offsetHeight / 2) * scale;
+
+	const cameraX = rect.width / 2 - nodeCenterX;
+	const cameraY = rect.height / 2 - nodeCenterY;
+
+	setGraphPosition(cameraX, cameraY);
+}
 
 function getFirstNode() {
 	return window.nodes[0];
@@ -685,15 +708,20 @@ function getNodeId(node) {
 	return parseInt(node.getAttribute('data-nodeId'));
 };
 
-// select node
-
+// node selection
 function selectNode(node, saveInHistory = false) {
+	if (!node)
+		return;
+	
 	node.classList.add('selected');
 	if (saveInHistory)
 		addToNodeHistory({type: "select", target: node});
 };
 
 function unselectNode(node, saveInHistory = false) {
+	if (!node)
+		return;
+	
 	node.classList.remove('selected');
 	if (saveInHistory)
 		addToNodeHistory({type: "unselect", target: node});
