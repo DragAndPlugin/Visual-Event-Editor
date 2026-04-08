@@ -69,6 +69,16 @@ function getGraphCoordinatesFromAbsolute(absX, absY) {
     return [x, y];
 };
 
+function graphToScreen(x, y) {
+    const scale = getGraphEditorScale();
+    const [xGraphEditor, yGraphEditor] = getGraphPosition();
+
+    return [
+        x * scale + xGraphEditor,
+        y * scale + yGraphEditor
+    ];
+}
+
 function setGraphPosition(x, y, resetDataMouse = true) {
 	const graphEditor = document.querySelector('#graphEditor');
 	
@@ -162,11 +172,13 @@ function zoomGraphEditor(event) { //movement for graph camera using translate po
 
 	const minScale = 0.1;
 	const maxScale = 3;
-	const zoomFactor = 1.15;
+	const zoomFactor = 1.116;
 
 	const oldScale = getGraphEditorScale();
 	let newScale = event.deltaY < 0 ? oldScale * zoomFactor : oldScale / zoomFactor;
 	newScale = Math.min(Math.max(newScale, minScale), maxScale);
+	if (Math.abs(newScale - 1) < 0.02)
+		newScale = 1;
 
 	if (newScale === oldScale)
 		return;
@@ -191,7 +203,7 @@ function zoomGraphEditor(event) { //movement for graph camera using translate po
 		const dirY = mouseY - centerY;
 
 		const distance = Math.sqrt(dirX * dirX + dirY * dirY);
-		const maxDistance = Math.sqrt((editorRect.width/2)**2 + (editorRect.height/2)**2);
+		const maxDistance = Math.sqrt((editorRect.width / 2) ** 2 + (editorRect.height / 2) ** 2);
 		const strength = 0.1 * (distance / maxDistance); // tweak 0.3 for max effect
 
 		newCameraX -= dirX * strength;
