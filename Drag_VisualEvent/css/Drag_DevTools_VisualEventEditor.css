@@ -1491,6 +1491,11 @@ img.noBrokenIcon::after {
     align-content: center;
 }
 
+.textOutline, .textOutline::placeholder {
+	-webkit-text-stroke: 1px var(--outlineColor);
+    text-shadow: -1px -1px 0 var(--outlineColor), 0px -1px 0 var(--outlineColor), 1px -1px 0 var(--outlineColor), -1px 0px 0 var(--outlineColor), 1px 0px 0 var(--outlineColor), -1px 1px 0 var(--outlineColor), 0px 1px 0 var(--outlineColor), 1px 1px 0 var(--outlineColor);
+}
+
 #search-button-wrapper button {
     display: inline-block;
     padding: 0.4em 0em;

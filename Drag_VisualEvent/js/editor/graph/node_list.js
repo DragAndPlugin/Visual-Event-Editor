@@ -106,6 +106,12 @@ function setupNodeList() {
 				$.Drag.VisualEvent.addCSSStylesheet(document, $.Drag.VisualEvent.createCSSStylesheet(`.${customNode.id}_input::after { content: url(${$.Drag.VisualEvent.SVGtoURI(customNode.exec_input_params.symbol)}) !important; }`));
 			if (customNode.exec_output_params && customNode.exec_output_params.symbol)
 				$.Drag.VisualEvent.addCSSStylesheet(document, $.Drag.VisualEvent.createCSSStylesheet(`.${customNode.id}_output::after { content: url(${$.Drag.VisualEvent.SVGtoURI(customNode.exec_output_params.symbol)}) !important; }`));
+			
+			if (customNode.onimport && typeof customNode.onimport === "function")
+				customNode.onimport(window);
+			
+			if (customNode.stylesheet && typeof customNode.stylesheet === "string") 
+				$.Drag.VisualEvent.addCSSStylesheet(document, $.Drag.VisualEvent.createCSSStylesheet(customNode.stylesheet));
 		}
 		console.log(`Imported ${filename} successfully !`);
 	}

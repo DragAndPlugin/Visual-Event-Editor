@@ -29,6 +29,15 @@ function registerNodeReferences(node) {
 	saveItemInEventCache('references', references, window.data.targetType, window.data.mapTargetId, window.data.targetId, window.data.pageId);				
 };
 
+function removeNodeReferences(node) {
+	if (!node)
+		return;
+	
+	const nodeId = getNodeId(node);
+	const references = getEventCacheItem('references', window.data.targetType, window.data.mapTargetId, window.data.targetId, window.data.pageId) || [];
+	references[nodeId] = null;
+};
+
 function searchReferences(searchIn = {}, searchFor = {}) {
 	const refs = {count: 0};
 	for (const eventType in searchIn) {

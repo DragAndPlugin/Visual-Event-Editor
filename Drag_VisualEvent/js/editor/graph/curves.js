@@ -151,7 +151,6 @@ function createCurve(from, to, container) {
 		if (!window._grabbedCurve)
 			document.querySelector('#graphEditor').style.removeProperty('cursor');
 	});
-	// curve.addEventListener('mousedown', onCurveMouseDown);
 	
 	connectCurve(from, to, curve, false);
 	

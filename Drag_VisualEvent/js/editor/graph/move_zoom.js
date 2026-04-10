@@ -46,18 +46,18 @@ function getGraphPosition() {
 	return [(window._xGraph || 0), (window._yGraph || 0)];
 };
 
-function getGraphCoordinatesFromAbsolute(absx, absy) { // old version for graphnode and graphsvg using absolute position and top left movement
-	const graphEditorRect = document.querySelector('#graphEditor').getBoundingClientRect();
-	const [xGraphEditor, yGraphEditor] = getGraphPosition();
+// function getGraphCoordinatesFromAbsolute(absx, absy) { // old version for graphnode and graphsvg using absolute position and top left movement
+	// const graphEditorRect = document.querySelector('#graphEditor').getBoundingClientRect();
+	// const [xGraphEditor, yGraphEditor] = getGraphPosition();
 	
-	const scale = getGraphEditorScale();
-	const scaleMult = 1 / scale;
+	// const scale = getGraphEditorScale();
+	// const scaleMult = 1 / scale;
 
-	const x = absx * scaleMult + graphEditorRect.width * (1 - scaleMult) / 2 - xGraphEditor;
-	const y = absy * scaleMult + graphEditorRect.height * (1 - scaleMult) / 2 - yGraphEditor;
+	// const x = absx * scaleMult + graphEditorRect.width * (1 - scaleMult) / 2 - xGraphEditor;
+	// const y = absy * scaleMult + graphEditorRect.height * (1 - scaleMult) / 2 - yGraphEditor;
 	
-	return [x, y];
-};
+	// return [x, y];
+// };
 
 function getGraphCoordinatesFromAbsolute(absX, absY) {
     const scale = getGraphEditorScale();
@@ -243,6 +243,7 @@ function setGraphEditorScale(scale, showScale = true, redrawCurves = true, refre
 	
 	const graphEditor = document.querySelector('#graphEditor');
 	graphEditor.style.backgroundSize = `calc(var(--bgSizeGraphEditor) * ${scale}) calc(var(--bgSizeGraphEditor) * ${scale})`;
+	document.documentElement.style.setProperty('--graph-scale', scale);
 	// old version for graphnode and graphsvg using absolute position and top left movement
 	// document.querySelector('#graphNodes').style.transform = `scale(${scale})`;
 	// document.querySelector('#graphSVG').style.transform = `scale(${scale})`;

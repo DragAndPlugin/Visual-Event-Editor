@@ -21,7 +21,7 @@ function undoNodes() {
 	const initType = window._nodeUndoHistory[window._nodeUndoHistory.length - 1].type;
 	let actionTime = initTime;
 	let actionType = initType;
-	while (initTime - actionTime < 60 && initType === actionType) {
+	while (initTime - actionTime < 60 && initType === actionType) { // UNDO REDO NEED TO BE REDESIGNED, INSTEAD OF RELYING ON TIME, STORE TARGETS AS ARRAY. SHOULD ALSO FIX CONNECTIONS MAPS
 		let action = window._nodeUndoHistory.pop();
 		switch (action.type) {
 			case "add":
@@ -30,6 +30,7 @@ function undoNodes() {
 			case "delete":
 				addNodeToGraphNode(action.target, false, true);
 				reconnectNodeFromConnectionsMap(action.target, action.connectionsMap);
+				cacheGraphNode(action.target, null, action.connectionsMap);
 				break;
 			case "move":
 				setNodePosition(action.target, action.from[0], action.from[1]);
@@ -88,6 +89,7 @@ function redoNodes() {
 			case "add":
 				addNodeToGraphNode(action.target, false, true);
 				reconnectNodeFromConnectionsMap(action.target, action.connectionsMap);
+				cacheGraphNode(action.target, null, action.connectionsMap);
 				break;
 			case "delete":
 				deleteNode(action.target);

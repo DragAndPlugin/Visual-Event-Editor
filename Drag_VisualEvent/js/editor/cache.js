@@ -413,7 +413,7 @@ function cacheAllGraphNodes() {
 		cacheGraphNode(node, eventCache);
 };
 
-function cacheGraphNode(node, eventCache) {
+function cacheGraphNode(node, eventCache, connectionsMap) {
 	if (!window.data.targetType || !node)
 		return;
 	
@@ -429,7 +429,8 @@ function cacheGraphNode(node, eventCache) {
 	const commandCategory = node.getAttribute('data-pluginName') || null;
 	
 	const parameters = commandCode !== 357 ? parseNodeInputs(node, null, false, false, false) : parseNodeInputs(node, null, false, true, false);
-	const connectionsMap = getNodeConnectionsMap(node);
+	if (!connectionsMap)
+		connectionsMap = getNodeConnectionsMap(node);
 	
 	const nodeInputs = getNodeInputs(node);
 	const lists = [];

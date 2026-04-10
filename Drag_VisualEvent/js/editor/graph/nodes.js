@@ -21,7 +21,9 @@ function addGraphNode(params = {}, saveInHistory = false, cache = false, onNodeR
 		for (const attribute of params.attributes)
 			node.setAttribute(attribute[0], attribute[1]);
 	
-	node.innerHTML = `<p id="node-header" class="${params.headerClassList ? params.headerClassList : ""}" style="${isCustom ? `background-color: ${getCustomNodeData(params.commandCode).color || ''};` : ''}">${params.name || ""}</p>`;
+	node.innerHTML = isCustom && customNodeData.header ? 
+	`<div id="node-header" style="${isCustom ? `background-color: ${customNodeData.color || ''};` : ''}">${customNodeData.header}</div>`
+	: `<p id="node-header" class="${params.headerClassList ? params.headerClassList : ""}" style="${isCustom ? `background-color: ${customNodeData.color || ''};` : ''}">${params.name || ""}</p>`;
 	
 	let nodeContent = ``;
 	nodeContent += `
@@ -128,6 +130,7 @@ function addGraphNode(params = {}, saveInHistory = false, cache = false, onNodeR
 			</div>
 			${params.footer ? params.footer : ''}
 		</div>
+		${isCustom && customNodeData.body && typeof customNodeData.body === "string" ? customNodeData.body : ''}
 		${(params.content || "")}`;
 		
 	// setTimeout(() => { 
@@ -233,8 +236,10 @@ function addNodeToGraphNode(node, saveInHistory = false, cache = false, nodeId =
 	onNodeResize(node);
 	
 	//cache
-	if (cache)
+	if (cache) {
 		cacheGraphNode(node);
+		registerNodeReferences(node);
+	}
 
 	//undo redo history
 	if (saveInHistory)
@@ -310,6 +315,7 @@ function deleteNode(node, saveInHistory = false) {
 	
 	setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
 	uncacheGraphNode(node);
+	removeNodeReferences(node);
 	nodeResizeObserver.unobserve(node);
 	node.remove();
 };
@@ -336,7 +342,7 @@ function moveNode(event) {
 };
 
 function getNodeSnap() {
-	return {x: parseInt(window._cache.editor.options.uiScale / 14 * 40), y: parseInt(window._cache.editor.options.uiScale / 14 * 40)};
+	return {x: parseInt(window._cache.editor.options.uiScale / 14 * 20), y: parseInt(window._cache.editor.options.uiScale / 14 * 20)};
 };
 
 function getNodeOffset(node) {
@@ -577,14 +583,6 @@ function refreshNode(node) {
 		setConnectionConnected(connection, getConnectionCurves(connection).length > 0)
 };
 
-function selectAllNodes() {
-	for (const node of window.nodes)
-		selectNode(node, true);
-	
-	closeNodeContextMenu();
-	closeNodeListMenu();
-};
-
 function getInputConnectedNodes(node) {
 	if (!node)
 		return null;
@@ -716,6 +714,20 @@ function selectNode(node, saveInHistory = false) {
 	node.classList.add('selected');
 	if (saveInHistory)
 		addToNodeHistory({type: "select", target: node});
+	
+	if (node.getAttribute('data-isCustom') == "true") {
+		const customNodeData = getCustomNodeData(getNodeCommandCode(node));
+		if (customNodeData.onselect && typeof customNodeData.onselect === "function")
+			customNodeData.onselect(this, node);
+	}
+};
+
+function selectAllNodes() {
+	for (const node of window.nodes)
+		selectNode(node, true);
+	
+	closeNodeContextMenu();
+	closeNodeListMenu();
 };
 
 function unselectNode(node, saveInHistory = false) {
@@ -748,7 +760,6 @@ function isNodeSelected(node) {
 };
 
 //custom Nodes
-
 function getCustomNodeData(name) {
 	const data = window._customNodes[name] || {};
 	
