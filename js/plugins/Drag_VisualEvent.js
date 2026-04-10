@@ -1696,9 +1696,9 @@ Drag.VisualEvent.version = "0.1.047";
 		const src = fileCount > 1 ? JSON.parse(element.getAttribute('data-src')) : element.getAttribute('data-src');
 		
 		if (isTile)
-			element.style.backgroundImage = "url(../img/tilesets/" + filename[0] + ".png)";
+			element.style.backgroundImage = "url(../../img/tilesets/" + filename[0] + ".png)";
 		else if (Array.isArray(src) ? filename.filter(name => name).length > 0 : filename[0])
-			element.style.backgroundImage = Array.isArray(src) ? src.map((url, i) => "url(../" + url + "/" + filename[i] + ".png)").join(', ') : "url(../" + src + "/" + filename[0] + ".png)";
+			element.style.backgroundImage = Array.isArray(src) ? src.map((url, i) => "url(../../" + url + "/" + filename[i] + ".png)").join(', ') : "url(../../" + src + "/" + filename[0] + ".png)";
 		
 		const isFullCharacterSheet = element.getAttribute('data-isFullCharacterSheet') === "true";
 		const isCharacterSheet = element.getAttribute('data-isCharacterSheet') === "true" || isFullCharacterSheet;
@@ -1708,7 +1708,7 @@ Drag.VisualEvent.version = "0.1.047";
 			return;
 		
 		const image = new Image();
-		image.src = !isTile ? Array.isArray(src) ? `../${src[0]}/${filename[0]}.png` : `../${src}/${filename[0]}.png` : `../img/tilesets/${filename[0]}.png`;
+		image.src = !isTile ? Array.isArray(src) ? `../../${src[0]}/${filename[0]}.png` : `../../${src}/${filename[0]}.png` : `../../img/tilesets/${filename[0]}.png`;
 
 		image.onload = function () {		
 			const naturalWidth = image.naturalWidth;
@@ -2376,10 +2376,20 @@ Drag.VisualEvent.version = "0.1.047";
 		`;
 	};
 	
+	Drag.VisualEvent.canvas = document.createElement('canvas');
+	Drag.VisualEvent.ctx = Drag.VisualEvent.canvas.getContext('2d');
+	
+	Drag.VisualEvent.measureTextWidth = function(textArea, text) {
+		const style = window.getComputedStyle(textArea);
+		Drag.VisualEvent.ctx.font = style.font;
+		return Drag.VisualEvent.ctx.measureText(text || ' ').width;
+	};
+
 	Drag.VisualEvent.autoFitTextArea = function(textArea) {		
 		if (textArea.getAttribute('data-resizeWidth') !== "false") {
-			textArea.style.width = "";
-			textArea.style.width = (Math.max(...textArea.value.split('\n').map(text => text.length)) + 2) * 8 + "px";
+			// textArea.style.width = "";
+			// textArea.style.width = (Math.max(...textArea.value.split('\n').map(text => text.length)) + 2) * 8 + "px";
+			textArea.style.width = Math.max(...textArea.value.split('\n').map(line => Drag.VisualEvent.measureTextWidth(textArea, line))) + 8 + "px";
 		}
 		
 		if (textArea.getAttribute('data-resizeHeight') !== "false") {
@@ -2982,7 +2992,10 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	Drag.VisualEvent.negrgbtorgb = function(negrgb) {
-		return negrgb.map(value => Drag.VisualEvent.lerp(0, 255, (value + 255) / 510));
+		if (negrgb)
+			return negrgb.map(value => Drag.VisualEvent.lerp(0, 255, (value + 255) / 510));
+		else
+			return [0, 0, 0, 1];
 	};
 		
 	Drag.VisualEvent.RGBAToHexA = function(rgba, forceRemoveAlpha = false, convertAlpha = true) {
