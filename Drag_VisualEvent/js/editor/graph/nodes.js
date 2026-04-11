@@ -226,6 +226,11 @@ function addNodeToGraphNode(node, saveInHistory = false, cache = false, nodeId =
 	node.onmouseup = onMouseUpGraphEditorNode.bind(null, node);
 	node.addEventListener("dblclick", () => focusNode(null, node));
 	
+	const nodeHeader = node.querySelector('#node-header');
+	nodeHeader.onmouseover = onNodeHeaderMouseOver.bind(null, node); 
+	nodeHeader.onmousemove = onNodeHeaderMouseMove.bind(null, node);
+	nodeHeader.onmouseout = onNodeHeaderMouseOut.bind(null, node);
+	
 	//add && init
 	if (frag)
 		frag.appendChild(node);
@@ -757,6 +762,52 @@ function deleteSelectedNodes(saveInHistory = false) {
 
 function isNodeSelected(node) {
 	return node.classList.contains('selected');
+};
+
+//node tooltip
+function getNodeTooltip() {
+	return document.querySelector('#node-tooltip');
+};
+
+function hideNodeTooltip() {
+	const nodeTooltip = getNodeTooltip();
+	nodeTooltip.style.display = 'none';
+};
+
+function showNodeTooltip(node, x, y) {
+	if (!node)
+		return;
+	
+	const nodeTooltip = getNodeTooltip();
+	const commandDescription = getNodeCommandDescription(node);
+	if (!nodeTooltip || !commandDescription)
+		return;
+	
+	
+	nodeTooltip.style.display = 'initial';
+	nodeTooltip.style.left = `${x}px`;
+	nodeTooltip.style.top = `${y}px`;
+	nodeTooltip.innerHTML = commandDescription;
+};
+
+function getNodeCommandDescription(node) {
+	if (!node)
+		return "";
+	
+	const commandCode = getNodeCommandCode(node);
+	if (node.getAttribute('data-isCustom') == 'true') {
+		const customNodeData = getCustomNodeData(commandCode);
+		return customNodeData && customNodeData.description ? customNodeData.description : "";
+	} else if (commandCode === 357) {
+		const pluginName = node.getAttribute('data-pluginName');
+		const pluginCommandName = node.getAttribute('data-pluginCommandName');
+		if (pluginName && pluginCommandName) {
+			const pluginCommandData = $.Drag.VisualEvent.pluginJSDocData[pluginName].commands[pluginCommandName];
+			return pluginCommandData && pluginCommandData.desc ? pluginCommandData.desc : "";
+		} else
+			return "";
+	} else 
+		return $.Drag.VisualEvent.getCommandDescription(commandCode);
 };
 
 //custom Nodes

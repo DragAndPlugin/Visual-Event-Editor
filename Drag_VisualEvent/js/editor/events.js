@@ -167,6 +167,34 @@ function onMouseDownGraphEditorNode(node, event) {
 	}
 };
 
+function onNodeHeaderMouseOver(node, event) {
+	if (!node)
+		return;
+	
+	window._mouseOverNode = node;
+	window._mouseOverTimeout = setTimeout(() => {
+		showNodeTooltip(node, event.x, event.y);
+	}, 600);
+};
+
+function onNodeHeaderMouseOut(node, event) {
+	hideNodeTooltip();
+	
+	delete window._mouseOverNode;
+	
+	clearTimeout(window._mouseOverTimeout);
+	delete window._mouseOverTimeout;
+};
+
+function onNodeHeaderMouseMove(node, event) {
+	hideNodeTooltip();
+	
+	clearTimeout(window._mouseOverTimeout);
+	window._mouseOverTimeout = setTimeout(() => {
+		showNodeTooltip(node, event.clientX, event.clientY);
+	}, 600);
+};
+
 function dispatchMouseMovementEvent(event) {
 	if (window._isLeftPanelResizing) {
 		event.preventDefault();

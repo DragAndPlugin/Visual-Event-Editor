@@ -61,7 +61,6 @@ function init() {
 };
 
 function checkNewVersionAvailable(data) {
-	console.log(data);
 	if (data === '404: Not Found')
 		return;
 	
