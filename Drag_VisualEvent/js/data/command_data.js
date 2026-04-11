@@ -65,6 +65,115 @@ module.exports = function(VisualEvent, RPGMAKER_NAME) {
 		command355: "Script", command356: "Plugin Command (MV)", command357: "Plugin Command (MZ)",
 	};
 	
+	VisualEvent.commandsDescription = {
+		command101: "Displays one or more messages in a dialogue window.",
+		command102: "Shows a list of choices and branches execution depending on the player's selection.",
+		command103: "Prompts the player to enter a number and stores the result in a variable.",
+		command104: "Lets the player choose an item from the inventory and stores the result in a variable.",
+		command105: "Displays text that scrolls automatically on the screen.",
+		command108: "Adds a comment to the event. Comments do not affect execution and are mainly used for organization or plugin commands.",
+		command111: "Checks whether a condition is met and branches execution accordingly.",
+		command112: "Starts a loop that repeats until a Break Loop command or another interruption stops it.",
+		command113: "Exits the current loop and continues execution after it.",
+		command115: "Stops the current event immediately and ends its execution.",
+		command117: "Runs the specified common event.",
+		command118: "Creates a label that can be used as a jump target within the same event.",
+		command119: "Jumps execution to the specified label within the same event.",
+		command121: "Turns one or more switches on or off.",
+		command122: "Changes the value of one or more variables using a constant, another variable, random values, game data, or a script.",
+		command123: "Turns the current event's self switch on or off.",
+		command124: "Starts, stops, or changes the value of the timer.",
+		command125: "Increases or decreases the party's gold.",
+		command126: "Adds or removes items from the party's inventory.",
+		command127: "Adds or removes weapons from the party's inventory, optionally including equipped ones.",
+		command128: "Adds or removes armors from the party's inventory, optionally including equipped ones.",
+		command129: "Adds an actor to the party or removes one from it.",
+		command132: "Changes the background music played during battles.",
+		command133: "Changes the music effect played after winning a battle.",
+		command134: "Enables or disables access to the save command.",
+		command135: "Enables or disables access to the menu.",
+		command136: "Enables or disables random encounters.",
+		command137: "Enables or disables access to party formation changes.",
+		command138: "Changes the color tone of window backgrounds.",
+		command139: "Changes the music effect played after being defeated in battle.",
+		command140: "Changes the background music used by a vehicle.",
+		command201: "Transfers the player to a specified map and coordinates, with optional direction and fade settings.",
+		command202: "Sets the location of a vehicle to a specified map and position.",
+		command203: "Moves an event to a specified location or exchanges positions with another event.",
+		command204: "Scrolls the map automatically in a specified direction at a chosen speed.",
+		command205: "Assigns a custom movement route to a character or event.",
+		command206: "Makes the player board or disembark from a vehicle.",
+		command211: "Changes the player's transparency, making them visible or invisible.",
+		command212: "Displays an animation on a specified character or event.",
+		command213: "Displays a balloon icon above a specified character or event.",
+		command214: "Erases the current event until the map is reloaded.",
+		command216: "Shows or hides the player's followers.",
+		command217: "Gathers all followers to the player's current position.",
+		command221: "Gradually fades the screen to black.",
+		command222: "Gradually fades the screen in from black.",
+		command223: "Applies a color tint to the screen over a specified duration.",
+		command224: "Flashes the screen with a specified color and intensity.",
+		command225: "Shakes the screen with a specified power and duration.",
+		command230: "Pauses event execution for a specified duration.",
+		command231: "Displays a picture on the screen.",
+		command232: "Moves a displayed picture to a new position with optional transformations.",
+		command233: "Rotates a displayed picture at a specified speed.",
+		command234: "Applies a color tint to a displayed picture.",
+		command235: "Removes a picture from the screen.",
+		command236: "Changes the weather effect, such as rain, storm, or snow.",
+		command241: "Plays background music (BGM).",
+		command242: "Gradually fades out the currently playing BGM.",
+		command243: "Saves the current BGM for later playback.",
+		command244: "Replays the previously saved BGM.",
+		command245: "Plays background sounds (BGS).",
+		command246: "Gradually fades out the currently playing BGS.",
+		command249: "Plays a music effect (ME), typically used for victory or fanfare.",
+		command250: "Plays a sound effect (SE).",
+		command251: "Stops all currently playing sound effects.",
+		command261: "Plays a movie file on the screen.",
+		command281: "Shows or hides the map name display.",
+		command282: "Changes the current map's tileset.",
+		command283: "Changes the battle background.",
+		command284: "Changes the map's parallax background.",
+		command285: "Retrieves location data from the map and stores it in a variable.",
+		command301: "Starts a battle against a specified troop, with options for escape and defeat handling.",
+		command302: "Opens the shop interface, allowing the player to buy and sell goods.",
+		command303: "Prompts the player to enter a name for the specified actor.",
+		command311: "Increases or decreases an actor's HP, optionally allowing knockout.",
+		command312: "Increases or decreases an actor's MP.",
+		command326: "Increases or decreases an actor's TP.",
+		command313: "Adds or removes states from an actor.",
+		command314: "Fully restores an actor's HP, MP, and removes all states.",
+		command315: "Increases or decreases an actor's experience points.",
+		command316: "Changes an actor's level.",
+		command317: "Changes an actor's parameters such as Max HP, Max MP, Attack, Defense, and others.",
+		command318: "Teaches or removes skills from an actor.",
+		command319: "Changes an actor's equipment.",
+		command320: "Changes an actor's name.",
+		command321: "Changes an actor's class.",
+		command322: "Changes an actor's face, character sprite, and battler images.",
+		command323: "Changes a vehicle's character sprite.",
+		command324: "Changes an actor's nickname.",
+		command325: "Changes an actor's profile description.",
+		command331: "Increases or decreases an enemy's HP during battle.",
+		command332: "Increases or decreases an enemy's MP during battle.",
+		command342: "Increases or decreases an enemy's TP during battle.",
+		command333: "Adds or removes states from an enemy during battle.",
+		command334: "Fully restores an enemy's HP, MP, and removes all states.",
+		command335: "Makes a hidden enemy appear in battle.",
+		command336: "Transforms an enemy into another enemy.",
+		command337: "Displays a battle animation on a target.",
+		command339: "Forces a battler to perform a specified action.",
+		command340: "Immediately ends the current battle.",
+		command351: "Opens the main menu screen.",
+		command352: "Opens the save screen.",
+		command353: "Triggers the game over screen.",
+		command354: "Returns to the title screen.",
+		command355: "Executes JavaScript code.",
+		command356: "Executes a plugin command using the RPG Maker MV format.",
+		command357: "Executes a plugin command using the RPG Maker MZ format with structured arguments.",
+	};
+	
 	VisualEvent.commandsEngine = {
 		command356: "MV",
 		command357: "MZ"
@@ -260,6 +369,13 @@ module.exports = function(VisualEvent, RPGMAKER_NAME) {
 		return "";
 	};
 	
+	VisualEvent.getCommandDescription = function(code) {
+		if (typeof code === "number")
+			return VisualEvent.commandsDescription[`command${code}`];
+		else 
+			return VisualEvent.commandsDescription[code];
+	};
+	
 	VisualEvent.getAssociatedCommands = function(code) {
 		if (typeof code === "number")
 			return VisualEvent.associatedCommands[`command${code}`] || [];
@@ -292,4 +408,5 @@ module.exports = function(VisualEvent, RPGMAKER_NAME) {
 	VisualEvent.getMoveCommandParameters = function(code) {
 		return VisualEvent.moveRouteParameters[parseInt(code)].map(item => {return {...item}}); 
 	};
+
 };
