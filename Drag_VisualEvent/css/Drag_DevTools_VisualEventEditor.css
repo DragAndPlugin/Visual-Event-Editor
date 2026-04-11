@@ -1504,3 +1504,23 @@ img.noBrokenIcon::after {
     border: 2px solid rebeccapurple;
     font-size: 0.9em;
 }
+
+#node-tooltip {
+	display: none;
+	position: absolute;
+    top: 0px;
+    left: 0px;
+    width: fit-content;
+    height: fit-content;
+    background: var(--background-color);
+    z-index: 100;
+    padding: 0.5em;
+    border: 1px solid white;
+    font-size: 0.85em;
+    font-family: cursive;
+    box-shadow: 2px 2px 4px black;
+	pointer-events: none;
+	transform: translate(0%, -100%);
+	margin-left: 1em;
+    margin-top: -1em;
+}
