@@ -4,7 +4,7 @@ module.exports = [{
 	name: "Comment (Graph)",
 	header: `
 		<div style="display: flex;">
-			<textarea class="textOutline unfitTextArea onReadyOnChange" placeholder="Write a comment..." onchange=" $.Drag.VisualEvent.onInputChange(this); $.Drag.VisualEvent.autoFitTextArea(this); cacheCommentHeaderContent(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"></textarea>
+			<textarea id="comment-group-note" class="textOutline unfitTextArea" placeholder="Note..." onchange=" $.Drag.VisualEvent.onInputChange(this); $.Drag.VisualEvent.autoFitTextArea(this); cacheCommentHeaderContent(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"></textarea>
 		</div>
 		<div class="relative columnGap05em flex" style="align-self: flex-start; justify-self: flex-end;">
 			<input type="color" onclick="" onchange="setNodeHeaderColor(this.parentElement.parentElement.parentElement, this.value);" oninput="this.onchange();" onfocus="this.blur()" value="#000000" />
@@ -85,11 +85,17 @@ module.exports = [{
 			const dx = (event.clientX - editor._resizeStartMouseX) / scale;
 			const dy = (event.clientY - editor._resizeStartMouseY) / scale;
 
-			const width = Math.max(100, editor._resizeStartWidth + dx);
+			let width = Math.max(100, editor._resizeStartWidth + dx);
 			const height = Math.max(60, editor._resizeStartHeight + dy);
 
 			content.style.width = `${width}px`;
 			content.style.height = `${height}px`;
+			
+			const header = editor._resizeNode.children[0];
+			if (header.offsetWidth > width) {
+				width = header.offsetWidth;
+				content.style.width = `${width}px`;
+			}
 			
 			editor.cacheNodeContentSize(editor._resizeNode, width, height);
 		};
@@ -216,6 +222,8 @@ module.exports = [{
 		
 		if (nodeCache.commentHeaderContent !== undefined)
 			editor.setCommentNodeHeaderContent(node, nodeCache.commentHeaderContent);
+		
+		node.querySelector('#node-header textarea').onchange();
 	},
 	parse: (editor, command, node, behaviors, inputs, sequence) => {}, //function, define what the node do when parsed within an event
 	onselect: (editor, groupNode) => {
@@ -232,6 +240,7 @@ module.exports = [{
 	stylesheet: `
 		#graphNode[data-commandCode="custom_node_comment_graph"] {
 			z-index: -1 !important;
+			pointer-events: none;
 		}
 
 		#graphNode[data-commandCode="custom_node_comment_graph"] #node-header {
@@ -240,18 +249,33 @@ module.exports = [{
 			justify-content: space-between;
 			align-items: center;
 			position: relative;
+			pointer-events: all;
 		}
 
-		#graphNode[data-commandCode="custom_node_comment_graph"] #node-header textarea {
+		#comment-group-note {
 			margin: 0px;
 			background-color: transparent;
-			border: 0px;
+			border: 0.0625em solid transparent;
 			pointer-events: all;
-			font-size: 1.5em;
+			font-size: 1.4em;
 			font-weight: bold;
 			color: white;
 			--outlineColor: black;
 			resize: none;
+			min-width: 4em;
+			margin-right: 2em;
+		}
+		
+		#comment-group-note:hover {
+			border: 0.0625em solid white;
+		}
+		
+		#comment-group-note::placeholder, .comment-group-note::-webkit-input-placeholder {
+			font-size: 0.6em !important;
+			color: lightgrey !important;
+			font-weight: initial !important;
+			-webkit-text-stroke: 0px !important;
+			--outlineColor: transparent !important;
 		}
 
 		#graphNode[data-commandCode="custom_node_comment_graph"] #node-header #comment-group-chain {
@@ -293,14 +317,6 @@ module.exports = [{
 			stroke-opacity: .55063291;
 		}
 
-		#graphNode[data-commandCode="custom_node_comment_graph"] #node-header textarea::placeholder {
-			font-weight: bold;
-			color: white;
-			--outlineColor: black;
-			-webkit-text-stroke: 1px var(--outlineColor);
-			text-shadow: -1px -1px 0 var(--outlineColor), 0px -1px 0 var(--outlineColor), 1px -1px 0 var(--outlineColor), -1px 0px 0 var(--outlineColor), 1px 0px 0 var(--outlineColor), -1px 1px 0 var(--outlineColor), 0px 1px 0 var(--outlineColor), 1px 1px 0 var(--outlineColor);
-		}
-
 		#graphNode[data-commandCode="custom_node_comment_graph"] #node-header input[type="color"] {
 			pointer-events: all;
 			box-shadow: 0 0 0 2px black;
@@ -311,6 +327,11 @@ module.exports = [{
 			bottom: 0.3125em;
 			right: 0.3125em;
 			cursor: nw-resize;
+		}
+		
+		#graphNode[data-commandCode="custom_node_comment_graph"] > div:nth-child(2){
+			min-height: 60px;
+			min-width: 100px;
 		}
 	`,
 }];
