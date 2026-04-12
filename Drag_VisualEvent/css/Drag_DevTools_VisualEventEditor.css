@@ -70,6 +70,14 @@ textarea {
 	min-height: 2.125em;
 }
 
+/* textarea::placeholder, textarea::-webkit-input-placeholder { */
+	/* font-size: 0.5em !important; */
+	/* color: lightgrey !important; */
+	/* font-weight: initial !important; */
+	/* -webkit-text-stroke: 0px !important; */
+	/* --outlineColor: transparent !important; */
+/* } */
+
 button {
 	padding: 0.625em 1.25em;
 	font-size: 1em;
@@ -1491,7 +1499,7 @@ img.noBrokenIcon::after {
     align-content: center;
 }
 
-.textOutline, .textOutline::placeholder {
+.textOutline {
 	-webkit-text-stroke: 1px var(--outlineColor);
     text-shadow: -1px -1px 0 var(--outlineColor), 0px -1px 0 var(--outlineColor), 1px -1px 0 var(--outlineColor), -1px 0px 0 var(--outlineColor), 1px 0px 0 var(--outlineColor), -1px 1px 0 var(--outlineColor), 0px 1px 0 var(--outlineColor), 1px 1px 0 var(--outlineColor);
 }
