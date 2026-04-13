@@ -6,6 +6,10 @@ data
 fonts
 icon
 img
+css
+effects
+movies
+save
 
 # ignore default scripts
 js/libs
@@ -36,4 +40,4 @@ index.html
 package.json
 
 # ignore editor cache
-html/data/cache.json
+Drag_VisualEvent/cache/cache.json
