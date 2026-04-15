@@ -294,9 +294,6 @@
 					
 					folderContent.innerHTML = content;
 					
-					// if (data.previewType && hasPreview && files.length > 0 && data.selectedFile[i] && selectedIndex > -1)
-						// showFilePreview(files[i][selectedIndex], i);
-					// else 
 					if (folderContent.querySelector('.selected'))
 						folderContent.querySelector('.selected').onclick();
 					else 
@@ -346,15 +343,16 @@
 				const container = element.parentElement;
 				const containerId = parseInt(element.parentElement.getAttribute('data-id'));
 				const src = element.getAttribute('data-src');
-				if (data.previewType && src)
-					showFilePreview(src, containerId);
-				else
-					hideFilePreview();
 				
 				for (const selected of container.querySelectorAll('.file.selected'))
 					selected.classList.remove('selected');
 				element.classList.add('selected');
-				data.selectedFile[containerId] = element.getAttribute('data-src');
+				data.selectedFile[containerId] = src;
+				
+				if (data.previewType && (src || data.selectedFile.some(file => !!file)))
+					showFilePreview();
+				else
+					hideFilePreview();
 			};
 			
 			function selectFolder(element) {
@@ -397,49 +395,58 @@
 				}
 			};
 			
-			function showFilePreview(file, id = 0) {
+			function showFilePreview() {
 				const contentPreview = document.querySelector('#content-preview > div');
 				contentPreview.classList.remove('hidden');
 				
 				data._isTilesetPreview = false;
 				
-				const directoryPath = getSrc()[id];
-				
-				if (data.previewType === "image") {
-					let image = contentPreview.querySelector(`img[data-id='${id}']`);
-					if (!image) {
-						image = document.createElement('img');
-						image.id = "preview-file";
-						image.src = `../../${directoryPath}/${file}`;
-						image.onload = hasSubSelection() ? setupSubSelection.bind(this, image) : '';
-						image.setAttribute('data-id', id);
-						if (id > 0)
-							image.style.zIndex = `-${id}`;
+				for (const [id, directoryPath] of getSrc().entries()) {
+				// const directoryPath = getSrc()[id];
+					
+					if (data.previewType === "image") {
+						let image = contentPreview.querySelector(`img[data-id='${id}']`);
 						
-						if (id >= contentPreview.children.length)
-							contentPreview.appendChild(image);
-						else
-							contentPreview.insertBefore(image, contentPreview.children[id]);
-					} else 
-						image.src = `../../${directoryPath}/${file}`;
-					
-					
-					if (hasSubSelection() && !document.querySelector('#sub-selection-container')) {
-						const subSelectionContainer = document.createElement('div');
-						subSelectionContainer.id = "sub-selection-container";
-						contentPreview.appendChild(subSelectionContainer);
+						if (!data.selectedFile[id]) {
+							if (image)
+								image.remove();
+							continue;
+						}
+						
+						if (!image) {
+							image = document.createElement('img');
+							image.id = "preview-file";
+							image.src = `../../${directoryPath}/${data.selectedFile[id]}`;
+							image.onload = hasSubSelection() ? setupSubSelection.bind(this, image) : '';
+							image.setAttribute('data-id', id);
+							if (id > 0)
+								image.style.zIndex = `-${id}`;
+							
+							if (id >= contentPreview.children.length)
+								contentPreview.appendChild(image);
+							else
+								contentPreview.insertBefore(image, contentPreview.children[id]);
+						} else 
+							image.src = `../../${directoryPath}/${data.selectedFile[id]}`;
+						
+						
+						if (hasSubSelection() && !document.querySelector('#sub-selection-container')) {
+							const subSelectionContainer = document.createElement('div');
+							subSelectionContainer.id = "sub-selection-container";
+							contentPreview.appendChild(subSelectionContainer);
+						}
 					}
-				}
-				
-				if (data.previewType === "video") {
-					const video = file ? `
-						<video controls autoplay loop muted style="max-width: 100%; height: auto;">
-							<source src="../../${directoryPath}/${file}" type="video/webm" />
-							<source src="../../${directoryPath}/${file}" type="video/mp4" />
-						</video>` 
-						: "";
-					let content = `${video}`;
-					contentPreview.innerHTML = content;
+					
+					if (data.previewType === "video") {
+						const video = data.selectedFile[id] ? `
+							<video controls autoplay loop muted style="max-width: 100%; height: auto;">
+								<source src="../../${directoryPath}/${data.selectedFile[id]}" type="video/webm" />
+								<source src="../../${directoryPath}/${data.selectedFile[id]}" type="video/mp4" />
+							</video>` 
+							: "";
+						let content = `${video}`;
+						contentPreview.innerHTML = content;
+					}
 				}
 			};
 			
