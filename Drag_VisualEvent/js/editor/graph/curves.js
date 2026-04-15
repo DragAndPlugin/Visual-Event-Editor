@@ -218,7 +218,7 @@ function connectCurve(from, to, curve, disconnect = true, history = false) {
 	// cacheGraphNode(node, null, action.afterConnectionsMap);
 // };
 
-// addHistoryHandler("connect", onUndoConnect, onRedoConnect);
+// addHistoryHandler("connect", "Connect", onUndoConnect, onRedoConnect);
 
 function disconnectCurve(curve) {
 	if (!curve)
@@ -269,7 +269,7 @@ function onRedoDisconnect(action) {
 	removeCurve(curve);
 };
 
-addHistoryHandler('disconnect', onUndoDisconnect, onRedoDisconnect);
+addHistoryHandler('disconnect', 'Disconnect', onUndoDisconnect, onRedoDisconnect);
 
 function onCurveMouseDown(curve, event) {
 	if (event.which === 1){

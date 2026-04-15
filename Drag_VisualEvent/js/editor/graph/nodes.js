@@ -263,7 +263,7 @@ function onRedoAddNode(action) {
 	}
 };
 
-addHistoryHandler("addNode", onUndoAddNode, onRedoAddNode);
+addHistoryHandler("addNode", "Add Node", onUndoAddNode, onRedoAddNode);
 
 function addNodeOutput(node, outputExec, position) {
 	const nodeId = node.getAttribute('data-nodeId');
@@ -368,7 +368,7 @@ function onRedoDeleteNode(action) {
 	}
 };
 
-addHistoryHandler("deleteNode", onUndoDeleteNode, onRedoDeleteNode);
+addHistoryHandler("deleteNode", "Delete Node", onUndoDeleteNode, onRedoDeleteNode);
 
 
 //move
@@ -504,7 +504,7 @@ function onRedoMoveNode(action) {
 	}
 };
 
-addHistoryHandler("moveNode", onUndoMoveNode, onRedoMoveNode);
+addHistoryHandler("moveNode", "Move Node", onUndoMoveNode, onRedoMoveNode);
 
 function resetAllNodesPositions() {
 	const noInputNodes = getAllNodesWithoutInputConnection();
@@ -842,7 +842,7 @@ function onRedoSelectNode(action) {
 		selectNode(getNodeById(nodeId));
 };
 
-addHistoryHandler("selectNode", onUndoSelectNode, onRedoSelectNode);
+addHistoryHandler("selectNode", "Select Node", onUndoSelectNode, onRedoSelectNode);
 
 function unselectNode(node, saveInHistory = false) {
 	if (!node)
@@ -873,7 +873,7 @@ function onRedoUnselectNode(action) {
 		unselectNode(getNodeById(nodeId));
 };
 
-addHistoryHandler("unselectNode", onUndoUnselectNode, onRedoUnselectNode);
+addHistoryHandler("unselectNode", "Unselect Node", onUndoUnselectNode, onRedoUnselectNode);
 
 //node tooltip
 function getNodeTooltip() {

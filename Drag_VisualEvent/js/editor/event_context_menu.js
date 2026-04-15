@@ -12,18 +12,6 @@ function showCommonEventContextMenu(e) {
 	if (!contextmenu)
 		return;
 	
-	contextmenu.classList.remove('hidden');
-	window._commonEventContextMenuOpened = true;
-	
-	const leftPanelRect = document.querySelector('#left-panel').getBoundingClientRect();
-	const graphEditorRect = document.querySelector('#graphEditor').getBoundingClientRect();
-	const contextMenuRect = contextmenu.getBoundingClientRect();
-	
-	const x = e.x + contextMenuRect.width > graphEditorRect.right ? e.x - (e.x + contextMenuRect.width - graphEditorRect.right) : e.x;
-	const y = e.y + contextMenuRect.height > leftPanelRect.bottom ? e.y - (e.y + contextMenuRect.height - leftPanelRect.bottom) : e.y;
-	contextmenu.style.left = `${x}px`;
-	contextmenu.style.top = `${y}px`;
-	
 	const count = window._cache.graph["Common Event"].ceCount ? window._cache.graph["Common Event"].ceCount : window.data.$dataCommonEvents.length - 1;
 	const ceMaximum = contextmenu.querySelector('#common-event-maximum');
 	ceMaximum.innerHTML = `<span>Set Maximum</span>${$.Drag.VisualEvent.getInputField({type: "integer", min: 1, max: 9999, value: count})}<button onclick="changeMaximumCommonEvents(this)">OK</button>`;
@@ -64,6 +52,18 @@ function showCommonEventContextMenu(e) {
 		ceCache.classList.remove('disabled');
 	else
 		ceCache.classList.add('disabled');
+	
+	contextmenu.classList.remove('hidden');
+	window._commonEventContextMenuOpened = true;
+	
+	const leftPanelRect = document.querySelector('#left-panel').getBoundingClientRect();
+	const graphEditorRect = document.querySelector('#graphEditor').getBoundingClientRect();
+	const contextMenuRect = contextmenu.getBoundingClientRect();
+	
+	const x = e.x + contextMenuRect.width > graphEditorRect.right ? e.x - (e.x + contextMenuRect.width - graphEditorRect.right) : e.x;
+	const y = e.y + contextMenuRect.height > leftPanelRect.bottom ? e.y - (e.y + contextMenuRect.height - leftPanelRect.bottom) : e.y;
+	contextmenu.style.left = `${x}px`;
+	contextmenu.style.top = `${y}px`;
 };
 
 function hideCommonEventContextMenu() {
@@ -211,18 +211,6 @@ function showTroopEventContextMenu(e) {
 	if (!contextmenu)
 		return;
 	
-	contextmenu.classList.remove('hidden');
-	window._troopEventContextMenuOpened = true;
-	
-	const leftPanelRect = document.querySelector('#left-panel').getBoundingClientRect();
-	const graphEditorRect = document.querySelector('#graphEditor').getBoundingClientRect();
-	const contextMenuRect = contextmenu.getBoundingClientRect();
-	
-	const x = e.x + contextMenuRect.width > graphEditorRect.right ? e.x - (e.x + contextMenuRect.width - graphEditorRect.right) : e.x;
-	const y = e.y + contextMenuRect.height > leftPanelRect.bottom ? e.y - (e.y + contextMenuRect.height - leftPanelRect.bottom) : e.y;
-	contextmenu.style.left = `${x}px`;
-	contextmenu.style.top = `${y}px`;
-	
 	const count = window._cache.graph["Troop Event"].count ? window._cache.graph["Troop Event"].count : window.data.$dataTroops.length - 1;
 	const eMaximum = contextmenu.querySelector('#troop-event-maximum');
 	eMaximum.innerHTML = `
@@ -267,6 +255,18 @@ function showTroopEventContextMenu(e) {
 		eDiscard.classList.remove('disabled');
 	else
 		eDiscard.classList.add('disabled');
+	
+	contextmenu.classList.remove('hidden');
+	window._troopEventContextMenuOpened = true;
+	
+	const leftPanelRect = document.querySelector('#left-panel').getBoundingClientRect();
+	const graphEditorRect = document.querySelector('#graphEditor').getBoundingClientRect();
+	const contextMenuRect = contextmenu.getBoundingClientRect();
+	
+	const x = e.x + contextMenuRect.width > graphEditorRect.right ? e.x - (e.x + contextMenuRect.width - graphEditorRect.right) : e.x;
+	const y = e.y + contextMenuRect.height > leftPanelRect.bottom ? e.y - (e.y + contextMenuRect.height - leftPanelRect.bottom) : e.y;
+	contextmenu.style.left = `${x}px`;
+	contextmenu.style.top = `${y}px`;
 };
 
 function hideTroopEventContextMenu() {
@@ -433,18 +433,6 @@ function showMapEventContextMenu(e) {
 	if (!contextmenu)
 		return;
 	
-	contextmenu.classList.remove('hidden');
-	window._mapEventContextMenuOpened = true;
-	
-	const leftPanelRect = document.querySelector('#left-panel').getBoundingClientRect();
-	const graphEditorRect = document.querySelector('#graphEditor').getBoundingClientRect();
-	const contextMenuRect = contextmenu.getBoundingClientRect();
-	
-	const x = e.x + contextMenuRect.width > graphEditorRect.right ? e.x - (e.x + contextMenuRect.width - graphEditorRect.right) : e.x;
-	const y = e.y + contextMenuRect.height > leftPanelRect.bottom ? e.y - (e.y + contextMenuRect.height - leftPanelRect.bottom) : e.y;
-	contextmenu.style.left = `${x}px`;
-	contextmenu.style.top = `${y}px`;
-	
 	const eEvent = e.path.find(elem => typeof elem.hasAttribute === "function" && elem.hasAttribute('data-eventId'));
 	const eventId = eEvent ? eEvent.getAttribute('data-eventId') : 0;
 	contextmenu.setAttribute('data-eventId', eventId);
@@ -508,6 +496,18 @@ function showMapEventContextMenu(e) {
 		eDiscard.classList.remove('disabled');
 	else
 		eDiscard.classList.add('disabled');
+	
+	contextmenu.classList.remove('hidden');
+	window._mapEventContextMenuOpened = true;
+	
+	const leftPanelRect = document.querySelector('#left-panel').getBoundingClientRect();
+	const graphEditorRect = document.querySelector('#graphEditor').getBoundingClientRect();
+	const contextMenuRect = contextmenu.getBoundingClientRect();
+	
+	const x = e.x + contextMenuRect.width > graphEditorRect.right ? e.x - (e.x + contextMenuRect.width - graphEditorRect.right) : e.x;
+	const y = e.y + contextMenuRect.height > leftPanelRect.bottom ? e.y - (e.y + contextMenuRect.height - leftPanelRect.bottom) : e.y;
+	contextmenu.style.left = `${x}px`;
+	contextmenu.style.top = `${y}px`;
 };
 
 function hideMapEventContextMenu() {

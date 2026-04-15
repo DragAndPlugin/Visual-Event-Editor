@@ -8,7 +8,7 @@
 	};
 })();
 
-function addHistoryHandler(name, undoHandler, redoHandler) {
+function addHistoryHandler(name, label, undoHandler, redoHandler) {
 	if (!name || !undoHandler || !redoHandler)
 		return console.error(`Missing name: ${name}, undoHandler: ${undoHandler} or redoHandler: ${redoHandler}, couldn't add to history handler`);
 		
@@ -16,6 +16,7 @@ function addHistoryHandler(name, undoHandler, redoHandler) {
 		return console.error(`History handler with name: ${name} already exist, couldn't overwrite.`);
 	
 	window._history.handlers[name] = {};
+	window._history.handlers[name].label = label ? label : name;
 	window._history.handlers[name].undo = undoHandler;
 	window._history.handlers[name].redo = redoHandler;
 };
@@ -25,6 +26,10 @@ function getHistoryHandler(name, type) {
 		return null;
 	
 	return window._history.handlers[name][type] || null;
+};
+
+function getHistoryHandlerLabel(name) {
+	return getHistoryHandler(name, "label");
 };
 
 function addToUndoHistory(action, redoDestructive = true) {
@@ -51,6 +56,7 @@ function undo() {
 	const undoHistory = getUndoHistory();
 	const action = undoHistory.pop();
 	const historyHandler = getHistoryHandler(action.type, "undo");
+	const label = getHistoryHandlerLabel(action.type);
 	
 	if (!historyHandler || typeof historyHandler !== "function")
 		return;
@@ -61,7 +67,7 @@ function undo() {
 		historyHandler(action);
 		addToRedoHistory(action);
 		
-		showUndoRedoNotification("undo", action.type);
+		showUndoRedoNotification("undo", label);
 		closeNodeContextMenu();
 		closeNodeListMenu();
 	} catch (error) {
@@ -87,6 +93,7 @@ function redo() {
 	const redoHistory = getRedoHistory();
 	const action = redoHistory.pop();
 	const historyHandler = getHistoryHandler(action.type, "redo");
+	const label = getHistoryHandlerLabel(action.type);
 	
 	if (!historyHandler || typeof historyHandler !== "function")
 		return;
@@ -95,8 +102,8 @@ function redo() {
 		setHistoryIsRestoring(true);
 		
 		historyHandler(action);
-	
-		showUndoRedoNotification("redo", action.type);
+		
+		showUndoRedoNotification("redo", label);
 		closeNodeContextMenu();
 		closeNodeListMenu();
 	} catch (error) {
@@ -107,15 +114,15 @@ function redo() {
 	}
 };
 
-function showUndoRedoNotification(type, actionType) {
-	if (!type || !actionType)
+function showUndoRedoNotification(type, label = "") {
+	if (!type)
 		return;
 	
 	const eNotification = document.querySelector('#undo-redo-notification');
 	if (!eNotification)
 		return;
 	
-	eNotification.innerHTML = `${$.Drag.VisualEvent.capitalize(type)}: ${actionType.toLowerCase()}`;	
+	eNotification.innerHTML = `${$.Drag.VisualEvent.capitalize(type)}: ${label || ""}`;	
 	eNotification.style.transition = 'opacity linear 0s';
 	eNotification.style.opacity = 1;
 	

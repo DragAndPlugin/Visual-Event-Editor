@@ -185,7 +185,7 @@ function onRedoConnectConnections(action) {
 	}
 };
 
-addHistoryHandler("connect", onUndoConnectConnections, onRedoConnectConnections);
+addHistoryHandler("connect", "Connect", onUndoConnectConnections, onRedoConnectConnections);
 
 function removeConnectionCurves(connection) {
 	const curves = getConnectionCurves(connection);
