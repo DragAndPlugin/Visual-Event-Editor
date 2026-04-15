@@ -136,7 +136,7 @@ function addGraphNode(params = {}, saveInHistory = false, cache = false, onNodeR
 	// setTimeout(() => { 
 		node.innerHTML += nodeContent; 
 		
-		setNodePosition(node, params.x || 0, params.y || 0, saveInHistory, cache);
+		setNodePosition(node, params.x || 0, params.y || 0, false, cache);
 		setNodeOffset(node, 0, 0);
 		
 		if (!window._preventAddNode)
@@ -145,24 +145,6 @@ function addGraphNode(params = {}, saveInHistory = false, cache = false, onNodeR
 	
 	return node;
 };
-
-// function addRerouteNode() {
-	// <div id="graphNode">
-		// <p id="node-header" class="" style="background: none; min-height: 1em; margin: 0; padding: 0;"></p>
-		// <div class="mBottom05 relative " style="margin-bottom: 0; display: flex; height: 2em;">
-			// <div id="input-container" style="max-width: 2em;">
-				// <span id="node-input" class="node-input-exec" style="margin-left: 0.3em;">
-					// <span data-connected="false" data-nodeid="19" data-connectionid="0" data-exclusive="exec" class="exec inputConnection"></span>
-				// </span>
-			// </div>
-			// <div id="output-container">
-				// <span class="nodeOutput" id="main-exec-output" style="margin-right: 0.3em;"> 
-					// <span data-connected="false" data-nodeid="19" data-connectionid="0" data-indent="0" data-exclusive="exec" class="exec outputConnection "></span>
-				// </span>
-			// </div>
-		// </div>
-	// </div>
-// };
 
 function onNodeInputsReady(node, onNodeReady) {
 	if (onNodeReady)
@@ -236,9 +218,16 @@ function addNodeToGraphNode(node, saveInHistory = false, cache = false, nodeId =
 		frag.appendChild(node);
 	else
 		graphNode.appendChild(node);
+	
 	triggerAllOnReadyOnChange();
 	autofitAllTextArea();
 	onNodeResize(node);
+	
+	if (node.getAttribute('data-isCustom') === 'true') {
+		const customNodeData = getCustomNodeData(getNodeCommandCode(node));
+		if (customNodeData.onadd && typeof customNodeData.onadd === "function")
+			customNodeData.onadd(this, node);
+	}
 	
 	//cache
 	if (cache) {
@@ -248,11 +237,33 @@ function addNodeToGraphNode(node, saveInHistory = false, cache = false, nodeId =
 
 	//undo redo history
 	if (saveInHistory)
-		addToNodeHistory({type: "add", target: node});
+		addToUndoHistory({type: "addNode", target: [node]});
 	
 	node.setAttribute('data-_ready', 'true');
 	triggerModsFunction("onAddNode", [node]);
-};			
+};
+
+function onUndoAddNode(action) {
+	const nodes = action.target;
+	for (const node of nodes) {
+		const nodeId = getNodeId(node);
+		deleteNode(getNodeById(nodeId));
+	}
+};
+
+function onRedoAddNode(action) {
+	const nodes = action.target;
+	for (const [i, node] of nodes.entries()) {
+		addNodeToGraphNode(node, false, false);
+		if (action.connectionsMap && action.connectionsMap[i]) {
+			reconnectNodeFromConnectionsMap(node, action.connectionsMap[i]);
+			cacheGraphNode(node, null, action.connectionsMap[i]);
+		} else 
+			cacheGraphNode(node);
+	}
+};
+
+addHistoryHandler("addNode", onUndoAddNode, onRedoAddNode);
 
 function addNodeOutput(node, outputExec, position) {
 	const nodeId = node.getAttribute('data-nodeId');
@@ -305,13 +316,15 @@ function hideNodeOutput(node, outputId) {
 	refreshNode(node);
 };
 
+
+//delete
 function deleteNode(node, saveInHistory = false) {
 	if (node.classList.contains('undeletable'))
 		return;
 	
 	const curves = getNodeCurves(node);
 	if (saveInHistory)
-		addToNodeHistory({type: "delete", target: node, connectionsMap: getNodeConnectionsMap(node)});
+		addToUndoHistory({type: "deleteNode", target: [node], connectionsMap: [getNodeConnectionsMap(node)]});
 	
 	for (const inputCurve of curves.inputs)
 		removeCurve(inputCurve);
@@ -325,6 +338,40 @@ function deleteNode(node, saveInHistory = false) {
 	node.remove();
 };
 
+function deleteSelectedNodes(saveInHistory = false) {
+	const selectedNodes = getSelectedNodes();
+	
+	if (saveInHistory && selectedNodes.length > 0)
+		addToUndoHistory({type: "deleteNode", target: selectedNodes, connectionsMap: selectedNodes.map(node => getNodeConnectionsMap(node))});
+	
+	for (const node of selectedNodes) 
+		deleteNode(node, false);
+	
+	closeNodeContextMenu();
+};
+
+
+function onUndoDeleteNode(action) {
+	const nodes = action.target;
+	for (const [i, node] of nodes.entries()) {
+		addNodeToGraphNode(node, false, true);
+		reconnectNodeFromConnectionsMap(node, action.connectionsMap[i]);
+		cacheGraphNode(node, null, action.connectionsMap[i]);
+	}
+};
+
+function onRedoDeleteNode(action) {
+	const nodes = action.target;
+	for (const node of nodes) {
+		const nodeId = getNodeId(node);
+		deleteNode(getNodeById(nodeId));
+	}
+};
+
+addHistoryHandler("deleteNode", onUndoDeleteNode, onRedoDeleteNode);
+
+
+//move
 function moveNode(event) {	
 	if (!window.nodeMouseDown)
 		return;
@@ -342,7 +389,8 @@ function moveNode(event) {
 	const xSnappedMovement = Math.round(xMouseMovement / nodeSnap.x) * nodeSnap.x;
 	const ySnappedMovement = Math.round(yMouseyMovement / nodeSnap.y) * nodeSnap.y;
 	
-	for (const node of document.querySelectorAll("#graphNode.selected"))
+	const selectedNodes = getSelectedNodes();
+	for (const node of selectedNodes)
 		setNodeOffset(node, xSnappedMovement, ySnappedMovement, true);
 };
 
@@ -384,9 +432,6 @@ function setNodeOffset(node, x, y, curveOffset = false) {
 			offsetCurve(curve, [0, 0], [nodeSnap.x * xDir, nodeSnap.y * yDir]);
 		for (const curve of curves.outputs)
 			offsetCurve(curve, [nodeSnap.x * xDir, nodeSnap.y * yDir], [0, 0]);
-		
-		// redrawNodeCurves(node);
-		// setTimeout(() => redrawNodeCurves(node), 0);
 	}
 };
 
@@ -407,8 +452,9 @@ function setNodePosition(node, x = 0, y = 0, saveInHistory = false, cache = true
 	x = parseInt(x / nodeSnap.x) * nodeSnap.x;
 	y = parseInt(y / nodeSnap.y) * nodeSnap.y;
 	
-	if (saveInHistory)
-		addToNodeHistory({type: "move", target: node, from: getNodePosition(node), to: [x, y]});
+	const nodePosition = getNodePosition(node);
+	if (saveInHistory && (nodePosition[0] !== x || nodePosition[1] !== y))
+		addToUndoHistory({type: "moveNode", target: [getNodeId(node)], movement: [nodePosition[0] - x, nodePosition[1] - y]}); //from: nodePosition, to: [x, y]
 	
 	node.setAttribute('data-x', x);
 	node.setAttribute('data-y', y);
@@ -417,11 +463,48 @@ function setNodePosition(node, x = 0, y = 0, saveInHistory = false, cache = true
 	
 	if (cache)
 		updateCacheGraphNodePosition(node);
-	
-	const [xNode, yNode] = getNodePosition(node);
-	if (xNode !== x || yNode !== y)
-		redrawNodeCurves(node);
 };
+
+function moveSelectedNodes() {
+	let movement = false;
+	
+	const nodes = getSelectedNodes();
+	for (const node of nodes) {
+		const [xNode, yNode] = getNodePosition(node);
+		const [xOffset, yOffset] = getNodeOffset(node);
+		if (xOffset !== 0 || yOffset !== 0) {
+			movement = [xOffset, yOffset];
+			setNodePosition(node, xNode + xOffset, yNode + yOffset);
+			setNodeOffset(node, 0, 0);
+			setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
+		}
+	}
+	
+	if (movement)
+		addToUndoHistory({type: "moveNode", target: nodes.map(node => getNodeId(node)), movement: movement});
+};
+
+function onUndoMoveNode(action) {
+	const nodeIds = action.target;
+	for (const nodeId of nodeIds) {
+		const node = getNodeById(nodeId);
+		const nodePosition = getNodePosition(node);
+		setNodePosition(node, nodePosition[0] - action.movement[0], nodePosition[1] - action.movement[1]); //action.from[0], action.from[1]
+		redrawNodeCurves(node);
+	}
+};
+
+function onRedoMoveNode(action) {
+	const nodeIds = action.target;
+	for (const nodeId of nodeIds) {
+		const node = getNodeById(nodeId);
+		const nodePosition = getNodePosition(node);
+		setNodePosition(node, nodePosition[0] + action.movement[0], nodePosition[1] + action.movement[1]); //action.to[0], action.to[1]
+		redrawNodeCurves(node);
+	}
+};
+
+addHistoryHandler("moveNode", onUndoMoveNode, onRedoMoveNode);
 
 function resetAllNodesPositions() {
 	const noInputNodes = getAllNodesWithoutInputConnection();
@@ -694,7 +777,7 @@ function focusNode(nodeId, node) {
 	const cameraY = rect.height / 2 - nodeCenterY;
 
 	setGraphPosition(cameraX, cameraY);
-}
+};
 
 function getFirstNode() {
 	return window.nodes[0];
@@ -712,13 +795,23 @@ function getNodeId(node) {
 };
 
 // node selection
+
+function getSelectedNodes() {
+	return Array.from(document.querySelectorAll('#graphNode.selected'));
+};
+
+function isNodeSelected(node) {
+	return node.classList.contains('selected');
+};
+
 function selectNode(node, saveInHistory = false) {
 	if (!node)
 		return;
 	
+	// if (saveInHistory && !node.classList.contains('selected'))
+		// addToUndoHistory({type: "selectNode", target: [getNodeId(node)]});
 	node.classList.add('selected');
-	if (saveInHistory)
-		addToNodeHistory({type: "select", target: node});
+	
 	
 	if (node.getAttribute('data-isCustom') == "true") {
 		const customNodeData = getCustomNodeData(getNodeCommandCode(node));
@@ -729,40 +822,58 @@ function selectNode(node, saveInHistory = false) {
 
 function selectAllNodes() {
 	for (const node of window.nodes)
-		selectNode(node, true);
+		selectNode(node);
+	
+	// addToUndoHistory({type: "selectNode", target: window.nodes.map(node => getNodeId(node))});
 	
 	closeNodeContextMenu();
 	closeNodeListMenu();
 };
+
+function onUndoSelectNode(action) {
+	const nodeIds = action.target;
+	for (const nodeId of nodeIds)
+		unselectNode(getNodeById(nodeId));
+};
+
+function onRedoSelectNode(action) {
+	const nodeIds = action.target;
+	for (const nodeId of nodeIds)
+		selectNode(getNodeById(nodeId));
+};
+
+addHistoryHandler("selectNode", onUndoSelectNode, onRedoSelectNode);
 
 function unselectNode(node, saveInHistory = false) {
 	if (!node)
 		return;
 	
 	node.classList.remove('selected');
-	if (saveInHistory)
-		addToNodeHistory({type: "unselect", target: node});
+	// if (saveInHistory)
+		// addToUndoHistory({type: "unselectNode", target: [getNodeId(node)]});
 };
 
 function unselectAllNodes(saveInHistory = false) {
-	for (const node of getSelectedNodes())
-		unselectNode(node, saveInHistory);
+	const selectedNodes = getSelectedNodes();
+	// if (saveInHistory && selectedNodes.length > 0)
+		// addToUndoHistory({type: "unselectNode", target: selectedNodes.map(node => getNodeId(node))});
+	for (const node of selectedNodes)
+		unselectNode(node, false);
 };
 
-function getSelectedNodes() {
-	return Array.from(document.querySelectorAll('#graphNode.selected'));
+function onUndoUnselectNode(action) {
+	const nodeIds = action.target;
+	for (const nodeId of nodeIds)
+		selectNode(getNodeById(nodeId));
 };
 
-function deleteSelectedNodes(saveInHistory = false) {
-	for (const node of getSelectedNodes()) 
-		deleteNode(node, saveInHistory);
-	
-	closeNodeContextMenu();
+function onRedoUnselectNode(action) {
+	const nodeIds = action.target;
+	for (const nodeId of nodeIds)
+		unselectNode(getNodeById(nodeId));
 };
 
-function isNodeSelected(node) {
-	return node.classList.contains('selected');
-};
+addHistoryHandler("unselectNode", onUndoUnselectNode, onRedoUnselectNode);
 
 //node tooltip
 function getNodeTooltip() {

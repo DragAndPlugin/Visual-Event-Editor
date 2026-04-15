@@ -10,6 +10,7 @@
 		<link href="../css/Drag_DevTools.css" rel="stylesheet">
 		<link href="../css/Drag_DevTools_VisualEventEditor.css" rel="stylesheet">
 		<script src="../js/editor/loading.js"></script>
+		<script src="../js/editor/history.js"></script>
 		<script src="../js/editor/top_panel.js"></script>
 		<script src="../js/editor/event_list.js"></script>
 		<script src="../js/editor/event_context_menu.js"></script>
@@ -22,7 +23,6 @@
 		<script src="../js/editor/parse.js"></script>
 		<script src="../js/editor/cache.js"></script>
 		<script src="../js/editor/graph/cull.js"></script>
-		<script src="../js/editor/history.js"></script>
 		<script src="../js/editor/autosave.js"></script>
 		<script src="../js/editor/playtest.js"></script>
 		<script src="../js/editor/graph/move_zoom.js"></script>
@@ -276,8 +276,8 @@
 				<hr/>
 				<div>
 					<span onclick="selectAllNodes();">Select All Nodes<span class='shortcut'>(CTRL+A)</span></span>
-					<span id="node-contextmenu-undo" class="disabled" onclick="undoNodes();">Undo<span class='shortcut'>(CTRL+Z)</span></span>
-					<span id="node-contextmenu-redo" class="disabled" onclick="redoNodes();">Redo<span class='shortcut'>(CTRL+Y)</span></span>
+					<span id="node-contextmenu-undo" class="disabled" onclick="undo();">Undo<span class='shortcut'>(CTRL+Z)</span></span>
+					<span id="node-contextmenu-redo" class="disabled" onclick="redo();">Redo<span class='shortcut'>(CTRL+Y)</span></span>
 				</div>
 			</div>
 		</div>

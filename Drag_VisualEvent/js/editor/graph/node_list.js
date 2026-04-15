@@ -180,7 +180,7 @@ function closeNodeListMenu() {
 	
 	const pendingCurves = document.querySelectorAll('#graphSVG > #curve[data-_pending="true"]');
 	for (const curve of pendingCurves)
-		removeCurve(curve);
+		removeCurve(curve, true, true);
 };
 
 function addNodeFromNodeList(elem) {			

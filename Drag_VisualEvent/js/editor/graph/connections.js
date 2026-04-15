@@ -9,7 +9,8 @@ function moveConnection(event) {
 	let curves = getConnectionCurves(window.connectionMouseDown);
 	let target;
 	
-	if (curves.length === 0) { //grabbed connection doesn't have an attached curve
+	//no attached curves, create temp curve
+	if (curves.length === 0) { 
 		let curve;
 		if (connectionType === "inputConnection")
 			curve = createCurve(null, window.connectionMouseDown);
@@ -17,7 +18,9 @@ function moveConnection(event) {
 			curve = createCurve(window.connectionMouseDown, null);
 		
 		curve.setAttribute('data-_temp', 'true');
-	} else { //grabbed connection already have a curve
+		
+	//existing curve, move it
+	} else { 
 		let curve = window._grabbedCurve ? window._grabbedCurve : curves[0];
 		
 		//invert connection type when grabbing from connection without existing curve
@@ -92,6 +95,16 @@ function onEndMoveConnection(event) {
 	
 	//target is valid
 	if (isConnection(target) && isConnectionTargetValid(target, window.connectionMouseDown, curve)) {
+		const targetNode = getConnectionNode(target);
+		const sourceNode = getConnectionNode(window.connectionMouseDown);
+		
+		const action = {};
+		if (history) {
+			const leftNode = getConnectionNode(getCurveLeftConnection(curve));
+			const rightNode = getConnectionNode(getCurveRightConnection(curve));
+			action.beforeNodeIds = [getNodeId(targetNode), getNodeId(sourceNode), getNodeId(leftNode), getNodeId(rightNode)];
+			action.beforeConnectionsMap = [getGraphNodeFromCache(targetNode).connectionsMap, getGraphNodeFromCache(sourceNode).connectionsMap, getGraphNodeFromCache(leftNode).connectionsMap, getGraphNodeFromCache(rightNode).connectionsMap];
+		}
 		
 		//mono connection already have a curve, destroy it
 		if (target.classList.contains('mono')) {
@@ -114,25 +127,38 @@ function onEndMoveConnection(event) {
 		// if (curve.getAttribute('data-_temp') === 'true')
 			// connectionType = connectionType === "inputConnection" ? "outputConnection" : "inputConnection";
 		
-		if (target.classList.contains(connectionType)) {
+		// if (target.classList.contains(connectionType)) {
 			const nodeId = parseInt(target.getAttribute('data-nodeId'));
 			const connectionId = target.getAttribute('data-connectionId');
 			if (connectionType === "inputConnection") {
 				curve.setAttribute('data-rightConnectionId', connectionId); 
 				curve.setAttribute('data-rightNodeId', nodeId);
+				// addToUndoHistory({type: "connect", nodeId: nodeId, connectionId: connectionId, dir: "right"});
 			} else {
 				curve.setAttribute('data-leftConnectionId', connectionId); 
 				curve.setAttribute('data-leftNodeId', nodeId);
+				// addToUndoHistory({type: "connect", nodeId: nodeId, connectionId: connectionId, dir: "left"});
 			}
-		}
+		// }
 		
-		setConnectionConnected(target, true)
+		setConnectionConnected(target, true);
 		curve.setAttribute('data-_temp', false);
 		
-		updateCacheGraphNodeConnectionsMap(getConnectionNode(target));
-		updateCacheGraphNodeConnectionsMap(getConnectionNode(window.connectionMouseDown));
-		updateCacheGraphNodeConnectionsMap(getConnectionNode(getCurveLeftConnection(curve)));
-		updateCacheGraphNodeConnectionsMap(getConnectionNode(getCurveRightConnection(curve)));
+		
+		const leftNode = getConnectionNode(getCurveLeftConnection(curve));
+		const rightNode = getConnectionNode(getCurveRightConnection(curve));
+		
+		updateCacheGraphNodeConnectionsMap(targetNode);
+		updateCacheGraphNodeConnectionsMap(sourceNode);
+		updateCacheGraphNodeConnectionsMap(leftNode);
+		updateCacheGraphNodeConnectionsMap(rightNode);
+		
+		if (history) {
+			action.afterNodeIds = [getNodeId(targetNode), getNodeId(sourceNode), getNodeId(leftNode), getNodeId(rightNode)];
+			action.afterConnectionsMap = [getGraphNodeFromCache(targetNode).connectionsMap, getGraphNodeFromCache(sourceNode).connectionsMap, getGraphNodeFromCache(leftNode).connectionsMap, getGraphNodeFromCache(rightNode).connectionsMap];
+			action.type = "connect";
+			addToUndoHistory(action);
+		}
 		
 		setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
 	} else {
@@ -143,11 +169,29 @@ function onEndMoveConnection(event) {
 	}
 };
 
+function onUndoConnectConnections(action) {
+	for (const [i, nodeId] of action.beforeNodeIds.entries()) {
+		const node = getNodeById(nodeId);
+		reconnectNodeFromConnectionsMap(node, action.beforeConnectionsMap[i]);
+		cacheGraphNode(node, null, action.beforeConnectionsMap[i]);
+	}
+};
+
+function onRedoConnectConnections(action) {
+	for (const [i, nodeId] of action.afterNodeIds.entries()) {
+		const node = getNodeById(nodeId);
+		reconnectNodeFromConnectionsMap(node, action.afterConnectionsMap[i]);
+		cacheGraphNode(node, null, action.afterConnectionsMap[i]);
+	}
+};
+
+addHistoryHandler("connect", onUndoConnectConnections, onRedoConnectConnections);
+
 function removeConnectionCurves(connection) {
 	const curves = getConnectionCurves(connection);
 	for (const curve of curves) {
 		if (!curve)
-			return;
+			continue;
 		
 		removeCurve(curve);
 	}

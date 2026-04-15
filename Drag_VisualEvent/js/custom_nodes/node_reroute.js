@@ -20,15 +20,8 @@ module.exports = [{
 	onimport: (editor, node) => {
 		
 		editor.onCurveDblClick = function(curve) {
-			// event.preventDefault();
-			
-			// const curve = event.target;
 			if (!curve)
 				return;
-			
-			// const reroute = editor.getCustomNodeData('custom_node_reroute');
-			// if (!reroute)
-				// return;
 			
 			const [x, y] = editor.getGraphCoordinatesFromAbsolute(event.x, event.y);
 			const node = editor.addNodeFromParams({

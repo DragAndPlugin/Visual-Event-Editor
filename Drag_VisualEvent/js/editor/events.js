@@ -98,21 +98,12 @@ function setupGraphEditorListeners() {
 			window.nodeMouseDown.removeAttribute('data-mousex');
 			window.nodeMouseDown.removeAttribute('data-mousey');
 			
-			//bake offset in node position
-			const nodes = getSelectedNodes();
-			for (const node of nodes) {
-				const [xNode, yNode] = getNodePosition(node);
-				const [xOffset, yOffset] = getNodeOffset(node);
-				if (xOffset !== 0 || yOffset !== 0) {
-					setNodePosition(node, xNode + xOffset, yNode + yOffset, true);
-					setNodeOffset(node, 0, 0);
-					setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
-				}
-			}
+			moveSelectedNodes();
 		}
 		
 		if (window._graphEditorMoved)
 			window._graphEditorHasMoved = true;
+		
 		window._graphEditorMoved = false;
 		
 		window.isMouseDownOnGraph = false;
@@ -323,11 +314,11 @@ document.addEventListener("DOMContentLoaded", function () {
 						event.preventDefault();	
 						return false;
 					case 90: //Z
-						undoNodes();
+						undo();
 						event.preventDefault();
 						return false;
 					case 89: //Y
-						redoNodes();
+						redo();
 						event.preventDefault();
 						return false;
 					case 70: //F

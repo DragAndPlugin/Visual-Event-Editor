@@ -1,138 +1,171 @@
-function addToNodeHistory(action, redoDestructive = true) {
-	if (typeof action !== "object")
+(function initHistory() {
+	window._history = {
+		undo: {},
+		redo: {},
+		handlers: {},
+		maxLength: 200,
+		isRestoring: false
+	};
+})();
+
+function addHistoryHandler(name, undoHandler, redoHandler) {
+	if (!name || !undoHandler || !redoHandler)
+		return console.error(`Missing name: ${name}, undoHandler: ${undoHandler} or redoHandler: ${redoHandler}, couldn't add to history handler`);
+		
+	if (window._history.handlers[name])
+		return console.error(`History handler with name: ${name} already exist, couldn't overwrite.`);
+	
+	window._history.handlers[name] = {};
+	window._history.handlers[name].undo = undoHandler;
+	window._history.handlers[name].redo = redoHandler;
+};
+
+function getHistoryHandler(name, type) {
+	if (!name || !type || !window._history.handlers[name])
+		return null;
+	
+	return window._history.handlers[name][type] || null;
+};
+
+function addToUndoHistory(action, redoDestructive = true) {
+	if (isHistoryRestoring())
 		return;
 	
-	if (!window._nodeUndoHistory)
-		window._nodeUndoHistory = [];
+	if (!action || typeof action !== "object" || Array.isArray(action) || !action.type)
+		return;
 	
-	if (!action.time)
-		action.time = Date.now();
+	const undoHistory = getUndoHistory();
+	undoHistory.push(action);
 	
-	window._nodeUndoHistory.push(action);
+	if (undoHistory.length > getHistoryMaxLength())
+		undoHistory.shift();
+	
 	if (redoDestructive)
-		window._nodeRedoHistory = [];
+		clearRedoHistory();
 };
 
-function undoNodes() {
-	if (!window._nodeUndoHistory || window._nodeUndoHistory.length === 0)
+function undo() {
+	if (undoHistoryIsEmpty() || isHistoryRestoring())
 		return;
 	
-	const initTime = window._nodeUndoHistory[window._nodeUndoHistory.length - 1].time;
-	const initType = window._nodeUndoHistory[window._nodeUndoHistory.length - 1].type;
-	let actionTime = initTime;
-	let actionType = initType;
-	while (initTime - actionTime < 60 && initType === actionType) { // UNDO REDO NEED TO BE REDESIGNED, INSTEAD OF RELYING ON TIME, STORE TARGETS AS ARRAY. SHOULD ALSO FIX CONNECTIONS MAPS
-		let action = window._nodeUndoHistory.pop();
-		switch (action.type) {
-			case "add":
-				deleteNode(action.target);
-				break;
-			case "delete":
-				addNodeToGraphNode(action.target, false, true);
-				reconnectNodeFromConnectionsMap(action.target, action.connectionsMap);
-				cacheGraphNode(action.target, null, action.connectionsMap);
-				break;
-			case "move":
-				setNodePosition(action.target, action.from[0], action.from[1]);
-				redrawNodeCurves(action.target);
-				break;
-			case "select":
-				unselectNode(action.target);
-				break;
-			case "unselect":
-				selectNode(action.target)
-				break;
-			default:
-				console.warn(`Unknown undo action ${action.type}, undo aborted.`);
-				break;
-		}
+	const undoHistory = getUndoHistory();
+	const action = undoHistory.pop();
+	const historyHandler = getHistoryHandler(action.type, "undo");
+	
+	if (!historyHandler || typeof historyHandler !== "function")
+		return;
+
+	try {
+		setHistoryIsRestoring(true);
 		
-		window._nodeRedoHistory.push(action);
+		historyHandler(action);
+		addToRedoHistory(action);
 		
-		if (window._nodeUndoHistory.length > 0) {
-			actionTime = window._nodeUndoHistory[window._nodeUndoHistory.length - 1].time;
-			actionType = window._nodeUndoHistory[window._nodeUndoHistory.length - 1].type;
-		} else {
-			actionTime = -1;
-			actionType = null;
-		}
+		showUndoRedoNotification("undo", action.type);
+		closeNodeContextMenu();
+		closeNodeListMenu();
+	} catch (error) {
+		console.error(`Failed to undo action: ${action.type}`, error);
+	} finally {
+		setHistoryIsRestoring(false);
 	}
+};
+
+function addToRedoHistory(action) {
+	const redoHistory = getRedoHistory();
+	redoHistory.push(action);
+	
+	if (redoHistory.length > getHistoryMaxLength())
+		redoHistory.shift();
+};
+
+
+function redo() {
+	if (redoHistoryIsEmpty() || isHistoryRestoring())
+		return;
+	
+	const redoHistory = getRedoHistory();
+	const action = redoHistory.pop();
+	const historyHandler = getHistoryHandler(action.type, "redo");
+	
+	if (!historyHandler || typeof historyHandler !== "function")
+		return;
+	
+	try {
+		setHistoryIsRestoring(true);
+		
+		historyHandler(action);
+	
+		showUndoRedoNotification("redo", action.type);
+		closeNodeContextMenu();
+		closeNodeListMenu();
+	} catch (error) {
+		console.error(`Failed to undo action: ${action.type}`, error);
+	} finally {
+		setHistoryIsRestoring(false);
+		addToUndoHistory(action, false);
+	}
+};
+
+function showUndoRedoNotification(type, actionType) {
+	if (!type || !actionType)
+		return;
 	
 	const eNotification = document.querySelector('#undo-redo-notification');
-	eNotification.innerHTML = `Undo: ${initType}`;	
+	if (!eNotification)
+		return;
+	
+	eNotification.innerHTML = `${$.Drag.VisualEvent.capitalize(type)}: ${actionType.toLowerCase()}`;	
 	eNotification.style.transition = 'opacity linear 0s';
 	eNotification.style.opacity = 1;
 	
-	if (window._undoRedoTimeout)
-		clearTimeout(window._undoRedoTimeout);
+	if (window._history.notificationTimeout)
+		clearTimeout(window._history.notificationTimeout);
 	
-	window._undoRedoTimeout = setTimeout(() => {
+	window._history.notificationTimeout = setTimeout(() => {
 		eNotification.style.transition = 'opacity linear 3s';
 		eNotification.style.opacity = 0;
 	}, 100);
-	
-	closeNodeContextMenu();
-	closeNodeListMenu();
 };
 
-function redoNodes() {
-	if (!window._nodeRedoHistory || window._nodeRedoHistory.length === 0)
-		return;
-	
-	const initTime = window._nodeRedoHistory[window._nodeRedoHistory.length - 1].time;
-	const initType = window._nodeRedoHistory[window._nodeRedoHistory.length - 1].type;
-	let actionTime = initTime;
-	let actionType = initType;
-	while (initTime - actionTime > -60 && initType === actionType) {
-		const action = window._nodeRedoHistory.pop();
-		switch (action.type) {
-			case "add":
-				addNodeToGraphNode(action.target, false, true);
-				reconnectNodeFromConnectionsMap(action.target, action.connectionsMap);
-				cacheGraphNode(action.target, null, action.connectionsMap);
-				break;
-			case "delete":
-				deleteNode(action.target);
-				break;
-			case "move":
-				setNodePosition(action.target, action.to[0], action.to[1]);
-				redrawNodeCurves(action.target);
-				break;
-			case "select":
-				selectNode(action.target);
-				break;
-			case "unselect":
-				unselectNode(action.target)
-				break;
-			default:
-				console.warn(`Unknown redo action ${action.type}, redo aborted.`);
-				break;
-		}
-		
-		addToNodeHistory(action, false);
-		
-		if (window._nodeRedoHistory.length > 0) {
-			actionTime = window._nodeRedoHistory[window._nodeRedoHistory.length - 1].time;
-			actionType = window._nodeRedoHistory[window._nodeRedoHistory.length - 1].type;
-		} else { 
-			actionTime = initTime;
-			actionType = null;
-		}
-	}
-	
-	const eNotification = document.querySelector('#undo-redo-notification');
-	eNotification.innerHTML = `Redo: ${initType}`;	
-	eNotification.style.transition = 'opacity linear 0s';
-	eNotification.style.opacity = 1;
-	
-	if (window._undoRedoTimeout)
-		clearTimeout(window._undoRedoTimeout);
-	
-	window._undoRedoTimeout = setTimeout(() => {
-		eNotification.style.transition = 'opacity linear 3s';
-		eNotification.style.opacity = 0;
-	}, 100);
-	
-	closeNodeContextMenu();
-	closeNodeListMenu();
+function clearRedoHistory() {
+	const redoHistory = getRedoHistory();
+	redoHistory.length = 0;
 };
+
+function getUndoHistory() {
+	const eventKey = getEventKey();
+	if (!window._history.undo[eventKey])
+		window._history.undo[eventKey] = [];
+	return window._history.undo[eventKey];
+};
+
+function getRedoHistory() {
+	const eventKey = getEventKey();
+	if (!window._history.redo[eventKey])
+		window._history.redo[eventKey] = [];
+	return window._history.redo[eventKey];
+};
+
+function undoHistoryIsEmpty() {
+	const undoHistory = getUndoHistory();
+	return undoHistory.length === 0;
+};
+
+function redoHistoryIsEmpty() {
+	const redoHistory = getRedoHistory();
+	return redoHistory.length === 0;
+};
+
+function getHistoryMaxLength() {
+	return window._history.maxLength;
+};
+
+function isHistoryRestoring() {
+	return window._history.isRestoring;
+};
+
+function setHistoryIsRestoring(isRestoring) {
+	return window._history.isRestoring = isRestoring;
+};
+

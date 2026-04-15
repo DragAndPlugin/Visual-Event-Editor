@@ -12,13 +12,13 @@ function showNodeContextMenu(e) {
 	const nodeContextMenuRect = nodeContextMenu.getBoundingClientRect();
 	
 	const nodeContextMenuUndo = nodeContextMenu.querySelector('#node-contextmenu-undo');
-	if (!window._nodeUndoHistory || window._nodeUndoHistory.length === 0)
+	if (undoHistoryIsEmpty())
 		nodeContextMenuUndo.classList.add('disabled');
 	else
 		nodeContextMenuUndo.classList.remove('disabled');
 	
 	const nodeContextMenuRedo = nodeContextMenu.querySelector('#node-contextmenu-redo');
-	if (!window._nodeRedoHistory || window._nodeRedoHistory.length === 0)
+	if (redoHistoryIsEmpty())
 		nodeContextMenuRedo.classList.add('disabled');
 	else
 		nodeContextMenuRedo.classList.remove('disabled');
@@ -95,7 +95,7 @@ function pasteNodes(useNodeListPosition = false) {
 		const clone = node.cloneNode(true);
 		clones.push(clone);
 		clone.removeAttribute('data-nodeId');
-		addNodeToGraphNode(clone, true, false);
+		addNodeToGraphNode(clone);
 		
 		//place copied node
 		const oldPosition = window._nodeClipboard.positions[nodeIndex];
@@ -121,7 +121,8 @@ function pasteNodes(useNodeListPosition = false) {
 		closeNodeListMenu();
 	}
 	
-	//rebuild all connections and curves
+	//rebuild all connections and curves and copy cache
+	const eventCache = getEventCache();
 	for (const [nodeIndex, node] of clones.entries()) {
 		for (const [connectionTargetIndex, connectionTarget] of window._nodeClipboard.connections[nodeIndex].entries()) {
 			const connection = getNodeConnectionsById(node, connectionTargetIndex);
@@ -131,11 +132,24 @@ function pasteNodes(useNodeListPosition = false) {
 				drawCurve(connection.output, targetConnection);
 			}
 		}
+		
+		const nodeCache = $.Drag.VisualEvent.deepCopyJSON(getGraphNodeFromCache(window._nodeClipboard.nodes[nodeIndex]));
+		nodeCache.nodeId = getNodeId(node);
+		nodeCache.x = getNodePosition(node)[0];
+		nodeCache.y = getNodePosition(node)[1];
+		nodeCache.connectionsMap = getNodeConnectionsMap(node); //connections maps seems to not be calculated correctly sometimes, to fix
+		eventCache.nodes[nodeCache.nodeId] = nodeCache;
 	}
 	
+	//history
+	if (clones.length > 0)
+		addToUndoHistory({type: "addNode", target: clones, connectionsMap: clones.map(node => getNodeConnectionsMap(node))});
+	
+	
+	//cache
 	setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
-	for (const node of clones)
-		cacheGraphNode(node);
+	// for (const node of clones)
+		// cacheGraphNode(node);
 	
 	closeNodeListMenu();
 };

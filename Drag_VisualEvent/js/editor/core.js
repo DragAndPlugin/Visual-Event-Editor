@@ -357,8 +357,6 @@ function setupGraphEditor() {
 	setupGraphEditorListeners();
 	
 	window.nodes = [];
-	window._nodeUndoHistory = [];
-	window._nodeRedoHistory = [];
 	
 	if (window.data.targetId) {
 		const start = performance.now();
@@ -424,11 +422,11 @@ function setupGraphNodesFromCache() {
 			commandCode: cacheNode.commandCode, parametersValues: cacheNode.parameters, parameterListsLength: cacheNode.listsLength
 		}, false, false);
 		
-		if (isCustom) {
-			const customNodeData = getCustomNodeData(getNodeCommandCode(node));
-			if (customNodeData.onadd && typeof customNodeData.onadd === "function")
-				customNodeData.onadd(this, node);
-		}
+		// if (isCustom) {
+			// const customNodeData = getCustomNodeData(getNodeCommandCode(node));
+			// if (customNodeData.onadd && typeof customNodeData.onadd === "function")
+				// customNodeData.onadd(this, node);
+		// }
 	}
 	
 	const test = setInterval(() => {
@@ -1668,12 +1666,15 @@ function handleSelectionBox(event) {
 	selectionBox.style.borderWidth = "3px";
 	
 	const selectionBoxRect = selectionBox.getBoundingClientRect();
+	window._selectionBoxSelectedNodes = [];
+	
 	for (const node of document.querySelectorAll('#graphNode')) {
 		const nodeRect = node.getBoundingClientRect();
-		if (!(selectionBoxRect.right < nodeRect.left || selectionBoxRect.left > nodeRect.right || selectionBoxRect.bottom < nodeRect.top || selectionBoxRect.top > nodeRect.bottom))
-			selectNode(node, true)
-		else if (!window._isCtrlPressed)
-			unselectNode(node);
+		if (!(selectionBoxRect.right < nodeRect.left || selectionBoxRect.left > nodeRect.right || selectionBoxRect.bottom < nodeRect.top || selectionBoxRect.top > nodeRect.bottom)) {
+			selectNode(node, false);
+			window._selectionBoxSelectedNodes.push(node);
+		} else if (!window._isCtrlPressed && isNodeSelected(node))
+			unselectNode(node, false);
 	};
 };
 
@@ -1684,6 +1685,11 @@ function clearSelectionBox() {
 	selectionBox.style.left = 0;
 	selectionBox.style.top = 0;
 	selectionBox.style.borderWidth = 0;
+	
+	// if (window._selectionBoxSelectedNodes && window._selectionBoxSelectedNodes.length > 0)
+		// addToUndoHistory({type: "selectNode", target: window._selectionBoxSelectedNodes.map(node => getNodeId(node))});
+	
+	delete window._selectionBoxSelectedNodes;
 };
 
 

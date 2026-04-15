@@ -159,12 +159,20 @@ function createCurve(from, to, container) {
 	return curve;
 };
 
-function connectCurve(from, to, curve, disconnect = true) {
+function connectCurve(from, to, curve, disconnect = true, history = false) {	
 	if (!curve)
 		return drawCurve(from, to);
 	
 	if (disconnect)
 		disconnectCurve(curve);
+	
+	//register state before curve connection
+	// const action = {};
+	// if (from && to && history) {
+		// const nodes = [getNodeById(curve.getAttribute('data-leftNodeId')), getNodeById(curve.getAttribute('data-rightNodeId')), getConnectionNode(from), getConnectionNode(to)];
+		// const nodeIds = nodes.map(node => getNodeId(node));
+		// const action = history ? {type: "connect", nodeId: nodeId, beforeConnectionsMap: getNodeConnectionsMap(node)} : {};
+	// }
 	
 	if (from)
 		setConnectionConnected(from, true);
@@ -174,22 +182,43 @@ function connectCurve(from, to, curve, disconnect = true) {
 	
 	if (to && to.getAttribute("data-curveColor"))
 		curve.style.stroke = to.getAttribute("data-curveColor");
-	
-	if (from && from.getAttribute("data-curveColor"))
+	else if (from && from.getAttribute("data-curveColor"))
 		curve.style.stroke = from.getAttribute("data-curveColor");
-	
-	// if (from && !from.classList.contains('exec'))
-		// curve.style.stroke = "cornflowerblue";
-	
-	// if (from && from.classList.contains('boolean'))
-		// curve.style.stroke = "darkred";
 	
 	curve.setAttribute('data-leftNodeId', from ? from.getAttribute('data-nodeId') : null);
 	curve.setAttribute('data-leftConnectionId', from ? from.getAttribute('data-connectionId') : null);
 	
 	curve.setAttribute('data-rightNodeId', to ? to.getAttribute('data-nodeId') : null);
 	curve.setAttribute('data-rightConnectionId', to ? to.getAttribute('data-connectionId') : null); 
+	
+	// if (history) {
+		// action.afterConnectionsMap = getNodeConnectionsMap(node);
+		// addToUndoHistory(action);
+	// }
 };
+
+// function onUndoConnect(action) {
+	// const curve = getCurveById(action.nodeId, action.connectionId, action.dir);
+	// if (curve)
+		// removeCurve(curve);
+	
+	// const node = getNodeById(action.nodeId);
+	// reconnectNodeFromConnectionsMap(node, action.beforeConnectionsMap);
+	// cacheGraphNode(node, null, action.beforeConnectionsMap);
+	// cacheGraphNode(node, null, action.beforeConnectionsMap);
+// };
+
+// function onRedoConnect(action) {
+	// const connections = getNodeConnectionsById();
+	// const from = connections.
+	// connectCurve(action.from, action.to, null);
+	
+	// const node = getNodeById(action.nodeId);
+	// reconnectNodeFromConnectionsMap(node, action.afterConnectionsMap);
+	// cacheGraphNode(node, null, action.afterConnectionsMap);
+// };
+
+// addHistoryHandler("connect", onUndoConnect, onRedoConnect);
 
 function disconnectCurve(curve) {
 	if (!curve)
@@ -205,9 +234,12 @@ function disconnectCurve(curve) {
 		setConnectionConnected(rightConnection, false);
 };
 
-function removeCurve(curve, cache = true) {
+function removeCurve(curve, cache = true, history = false) {
 	if (!curve)
 		return;
+	
+	if (history)
+		addToUndoHistory({type: 'disconnect', leftNodeId: parseInt(curve.getAttribute('data-leftNodeId')), leftConnectionId: parseInt(curve.getAttribute('data-leftConnectionId')), rightNodeId: parseInt(curve.getAttribute('data-rightNodeId')), rightConnectionId: parseInt(curve.getAttribute('data-rightConnectionId'))});
 	
 	disconnectCurve(curve);
 	curve.remove();
@@ -223,6 +255,21 @@ function removeCurve(curve, cache = true) {
 			updateCacheGraphNodeConnectionsMap(getNodeById(rightNodeId));
 	}
 };
+
+function onUndoDisconnect(action) {
+	const from = getNodeConnectionsById(getNodeById(action.leftNodeId), action.leftConnectionId).output;
+	const to = getNodeConnectionsById(getNodeById(action.rightNodeId), action.rightConnectionId).input;
+	connectCurve(from, to);
+	updateCacheGraphNodeConnectionsMap(getConnectionNode(from));
+	updateCacheGraphNodeConnectionsMap(getConnectionNode(to));
+};
+
+function onRedoDisconnect(action) {
+	const curve = getCurveById(action.leftNodeId, action.leftConnectionId, 'left');
+	removeCurve(curve);
+};
+
+addHistoryHandler('disconnect', onUndoDisconnect, onRedoDisconnect);
 
 function onCurveMouseDown(curve, event) {
 	if (event.which === 1){
