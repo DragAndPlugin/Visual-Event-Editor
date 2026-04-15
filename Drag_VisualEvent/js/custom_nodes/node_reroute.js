@@ -26,13 +26,30 @@ module.exports = [{
 			const [x, y] = editor.getGraphCoordinatesFromAbsolute(event.x, event.y);
 			const node = editor.addNodeFromParams({
 				x: x, y: y, isPluginCommand: false, isCustom: true, commandCode: "custom_node_reroute", commandName: "Reroute", commandText: "", commandCategory: "Flow Control"
-			}, true, true);
+			}, false, true);
 			
 			if (!node)
 				return;
 			
+			const nodeId = editor.getNodeId(node);
+			const leftNodeId = editor.getCurveLeftNodeId(curve);
+			const rightNodeId = editor.getCurveRightNodeId(curve);
+			const leftNode = editor.getCurveLeftNode(curve);
+			const rightNode = editor.getCurveRightNode(curve);
+			
+			const beforeConnectionsMap = [editor.getGraphNodeFromCache(node).connectionsMap, editor.getGraphNodeFromCache(leftNode).connectionsMap, editor.getGraphNodeFromCache(rightNode).connectionsMap];
+			
 			curve.setAttribute('data-_pending', 'true');
 			editor.connectPendingCurve(node);
+			
+			editor.addToUndoHistory({type: "addNode", target: [node]});
+			editor.addToUndoHistory({
+				type: "connect",
+				beforeNodeIds: [nodeId, leftNodeId, rightNodeId],
+				beforeConnectionsMap: beforeConnectionsMap,
+				afterNodeIds: [nodeId, leftNodeId, rightNodeId],
+				afterConnectionsMap: [editor.getGraphNodeFromCache(node).connectionsMap, editor.getGraphNodeFromCache(leftNode).connectionsMap, editor.getGraphNodeFromCache(rightNode).connectionsMap],
+			});
 		};
 		
 		editor.getGraphSVG().addEventListener('dblclick', (event) => {
@@ -40,8 +57,12 @@ module.exports = [{
 			if (!curve)
 				return;
 			
+			event.stopPropagation();
+			event.stopImmediatePropagation();
 			event.preventDefault();
+			
 			editor.onCurveDblClick(curve);
+			
 			return false;
 		});
 	},
