@@ -1679,12 +1679,16 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	Drag.VisualEvent.updatePicture = function(element) {
-		if (!element || !element.value)
+		if (!element)
 			return;
 		
-		const value = element.value;		
+		const value = element.value;
+		if (!value)
+			return element.style.backgroundImage = "unset";
+		
 		const filename = value.split(',');	
-		if (!filename[0])
+		
+		if (filename.every(value => !value))
 			return element.style.backgroundImage = "unset";
 		
 		const isTile = element.getAttribute('data-allowTilesetSelection') === "true" && element.getAttribute('data-tilesetNames') && element.getAttribute('data-tilesetNames').split(',').includes(filename[0]);
@@ -1697,14 +1701,27 @@ Drag.VisualEvent.version = "0.1.047";
 		
 		if (isTile)
 			element.style.backgroundImage = "url(../../img/tilesets/" + filename[0] + ".png)";
-		else if (Array.isArray(src) ? filename.filter(name => name).length > 0 : filename[0])
-			element.style.backgroundImage = Array.isArray(src) ? src.map((url, i) => "url(../../" + url + "/" + filename[i] + ".png)").join(', ') : "url(../../" + src + "/" + filename[0] + ".png)";
+		else {
+			if (Array.isArray(src)) {
+				let bgImage = '';
+				for (const [i, url] of src.entries())
+					if (url && filename[i])
+						bgImage += "url(../../" + url + "/" + filename[i] + ".png), ";
+				
+				if (bgImage)
+					element.style.backgroundImage = bgImage.substring(0, bgImage.length - 2);
+			} else if (filename[0])
+				element.style.backgroundImage = "url(../../" + src + "/" + filename[0] + ".png)";
+		}
 		
 		const isFullCharacterSheet = element.getAttribute('data-isFullCharacterSheet') === "true";
 		const isCharacterSheet = element.getAttribute('data-isCharacterSheet') === "true" || isFullCharacterSheet;
 		const subImageWidth = parseInt(element.getAttribute('data-subImageWidth'));
 		const subImageHeight = parseInt(element.getAttribute('data-subImageHeight'));
 		if (!isCharacterSheet && (!subImageWidth || !subImageHeight))
+			return;
+		
+		if (!filename[0])
 			return;
 		
 		const image = new Image();
@@ -2386,11 +2403,12 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 
 	Drag.VisualEvent.autoFitTextArea = function(textArea) {		
-		if (textArea.getAttribute('data-resizeWidth') !== "false") {
+		if (textArea.getAttribute('data-resizeWidth') !== "false")
+			textArea.style.width = Math.max(...textArea.value.split('\n').map(line => Drag.VisualEvent.measureTextWidth(textArea, line))) + 8 + "px";
 			// textArea.style.width = "";
 			// textArea.style.width = (Math.max(...textArea.value.split('\n').map(text => text.length)) + 2) * 8 + "px";
-			textArea.style.width = Math.max(...textArea.value.split('\n').map(line => Drag.VisualEvent.measureTextWidth(textArea, line))) + 8 + "px";
-		}
+			
+		// }
 		
 		if (textArea.getAttribute('data-resizeHeight') !== "false") {
 			textArea.style.height = ""; 
