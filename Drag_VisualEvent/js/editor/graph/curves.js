@@ -453,3 +453,33 @@ function connectPendingCurve(node) {
 		updateCacheGraphNodeConnectionsMap(rightNode);
 	}
 };
+
+function getCurveLeftNodeId(curve) {
+	if (!curve)
+		return null;
+	
+	return parseInt(curve.getAttribute('data-leftNodeId'));
+};
+
+function getCurveLeftNode(curve) {
+	if (!curve)
+		return null;
+	
+	const leftNodeId = getCurveLeftNodeId(curve)
+	return getNodeById(leftNodeId);
+};
+
+function getCurveRightNodeId(curve) {
+	if (!curve)
+		return null;
+	
+	return parseInt(curve.getAttribute('data-rightNodeId'));
+};
+
+function getCurveRightNode(curve) {
+	if (!curve)
+		return null;
+	
+	const rightNodeId = getCurveRightNodeId(curve);
+	return getNodeById(rightNodeId);
+};
