@@ -324,7 +324,7 @@ function deleteNode(node, saveInHistory = false) {
 	
 	const curves = getNodeCurves(node);
 	if (saveInHistory)
-		addToUndoHistory({type: "deleteNode", target: [node], connectionsMap: [getNodeConnectionsMap(node)]});
+		addToUndoHistory({type: "deleteNode", target: [node], cache: [getGraphNodeFromCache(node)], connectionsMap: [getNodeConnectionsMap(node)]});
 	
 	for (const inputCurve of curves.inputs)
 		removeCurve(inputCurve);
@@ -342,7 +342,7 @@ function deleteSelectedNodes(saveInHistory = false) {
 	const selectedNodes = getSelectedNodes();
 	
 	if (saveInHistory && selectedNodes.length > 0)
-		addToUndoHistory({type: "deleteNode", target: selectedNodes, connectionsMap: selectedNodes.map(node => getNodeConnectionsMap(node))});
+		addToUndoHistory({type: "deleteNode", target: selectedNodes, cache: selectedNodes.map(node => getGraphNodeFromCache(node)), connectionsMap: selectedNodes.map(node => getNodeConnectionsMap(node))});
 	
 	for (const node of selectedNodes) 
 		deleteNode(node, false);
@@ -354,9 +354,13 @@ function deleteSelectedNodes(saveInHistory = false) {
 function onUndoDeleteNode(action) {
 	const nodes = action.target;
 	for (const [i, node] of nodes.entries()) {
-		addNodeToGraphNode(node, false, true);
-		reconnectNodeFromConnectionsMap(node, action.connectionsMap[i]);
-		cacheGraphNode(node, null, action.connectionsMap[i]);
+		addNodeToGraphNode(node, false, false);
+		if (action.connectionsMap && action.connectionsMap[i]) {
+			reconnectNodeFromConnectionsMap(node, action.connectionsMap[i]);
+			setNodeCache(getNodeId(node), action.cache[i]);
+			// cacheGraphNode(node, null, action.connectionsMap[i]);
+		} else
+			cacheGraphNode(node);
 	}
 };
 
@@ -369,7 +373,6 @@ function onRedoDeleteNode(action) {
 };
 
 addHistoryHandler("deleteNode", "Delete Node", onUndoDeleteNode, onRedoDeleteNode);
-
 
 //move
 function moveNode(event) {	
