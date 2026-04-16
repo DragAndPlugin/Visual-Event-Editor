@@ -1,3 +1,5 @@
+const NODE_COMMENT_GROUP = {};
+
 module.exports = [{
 	category: "Utility",
 	color: "black",
@@ -7,7 +9,7 @@ module.exports = [{
 			<textarea id="comment-group-note" class="textOutline unfitTextArea" placeholder="Note..." onchange=" $.Drag.VisualEvent.onInputChange(this); $.Drag.VisualEvent.autoFitTextArea(this); cacheCommentHeaderContent(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"></textarea>
 		</div>
 		<div class="relative columnGap05em flex" style="align-self: flex-start; justify-self: flex-end;">
-			<input type="color" onclick="" onchange="setNodeHeaderColor(this.parentElement.parentElement.parentElement, this.value);" oninput="this.onchange();" onfocus="this.blur()" value="#000000" />
+			<input type="color" onclick="" onchange="onChangeNodeHeaderColor(this.parentElement.parentElement.parentElement, this.value);" oninput="this.onchange();" onfocus="this.blur()" value="#000000" />
 		</div>
 		<div id="comment-group-chain" data-chained="false">
 			<svg id="comment-group-chained-svg" onmousedown="onClickChainCommentGroup(event, this);" viewBox="-7.5 0 24 24" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" version="1.1" id="comment-group-lock">
@@ -35,78 +37,92 @@ module.exports = [{
 			<path d="M22.354 9.354l-.707-.707-13 13 .707.707zm0 7l-.707-.707-6 6 .707.707z" style="stroke: white;"></path>
 		</svg>
 	`,
-	onimport: (editor) => {
-		//utils
-		editor.isNodeInsideCommentGroup = function(node, groupRect) {
-			const nodeRect = node.getBoundingClientRect();
-			const centerX = nodeRect.left + nodeRect.width / 2;
-			const centerY = nodeRect.top + nodeRect.height / 2;
-
-			return (
-				centerX >= groupRect.left &&
-				centerX <= groupRect.right &&
-				centerY >= groupRect.top &&
-				centerY <= groupRect.bottom
-			);
+	onimport: (editor) => {		
+		//utils 
+		NODE_COMMENT_GROUP.isNodeInsideCommentGroup = function(node, groupRect) { 
+			if (!node || !groupRect) 
+				return false; 
+			
+			const nodeRect = node.getBoundingClientRect(); 
+			const centerX = nodeRect.left + nodeRect.width / 2; 
+			const centerY = nodeRect.top + nodeRect.height / 2; 
+			return (centerX >= groupRect.left && centerX <= groupRect.right && centerY >= groupRect.top && centerY <= groupRect.bottom); 
 		};
 		
 		//size		
 		editor.startNodeResize = function(event, node) {
+			event.stopPropagation();
+			event.stopImmediatePropagation();
+			event.preventDefault();
+			
 			const content = node.children[1];
+			NODE_COMMENT_GROUP._resizeNode = node;
+			NODE_COMMENT_GROUP._resizeStartMouseX = event.clientX;
+			NODE_COMMENT_GROUP._resizeStartMouseY = event.clientY;
+			NODE_COMMENT_GROUP._resizeStartWidth = content.offsetWidth;
+			NODE_COMMENT_GROUP._resizeStartHeight = content.offsetHeight;
 
-			editor._resizeNode = node;
-			editor._resizeStartMouseX = event.clientX;
-			editor._resizeStartMouseY = event.clientY;
-			editor._resizeStartWidth = content.offsetWidth;
-			editor._resizeStartHeight = content.offsetHeight;
-
-			editor.addEventListener('mouseup', editor.stopNodeResize);
-			editor.addEventListener('mousemove', editor.resizeNode);
+			editor.addEventListener('mouseup', NODE_COMMENT_GROUP.stopNodeResize);
+			editor.addEventListener('mousemove', NODE_COMMENT_GROUP.resizeNode);
 		};
 
-		editor.stopNodeResize = function() {
-			delete editor._resizeNode;
-			delete editor._resizeStartMouseX;
-			delete editor._resizeStartMouseY;
-			delete editor._resizeStartWidth;
-			delete editor._resizeStartHeight;
+		NODE_COMMENT_GROUP.stopNodeResize = function() {
+			editor.addToUndoHistory({
+				type: "resize_comment_group", 
+				nodeId: editor.getNodeId(NODE_COMMENT_GROUP._resizeNode), 
+				startSize: [NODE_COMMENT_GROUP._resizeStartWidth, NODE_COMMENT_GROUP._resizeStartHeight],
+				endSize: [NODE_COMMENT_GROUP._resizeEndWidth, NODE_COMMENT_GROUP._resizeEndHeight]
+			});
 			
-			editor.removeEventListener('mouseup', editor.stopNodeResize);
-			editor.removeEventListener('mousemove', editor.resizeNode);
+			delete NODE_COMMENT_GROUP._resizeNode;
+			delete NODE_COMMENT_GROUP._resizeStartMouseX;
+			delete NODE_COMMENT_GROUP._resizeStartMouseY;
+			delete NODE_COMMENT_GROUP._resizeStartWidth;
+			delete NODE_COMMENT_GROUP._resizeStartHeight;
+			delete NODE_COMMENT_GROUP._resizeEndWidth;
+			delete NODE_COMMENT_GROUP._resizeEndHeight;
+			
+			editor.removeEventListener('mouseup', NODE_COMMENT_GROUP.stopNodeResize);
+			editor.removeEventListener('mousemove', NODE_COMMENT_GROUP.resizeNode);
 		};
 
-		editor.resizeNode = function(event) {
-			if (!editor._resizeNode)
-				return;
+		NODE_COMMENT_GROUP.resizeNode = function(event) {
+			try {
+				if (!NODE_COMMENT_GROUP._resizeNode)
+					return;
 
-			const content = editor._resizeNode.children[1];
-			const scale = editor.getGraphEditorScale();
+				const content = NODE_COMMENT_GROUP._resizeNode.children[1];
+				const scale = editor.getGraphEditorScale();
 
-			const dx = (event.clientX - editor._resizeStartMouseX) / scale;
-			const dy = (event.clientY - editor._resizeStartMouseY) / scale;
+				const dx = (event.clientX - NODE_COMMENT_GROUP._resizeStartMouseX) / scale;
+				const dy = (event.clientY - NODE_COMMENT_GROUP._resizeStartMouseY) / scale;
 
-			let width = Math.max(100, editor._resizeStartWidth + dx);
-			const height = Math.max(60, editor._resizeStartHeight + dy);
+				let width = Math.max(100, NODE_COMMENT_GROUP._resizeStartWidth + dx);
+				const height = Math.max(60, NODE_COMMENT_GROUP._resizeStartHeight + dy);
 
-			content.style.width = `${width}px`;
-			content.style.height = `${height}px`;
-			
-			const header = editor._resizeNode.children[0];
-			if (header.offsetWidth > width) {
-				width = header.offsetWidth;
-				content.style.width = `${width}px`;
+				NODE_COMMENT_GROUP.setNodeContentSize(NODE_COMMENT_GROUP._resizeNode, width, height);
+				
+				const header = NODE_COMMENT_GROUP._resizeNode.children[0];
+				if (header.offsetWidth > width) {
+					width = header.offsetWidth;
+					NODE_COMMENT_GROUP.setNodeContentSize(NODE_COMMENT_GROUP._resizeNode, width, height);
+				}
+				
+				NODE_COMMENT_GROUP._resizeEndWidth = width;
+				NODE_COMMENT_GROUP._resizeEndHeight = height;
+				NODE_COMMENT_GROUP.cacheNodeContentSize(NODE_COMMENT_GROUP._resizeNode, width, height);
+			} catch(error) {
+				editor.console.log(error);
 			}
-			
-			editor.cacheNodeContentSize(editor._resizeNode, width, height);
 		};
 
-		editor.setNodeContentSize = function(node, width, height) {
+		NODE_COMMENT_GROUP.setNodeContentSize = function(node, width, height) {
 			const content = node.children[1];
 			content.style.width = `${width}px`;
 			content.style.height = `${height}px`;
 		};
 		
-		editor.cacheNodeContentSize = function(node, width = null, height = null) {
+		NODE_COMMENT_GROUP.cacheNodeContentSize = function(node, width = null, height = null) {
 			if (!node)
 				return;
 			
@@ -120,17 +136,42 @@ module.exports = [{
 				eventCache.nodes[nodeId].heightContent = height;
 		};
 		
+		NODE_COMMENT_GROUP.onUndoResizeCommentGroup = function(action) {
+			NODE_COMMENT_GROUP.setNodeContentSize(editor.getNodeById(action.nodeId), action.startSize[0], action.startSize[1]);
+			NODE_COMMENT_GROUP.cacheNodeContentSize(editor.getNodeById(action.nodeId), action.startSize[0], action.startSize[1]);
+		};
+		
+		NODE_COMMENT_GROUP.onRedoResizeCommentGroup = function(action) {
+			NODE_COMMENT_GROUP.setNodeContentSize(editor.getNodeById(action.nodeId), action.endSize[0], action.endSize[1]);
+			NODE_COMMENT_GROUP.cacheNodeContentSize(editor.getNodeById(action.nodeId), action.endSize[0], action.endSize[1]);
+		};
+		
+		editor.addHistoryHandler("resize_comment_group", "Resize Comment Group", NODE_COMMENT_GROUP.onUndoResizeCommentGroup, NODE_COMMENT_GROUP.onRedoResizeCommentGroup);
+		
 		//color
-		editor.setNodeHeaderColor = function(node, color) {
+		editor.onChangeNodeHeaderColor = function(node, color) {
+			if (!NODE_COMMENT_GROUP._startColor)
+				NODE_COMMENT_GROUP._startColor = color;
+			
+			NODE_COMMENT_GROUP.setNodeHeaderColor(node, color);
+			
+			if (color === NODE_COMMENT_GROUP._prevColor)
+				NODE_COMMENT_GROUP.onEndSetNodeHeaderColor(node, color);
+			else
+				NODE_COMMENT_GROUP._prevColor = color;
+		};
+		
+		NODE_COMMENT_GROUP.setNodeHeaderColor = function(node, color) {
 			if (!node)
 				return;
 			
 			node.children[0].style.backgroundColor = color || 'black';
-			editor.cacheNodeHeaderColor(node, color);
 			node.style.background = color + '66';
+			
+			NODE_COMMENT_GROUP.cacheNodeHeaderColor(node, color);
 		};
 		
-		editor.cacheNodeHeaderColor = function(node, color = null) {
+		NODE_COMMENT_GROUP.cacheNodeHeaderColor = function(node, color = null) {
 			if (!node || !color)
 				return;
 			
@@ -140,9 +181,31 @@ module.exports = [{
 			if (color)
 				eventCache.nodes[nodeId].headerColor = color;
 		};
+		
+		NODE_COMMENT_GROUP.onEndSetNodeHeaderColor = function(node, color) {
+			editor.addToUndoHistory({
+				type: "recolor_comment_group", 
+				nodeId: editor.getNodeId(node), 
+				startColor: NODE_COMMENT_GROUP._startColor,
+				endColor: color
+			});
+			
+			delete NODE_COMMENT_GROUP._prevColor;
+			delete NODE_COMMENT_GROUP._startColor;
+		};
+		
+		NODE_COMMENT_GROUP.onUndoRecolorCommentGroup = function(action) {
+			NODE_COMMENT_GROUP.setNodeHeaderColor(editor.getNodeById(action.nodeId), action.startColor);
+		};
+		
+		NODE_COMMENT_GROUP.onRedoRecolorCommentGroup = function(action) {
+			NODE_COMMENT_GROUP.setNodeHeaderColor(editor.getNodeById(action.nodeId), action.endColor);
+		};
+		
+		editor.addHistoryHandler("recolor_comment_group", "Recolor Comment Group", NODE_COMMENT_GROUP.onUndoRecolorCommentGroup, NODE_COMMENT_GROUP.onRedoRecolorCommentGroup);
 
 		//textarea title
-		editor.setCommentNodeHeaderContent = function(node, content) {
+		NODE_COMMENT_GROUP.setCommentNodeHeaderContent = function(node, content) {
 			if (!node)
 				return;
 			
@@ -178,21 +241,28 @@ module.exports = [{
 			
 			const container = event.path.find(elem => elem.id === "comment-group-chain");
 			const node = event.path.find(elem => elem.id === "graphNode");
-			if (container && node)
-				editor.setNodeCommentGroupChained(node, !(container.getAttribute('data-chained') === "true"));
+			if (container && node) {
+				const chained = !(container.getAttribute('data-chained') === "true");
+				NODE_COMMENT_GROUP.setNodeCommentGroupChained(node, chained);
+				editor.addToUndoHistory({
+					type: "chain_comment_group", 
+					nodeId: editor.getNodeId(node), 
+					chained: chained
+				});
+			}
 			
 			return false;
 		};
 		
-		editor.setNodeCommentGroupChained = function(node, chained = true) {
+		NODE_COMMENT_GROUP.setNodeCommentGroupChained = function(node, chained = true) {
 			if (!node)
 				return;
 			
 			node.querySelector('#comment-group-chain').setAttribute('data-chained', chained);
-			editor.cacheNodeCommentGroupChained(node, chained);
+			NODE_COMMENT_GROUP.cacheNodeCommentGroupChained(node, chained);
 		};
 		
-		editor.cacheNodeCommentGroupChained = function(node, chained = true) {
+		NODE_COMMENT_GROUP.cacheNodeCommentGroupChained = function(node, chained = true) {
 			if (!node)
 				return;
 			
@@ -202,6 +272,16 @@ module.exports = [{
 			if (eventCache && nodeId)
 				eventCache.nodes[nodeId].chained = chained;
 		};
+		
+		NODE_COMMENT_GROUP.onUndoChainCommentGroup = function(action) {
+			NODE_COMMENT_GROUP.setNodeCommentGroupChained(editor.getNodeById(action.nodeId), !action.chained);
+		};
+		
+		NODE_COMMENT_GROUP.onRedoChainCommentGroup = function(action) {
+			NODE_COMMENT_GROUP.setNodeCommentGroupChained(editor.getNodeById(action.nodeId), action.chained);
+		};
+		
+		editor.addHistoryHandler("chain_comment_group", "Chain Comment Group", NODE_COMMENT_GROUP.onUndoChainCommentGroup, NODE_COMMENT_GROUP.onRedoChainCommentGroup);
 	},
 	onadd: (editor, node) => {
 		if (!node)
@@ -212,20 +292,20 @@ module.exports = [{
 			return;
 		
 		if (nodeCache.chained !== undefined)
-			editor.setNodeCommentGroupChained(node, nodeCache.chained);
+			NODE_COMMENT_GROUP.setNodeCommentGroupChained(node, nodeCache.chained);
 		
 		if (nodeCache.widthContent !== undefined || nodeCache.heightContent !== undefined)
-			editor.setNodeContentSize(node, nodeCache.widthContent, nodeCache.heightContent);
+			NODE_COMMENT_GROUP.setNodeContentSize(node, nodeCache.widthContent, nodeCache.heightContent);
 		
 		if (nodeCache.headerColor !== undefined)
-			editor.setNodeHeaderColor(node, nodeCache.headerColor);
+			NODE_COMMENT_GROUP.setNodeHeaderColor(node, nodeCache.headerColor);
 		
 		if (nodeCache.commentHeaderContent !== undefined)
-			editor.setCommentNodeHeaderContent(node, nodeCache.commentHeaderContent);
+			NODE_COMMENT_GROUP.setCommentNodeHeaderContent(node, nodeCache.commentHeaderContent);
 		
 		node.querySelector('#node-header textarea').onchange();
 	},
-	parse: (editor, command, node, behaviors, inputs, sequence) => {}, //function, define what the node do when parsed within an event
+	parse: (editor, command, node, behaviors, inputs, sequence) => {},
 	onselect: (editor, groupNode) => {
 		if (groupNode.querySelector('#comment-group-chain').getAttribute('data-chained') !== "true")
 			return;
@@ -233,7 +313,7 @@ module.exports = [{
 		const nodes = editor.nodes;
 		const groupRect = groupNode.getBoundingClientRect();
 		for (const node of nodes) {
-			if (node && node !== groupNode && editor.isNodeInsideCommentGroup(node, groupRect))
+			if (node && node !== groupNode && NODE_COMMENT_GROUP.isNodeInsideCommentGroup(node, groupRect))
 				editor.selectNode(node);
 		}
 	},
