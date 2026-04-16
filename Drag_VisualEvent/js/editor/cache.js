@@ -417,9 +417,6 @@ function cacheGraphNode(node, eventCache, connectionsMap) {
 	if (!window.data.targetType || !node)
 		return;
 	
-	if (!eventCache)
-		eventCache = getEventCache(window.data.targetType, getEventKey());
-	
 	const [x, y] = getNodePosition(node);
 	const nodeId = getNodeId(node);
 	const isCustom = node.getAttribute('data-isCustom') === "true";
@@ -443,18 +440,40 @@ function cacheGraphNode(node, eventCache, connectionsMap) {
 	for (const listId of lists)
 		listsLength.push(node.querySelectorAll(`*[data-listId='${listId}']`).length);
 	listsLength = listsLength.concat(Array.from(node.querySelectorAll('#list-wrapper')).map(list => list.children.length));
-
-	eventCache.nodes[nodeId] = {
+	
+	
+	setNodeCache(nodeId, {
 		x: x, y: y, nodeId: nodeId, 
 		commandCode: commandCode, commandName: commandName, commandText: commandText, commandCategory: commandCategory, 
 		parameters: parameters, connectionsMap: connectionsMap, listsLength: listsLength
-	};
+	});
 	
-	if (!commandName)
+	// if (!eventCache)
+		// eventCache = getEventCache(window.data.targetType, getEventKey());
+
+	// eventCache.nodes[nodeId] = {
+		// x: x, y: y, nodeId: nodeId, 
+		// commandCode: commandCode, commandName: commandName, commandText: commandText, commandCategory: commandCategory, 
+		// parameters: parameters, connectionsMap: connectionsMap, listsLength: listsLength
+	// };
+	
+	
+};
+
+function setNodeCache(nodeId, cache, eventCache = null) {
+	if (!cache)
+		return;
+	
+	if (!eventCache)
+		eventCache = getEventCache();
+	
+	eventCache.nodes[nodeId] = cache;
+	
+	if (!eventCache.nodes[nodeId].commandName)
 		delete eventCache.nodes[nodeId].commandName;
-	if (!commandText)
+	if (!eventCache.nodes[nodeId].commandText)
 		delete eventCache.nodes[nodeId].commandText;
-	if (!commandCategory)
+	if (!eventCache.nodes[nodeId].commandCategory)
 		delete eventCache.nodes[nodeId].commandCategory;
 };
 
