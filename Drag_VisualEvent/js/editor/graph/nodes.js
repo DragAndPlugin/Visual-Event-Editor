@@ -237,7 +237,7 @@ function addNodeToGraphNode(node, saveInHistory = false, cache = false, nodeId =
 
 	//undo redo history
 	if (saveInHistory)
-		addToUndoHistory({type: "addNode", target: [node]});
+		addToUndoHistory({type: "addNode", target: [node], cache: [getGraphNodeFromCache(node)]});
 	
 	node.setAttribute('data-_ready', 'true');
 	triggerModsFunction("onAddNode", [node]);
@@ -255,9 +255,10 @@ function onRedoAddNode(action) {
 	const nodes = action.target;
 	for (const [i, node] of nodes.entries()) {
 		addNodeToGraphNode(node, false, false);
-		if (action.connectionsMap && action.connectionsMap[i]) {
+		if (action.connectionsMap && action.connectionsMap[i] && action.cache && action.cache[i]) {
+			action.cache[i].connectionsMap = action.connectionsMap[i];
+			setNodeCache(getNodeId(node), action.cache[i]);
 			reconnectNodeFromConnectionsMap(node, action.connectionsMap[i]);
-			cacheGraphNode(node, null, action.connectionsMap[i]);
 		} else 
 			cacheGraphNode(node);
 	}
@@ -350,29 +351,7 @@ function deleteSelectedNodes(saveInHistory = false) {
 	closeNodeContextMenu();
 };
 
-
-function onUndoDeleteNode(action) {
-	const nodes = action.target;
-	for (const [i, node] of nodes.entries()) {
-		addNodeToGraphNode(node, false, false);
-		if (action.connectionsMap && action.connectionsMap[i]) {
-			reconnectNodeFromConnectionsMap(node, action.connectionsMap[i]);
-			setNodeCache(getNodeId(node), action.cache[i]);
-			// cacheGraphNode(node, null, action.connectionsMap[i]);
-		} else
-			cacheGraphNode(node);
-	}
-};
-
-function onRedoDeleteNode(action) {
-	const nodes = action.target;
-	for (const node of nodes) {
-		const nodeId = getNodeId(node);
-		deleteNode(getNodeById(nodeId));
-	}
-};
-
-addHistoryHandler("deleteNode", "Delete Node", onUndoDeleteNode, onRedoDeleteNode);
+addHistoryHandler("deleteNode", "Delete Node", onRedoAddNode, onUndoAddNode);
 
 //move
 function moveNode(event) {	

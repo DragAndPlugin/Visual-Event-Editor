@@ -143,7 +143,7 @@ function pasteNodes(useNodeListPosition = false) {
 	
 	//history
 	if (clones.length > 0)
-		addToUndoHistory({type: "addNode", target: clones, connectionsMap: clones.map(node => getNodeConnectionsMap(node))});
+		addToUndoHistory({type: "addNode", target: clones, cache: clones.map(node => getGraphNodeFromCache(node)), connectionsMap: clones.map(node => getNodeConnectionsMap(node))});
 	
 	
 	//cache
