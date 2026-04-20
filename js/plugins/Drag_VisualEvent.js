@@ -29,7 +29,7 @@ Drag.VisualEvent.version = "0.1.047";
 // (function() {
 	
 	//------------------------------------------------------------------------------------------------------------
-	// global variables
+	// plugin variables
 	if (typeof require === "function") {
 		Drag.VisualEvent.modules = {};
 		Drag.VisualEvent.modules.fs = require('fs');
@@ -74,9 +74,10 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.loadInteractiveInputData('interactive_input_data.js');
 	
 	try {
-		require(`./Drag_VisualEvent/js/mz_plugin_command.js`)(Drag.VisualEvent, Utils.RPGMAKER_NAME);
+		// require(`./Drag_VisualEvent/js/mz_plugin_command.js`)(Drag.VisualEvent, Utils.RPGMAKER_NAME);
 		require(`./Drag_VisualEvent/js/data/command_data.js`)(Drag.VisualEvent, Utils.RPGMAKER_NAME);
 		require(`./Drag_VisualEvent/js/data/event_data.js`)(Drag.VisualEvent, Utils.RPGMAKER_NAME);
+		Drag.VisualEvent.pluginJSDocData = require(`./Drag_VisualEvent/cache/plugins.json`);
 	} catch(error) {
 		console.error(error);
 	}
@@ -398,6 +399,204 @@ Drag.VisualEvent.version = "0.1.047";
 		return Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2));
 	};
 	
+	//plugin commands fetch and jsdoc parser
+	Drag.VisualEvent.getPluginList = function(document) {
+		if (!document)
+			return [];
+		
+		return Array.from(document.querySelectorAll('script')).filter(script => script.src.includes('js/plugins/')).map(script => decodeURIComponent(script.src.split('/js/plugins/').pop().replace('.js', '')));
+	};
+	
+	Drag.VisualEvent.fetchPluginCommands = function(name, callback, parseParams = true, parseCommands = true) {
+		Drag.VisualEvent.fetchAndParsePluginText(name, {parseParams: parseParams, parseCommands: parseCommands}, callback);
+	};
+	
+	Drag.VisualEvent.fetchAndParsePluginText = function(name, options, callback) {		
+		name = name.replace('.js', '').trim();
+		fetch(`js/plugins/${name}.js`).then(res => {
+			return res.text();
+		}).then(text => {
+			const parsed = Drag.VisualEvent.parsePluginJSDoc(text, name, options);
+			const stat = Drag.VisualEvent.getPluginStat(name);
+			
+			parsed.size = stat.size;
+			parsed.mtimeMs = stat.mtimeMs;
+			callback(parsed);
+		});
+	};
+	
+	Drag.VisualEvent.getPluginStat = function(pluginName) {
+		return Drag.VisualEvent.modules.fs.statSync(`js/plugins/${pluginName}.js`);
+	};
+	
+	Drag.VisualEvent.validatePluginCache = function(pluginName) {
+		if (!Drag.VisualEvent.pluginJSDocData[pluginName])
+			return false;
+		
+		const stat = Drag.VisualEvent.getPluginStat(pluginName);
+		if (Drag.VisualEvent.pluginJSDocData[pluginName].size !== stat.size)
+			return false;
+		
+		if (Drag.VisualEvent.pluginJSDocData[pluginName].mtimeMs !== stat.mtimeMs)
+			return false;
+		
+		return true;
+	};
+	
+	Drag.VisualEvent.parsePluginJSDoc = function(text, name, options = {parseParams: true, parseCommands: true}) {
+		if (Utils.RPGMAKER_NAME !== "MZ") {
+			Drag.VisualEvent.pluginJSDocData[name] = {};
+			return {};
+		}
+		
+		const jsdocRegex = /@[^@\n]+|~struct~\w+:/g;
+		const structRegex = /~struct~\w+:/g;
+		const matches = [...text.matchAll(jsdocRegex)];
+		
+		const pluginData = {};
+		if (options.parseParams)
+			pluginData.params = {};
+		if (options.parseCommands)
+			pluginData.commands = {};
+		if (options.parseParams || options.parseCommands)
+			pluginData.structs = {};
+		
+		for (const [i, match] of matches.entries()) {
+			if (match.parsed)
+				continue;
+			
+			const [tag, val] = Drag.VisualEvent.parseJSDocTag(match[0]);
+			
+			const isStruct = tag.match(structRegex);
+			if (tag === "command" || tag === "param" || isStruct) {
+				const data = {name: !isStruct ? val : Drag.VisualEvent.getStructName(tag)};
+				
+				for (let j = i + 1; j < matches.length; j++) {
+					const [subTag, subVal] = Drag.VisualEvent.parseJSDocTag(matches[j][0]);
+					
+					if (subTag === "command" || (subTag === "param" && !isStruct) || subTag.match(structRegex)) 
+						break;
+					else {
+						if (tag === "command" && options.parseCommands) {
+							if (subTag === "arg") {
+								data.args = data.args || [];
+								data.args.push({name: subVal});
+							} else {
+								if (!data.args)
+									data[subTag] = subVal;
+								else
+									Drag.VisualEvent.parseJSDocTagAndVal(subTag, subVal, data.args[data.args.length - 1]);
+							}
+						} else if (tag === "param" && options.parseParams) {
+							VisualEvent.parseJSDocTagAndVal(subTag, subVal, data);
+						} else if (isStruct && (options.parseCommands || options.parseParams)) {
+							if (subTag === "param") {
+								data.params = data.params || [];
+								data.params.push({name: subVal});
+							} else
+								Drag.VisualEvent.parseJSDocTagAndVal(subTag, subVal, data.params[data.params.length - 1]);
+						}
+						
+						matches[j].parsed = true;
+					}
+				}
+				
+				if (tag === "command" && options.parseCommands)
+					pluginData.commands[val] = data;
+				else if (tag === "param" && options.parseParams && !isStruct)
+					pluginData.params[val] = data;
+				else if (isStruct && (options.parseCommands || options.parseParams))
+					pluginData.structs[data.name] = data;
+				
+			} else
+				pluginData[tag] = val;
+		}
+		
+		Drag.VisualEvent.pluginJSDocData[name] = pluginData;
+		return pluginData;
+	};
+	
+	Drag.VisualEvent.parseJSDocTag = function(text) {
+		const tag = text.replace(/ .*/, '').replace("@", '').trim();
+		const val = text.substring(tag.length + 1).trim();
+		
+		return [tag, val];
+	};
+	
+	Drag.VisualEvent.parseJSDocTagAndVal = function(tag, val, obj) {
+		const structTypeRegex = /struct<\w+>/g;
+		
+		if (tag === "type" && val.slice(-2) === "[]") {
+			val = val.slice(0, -2);
+			obj[tag] = val
+			obj["isList"] = true;
+		} else if (tag !== "option" && tag !== "value")
+			obj[tag] = val;
+		
+		if (tag === "type" && (val === "combo" || val === "select")) {
+			obj["options"] = [];
+			obj["values"] = [];
+		} else if (obj["options"] && tag === "option") {
+			obj["options"].push(val);
+			obj["values"].push(val);
+		} else if (obj["values"] && tag === "value") 
+			obj["values"][obj["values"].length - 1] = val;
+		
+		if (tag === "type" && val.match(structTypeRegex)) {
+			obj["structName"] = Drag.VisualEvent.getStructName(val);
+			obj["type"] = "struct";
+		}
+	};
+	
+	Drag.VisualEvent.getStructName = function(structString) {
+		return structString.replace("struct<", "").replace("~struct~", "").replace(">", "").replace(":", "").replace("[]", "").trim();
+	};
+	
+	Drag.VisualEvent.getPluginCommandParameters = function(pluginName, commandName) {
+		const pluginData = Drag.VisualEvent.pluginJSDocData[pluginName];
+		const commandData = pluginData ? pluginData.commands[commandName] : null;
+		const commandArgs = commandData ? commandData.args : null;
+		return commandArgs ? commandArgs.map(item => {return {...item}}) : []; //two level deep copy
+	};
+	
+	Drag.VisualEvent.pluginsCacheFilepath = "./Drag_VisualEvent/cache/plugins.json";
+	Drag.VisualEvent.loadPluginsCache = function() {
+		const xhr = new XMLHttpRequest();
+		xhr.open("GET", Drag.VisualEvent.pluginsCacheFilepath);
+		xhr.overrideMimeType("application/json");
+		xhr.onload = () => this.onPluginsCacheLoad(xhr);
+		xhr.onerror = () => this.onPluginsCacheError();
+		xhr.send();
+	};
+	
+	Drag.VisualEvent.savePluginsCache = function(callback) {
+		Drag.VisualEvent.writeJSON(Drag.VisualEvent.pluginsCacheFilepath, Drag.VisualEvent.pluginJSDocData, callback);
+	};
+	
+	Drag.VisualEvent.onPluginsCacheLoad = function(xhr) {
+		if (xhr.status < 400) {
+			try { 
+				const data = JSON.parse(xhr.responseText);
+				Drag.VisualEvent.onPluginsCacheLoaded(data);
+			} catch(err) {
+				Drag.VisualEvent.onPluginsCacheError();
+			}
+		} else
+			Drag.VisualEvent.onPluginsCacheError();
+	};
+	
+	Drag.VisualEvent.onPluginsCacheLoaded = function(data) {
+		const editor = Drag.VisualEvent.getEditor();
+		if (editor)
+			editor.onPluginsCacheLoaded(data);
+	};
+	
+	Drag.VisualEvent.onPluginsCacheError = function() {
+		const editor = Drag.VisualEvent.getEditor();
+		if (editor)
+			editor.onPluginsCacheLoadError();
+	};
+	
 	//------------------------------------------------------------------------------------------------------------
 	// Scene Manager
 	
@@ -543,8 +742,8 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.openWindow = function(filename, name, width, height, top, left, data = {}) {
 		const filepath = `./Drag_VisualEvent/html/`;
 		
-		if (Utils.RPGMAKER_NAME === "MV")
-			top += 30;
+		// if (Utils.RPGMAKER_NAME === "MV")
+			// top += 30;
 		
 		try {
 			if (!Drag.VisualEvent.windowsHandlers)
@@ -554,10 +753,13 @@ Drag.VisualEvent.version = "0.1.047";
 				if (Drag.VisualEvent.modules.fs && Drag.VisualEvent.modules.fs.existsSync(filepath + filename)) {
 					const screenWidth = window.screen.width;
 					const screenHeight = window.screen.height;
-					if (left + width + 20 > screenWidth)
-						left += screenWidth - (left + width + 20); 
-					if (top + height + (window.outerHeight - window.innerHeight) + 10 > screenHeight)
-						top += screenHeight - (top + height + (window.outerHeight - window.innerHeight) + 10); 
+					// if (left + width + 20 > screenWidth)
+						// left += screenWidth - (left + width + 20); 
+					// if (top + height + (window.outerHeight - window.innerHeight) + 10 > screenHeight)
+						// top += screenHeight - (top + height + (window.outerHeight - window.innerHeight) + 10); 
+					
+					left = (screenWidth - width) / 2;
+					top = (screenHeight - height) / 2;
 					
 					Drag.VisualEvent.windowsHandlers[`${name}`] = window.open(filename, name, `attributionsrc=1, dependent=1, menubar=1, resizable=1, width=${width}, height=${height}, top=${top}, left=${left}`);
 					Drag.VisualEvent.windowsHandlers[`${name}`].data = data;
@@ -786,7 +988,7 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	//------------------------------------------------------------------------------------------------------------
-	// Editor cache
+	// Editor Cache
 	
 	Drag.VisualEvent.cacheFilepath = "./Drag_VisualEvent/cache/cache.json";
 	Drag.VisualEvent.loadEditorCache = function() {
@@ -1453,7 +1655,6 @@ Drag.VisualEvent.version = "0.1.047";
 		try {
 			Drag.VisualEvent.ensureDirectoryExistence(filename);
 			const data = JSON.stringify(obj, null, space);
-			
 			Drag.VisualEvent.modules.fs.writeFile(filename, data, function(err) {
 				if (err)
 					console.error(err);
@@ -1918,23 +2119,40 @@ Drag.VisualEvent.version = "0.1.047";
 		return $dataMap ? $dataMap.mapId : 0; 
 	};
 	
-	Drag.VisualEvent.getDatabaseData = function(type) {
-		const editorData = Drag.VisualEvent.getEditor().data;
-		if (type === "map_event")
-			// return dataMap ? dataMap.events.filter(ev => ev) : [];
-			return editorData.loadedMap ? editorData.loadedMap.events.filter(ev => ev) : [];
-		else if (type === "switch" || type === "variable") {
-			const dataType = Drag.VisualEvent.getDatabaseTypePlural(type).toLowerCase();
-			return editorData.$dataSystem[`${dataType}`] ? editorData.$dataSystem[`${dataType}`].filter((data, index) => index > 0).map((data, index) => ({id: index + 1, name: data})) : [];
-		} else if (type === "equipment_type")
-			return editorData.$dataSystem.equipTypes.slice(1).map((type, index) => ({name: type === "" ? `#${(index + 1).toString().padStart(2, "0")}` : type, id: index + 1}));
-		else if (type === "element_type")
-			return editorData.$dataSystem.elements.slice(1).map((type, index) => ({name: type === "" ? `#${(index + 1).toString().padStart(2, "0")}` : type, id: index + 1}));
+	Drag.VisualEvent._databaseDataCache = {};
+	Drag.VisualEvent.getDatabaseData = function(type) {		
+		if (Drag.VisualEvent._databaseDataCache[type])
+			return Drag.VisualEvent._databaseDataCache[type];
 		else {
-			const dataType = Drag.VisualEvent.capitalizeAll(Drag.VisualEvent.replaceAll(Drag.VisualEvent.getDatabaseTypePlural(type), "_", " "), ""); 
-			return editorData[`$data${dataType}`] ? editorData[`$data${dataType}`].filter(data => data) : [];
+			let data;
+			const editorData = Drag.VisualEvent.getEditor().data;
+			
+			if (type === "map_event")
+				data = editorData.loadedMap ? editorData.loadedMap.events.filter(ev => ev) : [];
+			else if (type === "switch" || type === "variable") {
+				const dataType = Drag.VisualEvent.getDatabaseTypePlural(type).toLowerCase();
+				data = editorData.$dataSystem[`${dataType}`] ? editorData.$dataSystem[`${dataType}`].filter((data, index) => index > 0).map((data, index) => ({id: index + 1, name: data})) : [];
+			} else if (type === "equipment_type")
+				data = editorData.$dataSystem.equipTypes.slice(1).map((type, index) => ({name: type === "" ? `#${(index + 1).toString().padStart(2, "0")}` : type, id: index + 1}));
+			else if (type === "element_type")
+				data = editorData.$dataSystem.elements.slice(1).map((type, index) => ({name: type === "" ? `#${(index + 1).toString().padStart(2, "0")}` : type, id: index + 1}));
+			else {
+				const dataType = Drag.VisualEvent.capitalizeAll(Drag.VisualEvent.replaceAll(Drag.VisualEvent.getDatabaseTypePlural(type), "_", " "), ""); 
+				data = editorData[`$data${dataType}`] ? editorData[`$data${dataType}`].filter(data => data) : [];
+			}
+			
+			Drag.VisualEvent._databaseDataCache[type] = data;
+			return data;
 		}
 	};
+	
+	Drag.VisualEvent.getDatabaseItemName = function(type, id = 0) {
+		if (!type || !id || id < 1)
+			return '';
+		
+		const item = Drag.VisualEvent.getDatabaseData(type)[id];
+		return item ? item.name : '';
+	};		
 	
 	Drag.VisualEvent.getDatabaseTypePlural = function(type) {
 		if (type === "enemy")
@@ -2512,51 +2730,60 @@ Drag.VisualEvent.version = "0.1.047";
 		`;	
 	};
 	
+	// Drag.VisualEvent._databaseInputOptionsCache = {};
 	Drag.VisualEvent.getDatabaseInputField = function(params, index, controller = null) {
+		// if (Drag.VisualEvent._databaseInputFieldCache[params.type])
+			// return Drag.VisualEvent._databaseInputFieldCache[params.type];
+		
 		if (!params.addOptions || !Array.isArray(params.addOptions))
 			params.addOptions = [];
 		if (params.isPluginParameter)
 			params.addOptions.push("None");
 		
-		const databaseOptions = Drag.VisualEvent.getDatabaseData(params.type);
-		params.options = params.addOptions.map((option, optionId) => ({id: optionId - params.addOptions.length + 1, name: option})).concat(databaseOptions);
+		// const databaseOptions = Drag.VisualEvent.getDatabaseData(params.type);
+		// params.options = params.addOptions.map((option, optionId) => ({id: optionId - params.addOptions.length + 1, name: option})).concat(databaseOptions);
 		
 		const defaultId = params.default !== undefined ? params.default : 1;
 		const id = Math.max(params.value !== undefined ? params.value : defaultId, -params.addOptions.length + 1);
 		
-		let optionValue = params.options.find(option => option.id === id);
-		if (!optionValue) {
-			optionValue = {id: id, name: "??? [NOT IN DB]"};
-			params.options.push(optionValue);
-		}
+		// let optionValue = params.options.find(option => option.id === id);
+		// if (!optionValue) {
+			// optionValue = {id: id, name: "??? [NOT IN DB]"};
+			// params.options.push(optionValue);
+		// }
 		
-		const padId = String(id).padStart(4, "0");
-		const name = optionValue.name;
-		const literalValue = id <= 0 ? name : `${padId}: ${name}`;
-		const literalsOptions = params.options.map(option => `<option ${id === option.id ? 'selected' : ''} value="${option.id}">${option.id > 0 ? String(option.id).padStart(4, "0") + ': ' : ''}${option.name || ''}</option>`);
+		// const padId = String(id).padStart(4, "0");
+		// const name = Drag.VisualEvent.getDatabaseItemName(params.type, id); //optionValue.name;
+		// const literalValue = id <= 0 ? name : `${padId}: ${name}`;
+		// const literalValue = '';
 		
-		if (params.isInteractiveController === true)
+		// const literalsOptions = params.options.map(option => `<option value="${option.id}">${option.id > 0 ? String(option.id).padStart(4, "0") + ': ' : ''}${option.name || ''}</option>`);
+		
+		if (params.isInteractiveController === true) {
+			const databaseOptions = Drag.VisualEvent.getDatabaseData(params.type);
+			params.options = params.addOptions.map((option, optionId) => ({id: optionId - params.addOptions.length + 1, name: option})).concat(databaseOptions);
 			params.data = `data-behavior="${JSON.stringify([-1].concat(params.options.map((option, index) => index)))}" ${params.data || ''}`;
+		}
 		
 		if (params.onchange)
 			params.onchange = params.onchange.replace('$.Drag.VisualEvent.onInputChange(this);', '').replace('handleInteractiveInput(this, this.parentElement.parentElement);', '').trim();
 	
-		return `
+		const input =  `
 			<div class="relative flex" style="align-items: center">
 				<input
-					type="text" class="${params.class ? params.class : ''}" id="${params.id ? params.id : ''}" value="${literalValue}" placeholder="${params.placeholder || ''}"
-					${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} data-value="${id}"
+					type="text" class="${params.class ? params.class : ''}" id="${params.id ? params.id : ''}" value="${id}" placeholder="${params.placeholder || ''}"
+					${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} data-value="${id}" data-addOptions="${JSON.stringify(params.addOptions)}"
 					onchange="$.Drag.VisualEvent.onInputComboChange(this); ${params.isInteractiveController ? 'handleInteractiveInput(this, this.parentElement.parentElement);' : ''}" 
-					oninput="this.onchange();" onfocus="$.Drag.VisualEvent.onInputComboFocus(this);"
+					oninput="this.onchange();" onfocus="$.Drag.VisualEvent.populateDatabaseSelectOptions(this); $.Drag.VisualEvent.onInputComboFocus(this);"
 					onblur="$.Drag.VisualEvent.onInputComboBlur(this);" ${params.onchange ? `data-onchange="${params.onchange}"` : ''}
 					${params.disabled ? 'disabled' : ''} style="min-width: 12.5em;"
 				>
 				<select 
-					onmouseover="$.Drag.VisualEvent.onSelectMouseOver(this);" onmouseout="$.Drag.VisualEvent.onSelectMouseOut(this);"
+					onmouseover="$.Drag.VisualEvent.onSelectMouseOver(this);" onmouseout="$.Drag.VisualEvent.onSelectMouseOut(this);" data-
 					onchange="$.Drag.VisualEvent.onSelectComboChange(this);" onclick="this.onchange();" onblur="$.Drag.VisualEvent.hideSelect(this);"
 					class="hidden" style="display: list-item; position: absolute; top: calc(100% - 2px); padding-top: 0px; padding-bottom: 0px; padding-left: 7px; overflow-y: scroll; background-color: var(--background-color); border: 1px solid var(--color); z-index: 2;"
 				>
-					${literalsOptions.join("")}			
+						
 				</select>
 				${params.type === "switch" || params.type === "variable" ? `
 					<div id="rename-switch-variable-container" title="Rename ${params.type === 'switch' ? 'Switches' : 'Variables'}" class="flex">
@@ -2567,8 +2794,33 @@ Drag.VisualEvent.version = "0.1.047";
 						</svg>
 					</div>
 				` : ''}
-			</div>`;
+			</div>`; //${literalsOptions.join("")}		
+			
+		// if (!Drag.VisualEvent._databaseInputFieldCache[params.type])
+			// Drag.VisualEvent._databaseInputFieldCache[params.type] = input;
+		
+		return input;
 	}; 
+	
+	Drag.VisualEvent.populateDatabaseSelectOptions = function(input) {
+		const select = input.nextElementSibling;
+		const frag = document.createDocumentFragment();
+		const type = input.getAttribute('data-inputType');
+		const addOptions = JSON.parse(input.getAttribute('data-addOptions'));
+		
+		const databaseOptions = Drag.VisualEvent.getDatabaseData(type);
+		const options = addOptions.map((option, optionId) => ({id: optionId - addOptions.length + 1, name: option})).concat(databaseOptions);
+		
+		for (const option of options) {
+			const optionElement = document.createElement('option');
+			optionElement.value = option.id;
+			optionElement.innerHTML = `${option.id > 0 ? String(option.id).padStart(4, "0") + ': ' : ''}${option.name || ''}`;
+			frag.appendChild(optionElement);
+		}
+		
+		select.innerHTML = '';
+		select.appendChild(frag);
+	};
 	
 	Drag.VisualEvent.getCommandInputField = function(params, index, controller = null) {
 		if (!params.addOptions || !Array.isArray(params.addOptions))
@@ -2710,13 +2962,20 @@ Drag.VisualEvent.version = "0.1.047";
 		const input = select.previousElementSibling;
 		let option = select.options[select.options.selectedIndex];
 		if (!option) {
-			option = document.createElement("option");
-			option.value = input.getAttribute('data-value');
-			option.text = `${String(option.value).padStart(4, "0")}: ??? [NOT IN DB]`;
-			select.add(option, null);
-			select.value = option.value;
+			const id = parseInt(input.getAttribute('data-value'));
+			const type = input.getAttribute('data-inputType');
+			const name = Drag.VisualEvent.getDatabaseItemName(type, id - 1);
+			const padId = String(id).padStart(4, "0");
+			const literalValue = id <= 0 ? name : `${padId}: ${name}`;
+			input.value = literalValue;
+			return;
+			// option = document.createElement("option");
+			// option.value = input.getAttribute('data-value');
+			// option.text = `${String(option.value).padStart(4, "0")}: ??? [NOT IN DB]`;
+			// select.add(option, null);
+			// select.value = option.value;
 		}
-		// input.value = option ? option.text : select.options[0].text;
+		
 		input.value = option.text;
 		input.setAttribute('data-value', select.value);
 		
