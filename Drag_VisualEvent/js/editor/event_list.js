@@ -99,9 +99,10 @@ function toggleEventList(type) {
 	window._cache.editor.eventListCollapsed[type] = collapsed;
 };
 
-function makeMapEventList(data = window.data.loadedMap) {	
+function makeMapEventList(data = window.data.loadedMap) {
 	const mapEventList = document.querySelector('#map-event-list');		
-	const mapEventSelect = document.querySelector('#map-event-select');				
+	const mapEventSelect = document.querySelector('#map-event-select');	
+	
 	if (!data) {
 		mapEventList.innerHTML = ``;
 		mapEventSelect.innerHTML = ``;
@@ -110,15 +111,19 @@ function makeMapEventList(data = window.data.loadedMap) {
 	
 	const mapList = document.querySelector('#mapList');
 	mapList.value = window.data.mapTargetId;
+	
 	mapEventSelect.innerHTML = getMapEventSelect(data);
 	
 	const mapEventCount = getMapEventCount(data);
-	const max = Math.min(100, mapEventCount);
-	const list = getRangedMapEventList(1, max, data);
+	// const max = Math.min(100, mapEventCount);
+	const min = Math.max(Math.floor((window.data.targetId - 1) / 100) * 100, 0) + 1;
+	const max = Math.min(min + 99, mapEventCount);
+	const list = getRangedMapEventList(min, max, data);
 	mapEventList.innerHTML = list;
 };
 
-function getMapEventSelect(data = window.data.loadedMap, value = 0) {
+function getMapEventSelect(data = window.data.loadedMap) {
+	const value = window.data.targetId && window.data.targetType === "Map Event" ? Math.max(Math.floor((window.data.targetId - 1) / 100), 0) : 0;
 	return $.Drag.VisualEvent.getInputField({type: "select", options: getMapEventSelectOptions(), value: value, onchange: "onMapEventSelectChange(this);"});
 };
 
@@ -177,8 +182,7 @@ function refreshMapEventList() {
 };
 
 function getCommonEventSelect() {
-	const commonEventCount = getCommonEventCount();
-	const value = window.data.targetId && window.data.targetType === "Common Event" ? Math.floor(window.data.targetId / 100) : Math.floor(commonEventCount / 100);
+	const value = window.data.targetId && window.data.targetType === "Common Event" ? Math.max(Math.floor((window.data.targetId - 1) / 100), 0) : 0;
 	return $.Drag.VisualEvent.getInputField({type: "select", options: getCommonEventSelectOptions(), value: value, onchange: "onCommonEventSelectChange(this);"});
 };
 
@@ -190,25 +194,25 @@ function getCommonEventSelectOptions() {
 	const commonEventCount = Math.ceil(getCommonEventCount() / 100);
 	const commonEventOptions = [];
 	for (let i = 0; i <= commonEventCount - 1; i++)
-		commonEventOptions.push(`${i * 100} - ${(i * 100) + 100}`);
+		commonEventOptions.push(`${i * 100 + 1} - ${(i * 100) + 100}`);
 	return commonEventOptions;
 };
 
 function onCommonEventSelectChange(select) {
-	setTimeout(() => {
+	requestAnimationFrame(() => {
 		const commonEventCount = getCommonEventCount();
 		const commonEventList = document.querySelector('#common-event-list');
-		const min = parseInt(select.value) * 100;
-		const max = Math.min(min + 100, commonEventCount);
+		const min = parseInt(select.value) * 100 + 1;
+		const max = Math.min(min + 99, commonEventCount);
 		commonEventList.innerHTML = getRangedCommonEventList(min, max);
-	}, 1);
+	});
 };
 
 function getCommonEventList() {			
 	const start = performance.now();
 	const commonEventCount = getCommonEventCount();
-	const min = Math.floor(window.data.targetId / 100) * 100;
-	const max = Math.min(min + 100, commonEventCount);
+	const min = Math.max(Math.floor((window.data.targetId - 1) / 100) * 100, 0) + 1;
+	const max = Math.min(min + 99, commonEventCount);
 	const list = getRangedCommonEventList(min, max);
 	console.log(`Common event list built in ${performance.now() - start}ms`);
 	return list;
@@ -233,8 +237,8 @@ function refreshCommonEventList() {
 };
 
 function getTroopEventSelect() {
-	const troopEventCount = getTroopEventCount();
-	return $.Drag.VisualEvent.getInputField({type: "select", options: getTroopEventSelectOptions(), value: Math.floor(troopEventCount / 100), onchange: "onTroopEventSelectChange(this);"});
+	const value = window.data.targetId && window.data.targetType === "Troop Event" ? Math.max(Math.floor((window.data.targetId - 1) / 100), 0) : 0;
+	return $.Drag.VisualEvent.getInputField({type: "select", options: getTroopEventSelectOptions(), value: value, onchange: "onTroopEventSelectChange(this);"});
 };
 
 function getTroopEventCount() {
@@ -243,28 +247,28 @@ function getTroopEventCount() {
 
 function getTroopEventSelectOptions() {
 	const troopEventCount = Math.ceil(getTroopEventCount() / 100);
-	const troopEventTabulationArray = [];
+	const troopEventOptions = [];
 	for (let i = 0; i <= troopEventCount - 1; i++)
-		troopEventTabulationArray.push(`${i * 100} - ${(i * 100) + 100}`);
-	return troopEventTabulationArray;
+		troopEventOptions.push(`${i * 100 + 1} - ${(i * 100) + 100}`);
+	return troopEventOptions;
 };
 
 function onTroopEventSelectChange(select) {
-	setTimeout(() => {
+	requestAnimationFrame(() => {
 		const troopEventCount = getTroopEventCount();
-		const tabTroopEventList = document.querySelector('#troop-event-list');
-		const min = parseInt(select.value) * 100;
-		const max = Math.min(min + 100, troopEventCount);
-		tabTroopEventList.innerHTML = getRangedTroopEventList(min, max);
-	}, 1);
+		const troopEventList = document.querySelector('#troop-event-list');
+		const min = parseInt(select.value) * 100 + 1;
+		const max = Math.min(min + 99, troopEventCount);
+		troopEventList.innerHTML = getRangedTroopEventList(min, max);
+	});
 };
 
 function getTroopEventList() {
 	const start = performance.now();
 	const troopEventCount = getTroopEventCount();
-	const min = Math.floor(troopEventCount / 100) * 100;
-	const max = Math.min(min + 100, troopEventCount);
-	list =  getRangedTroopEventList(min, max);
+	const min = Math.max(Math.floor((window.data.targetId - 1) / 100) * 100, 0) + 1;
+	const max = Math.min(min + 99, troopEventCount);
+	list = getRangedTroopEventList(min, max);
 	console.log(`Troop event list built in ${performance.now() - start}ms`);
 	return list;
 };
@@ -283,6 +287,7 @@ function getRangedTroopEventList(min = 1, max = min + 100) {
 };
 
 function refreshTroopEventList() {
+	document.querySelector('#troop-event-select').innerHTML = getTroopEventSelect();
 	document.querySelector('#troop-event-list').innerHTML = getTroopEventList();
 };
 
