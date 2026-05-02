@@ -834,7 +834,8 @@ function makeInputsFromPluginCommand(pluginName, commandName, commandText, comma
 	const inputs = $.Drag.VisualEvent.getPluginCommandParameters(pluginName, commandName);
 	
 	for (const input of inputs) {
-		input.pluginName = pluginName.split("/")[pluginName.split("/").length - 1];
+		// input.pluginName = pluginName.split("/")[pluginName.split("/").length - 1];
+		input.pluginName = pluginName;
 		input.data = `data-parameterName="${input.name}" data-parameterText="${input.text || ""}"`;
 		input.isPluginParameter = true;
 		
@@ -1108,7 +1109,6 @@ function addNodeFromParams(params = {}, saveInHistory = false, cache = false, on
 	const outputLabel = getCommandOutputLabel(commandCode);
 	const name = params.name ? params.name : commandCode === 357 ? getCommandName(commandCode, params.commandCategory, params.commandText) : params.isCustom ? params.commandName : getCommandName(commandCode);
 	const footer = getCommandFooter(commandCode, hasWarning);
-	
 	const node = makeNodeFromParams({
 		x: params.x, y: params.y, nodeId: params.nodeId, name: name, commandCode: commandCode, attributes: attributes, isCustom: params.isCustom,
 		classList: classList + (hasWarning ? ' warning' : ''), haveInputExecNode: haveInputExecNode, haveOutputExecNode: haveOutputExecNode, 
