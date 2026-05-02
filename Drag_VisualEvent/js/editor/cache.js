@@ -410,7 +410,7 @@ function cacheAllGraphNodes() {
 	eventCache.nodes = [];
 	
 	for (const node of window.nodes)
-		cacheGraphNode(node, eventCache);
+		cacheGraphNode(node.node, eventCache);
 };
 
 function cacheGraphNode(node, eventCache, connectionsMap) {
@@ -419,8 +419,8 @@ function cacheGraphNode(node, eventCache, connectionsMap) {
 	
 	const [x, y] = getNodePosition(node);
 	const nodeId = getNodeId(node);
-	const isCustom = node.getAttribute('data-isCustom') === "true";
-	const commandCode = isCustom ? node.getAttribute('data-commandCode') : getNodeCommandCode(node);
+	const isCustom = getNodeIsCustom(node);
+	const commandCode = getNodeCommandCode(node); //isCustom ? node.getAttribute('data-commandCode') : getNodeCommandCode(node);
 	const commandName = node.getAttribute('data-pluginCommandName') || null;
 	const commandText = node.getAttribute('data-pluginCommandText') || null;
 	const commandCategory = node.getAttribute('data-pluginName') || null;
@@ -458,6 +458,33 @@ function cacheGraphNode(node, eventCache, connectionsMap) {
 	// };
 	
 	
+};
+
+function cacheNodeProperty(node, name = null, value) {
+	if (node === null || name === null)
+		return;
+	
+	if (!hasGraphNodeInCache(node))
+		cacheGraphNode(node);
+	
+	const nodeCache = getGraphNodeFromCache(node);
+	nodeCache[name] = value;
+};
+
+function getCacheNodeProperty(node, name = null) {
+	if (!node || !hasGraphNodeInCache(node))		
+		return null;
+	
+	const nodeCache = getGraphNodeFromCache(node);
+	return nodeCache[name];
+};
+
+function cacheNodeHasProperty(node, name = null) {
+	if (!node || !hasGraphNodeInCache(node))		
+		return false;
+	
+	const nodeCache = getGraphNodeFromCache(node);
+	return nodeCache.hasOwnProperty(name);
 };
 
 function setNodeCache(nodeId, cache, eventCache = null) {
@@ -501,7 +528,7 @@ function uncacheGraphNode(node, eventCache) {
 };
 
 function getGraphNodesFromCache(targetType = window.data.targetType, mapTargetId = window.data.mapTargetId, targetId = window.data.targetId, pageId = window.data.pageId || 0) {
-	return getEventCache(targetType, getEventKey(targetType, mapTargetId, targetId, pageId)).nodes || [];
+	return getEventCache(targetType, getEventKey(targetType, mapTargetId, targetId, pageId)).nodes || getEventCache(targetType, getEventKey(targetType, mapTargetId, targetId, pageId))._nodes || [];
 };
 
 function hasGraphNodesInCache(targetType = window.data.targetType, mapTargetId = window.data.mapTargetId, targetId = window.data.targetId, pageId = window.data.pageId || 0) {
@@ -513,7 +540,7 @@ function getGraphNodeFromCache(node) {
 		return {};
 	
 	const nodeId = getNodeId(node);
-	return getGraphNodesFromCache()[nodeId];
+	return getGraphNodesFromCache()[nodeId] || {};
 };
 
 function hasGraphNodeInCache(node) {

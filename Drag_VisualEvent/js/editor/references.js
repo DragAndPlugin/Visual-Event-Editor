@@ -219,7 +219,6 @@ function commandMeetSearch(command, search) {
 	let commandParameters;
 	if (isPluginCommand)
 		commandParameters = $.Drag.VisualEvent.getPluginCommandParameters(command.parameters[0], command.parameters[1]);
-		
 	else
 		commandParameters = $.Drag.VisualEvent.getCommandParameters(command.code);
 	

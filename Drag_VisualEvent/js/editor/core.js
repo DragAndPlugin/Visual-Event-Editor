@@ -1,17 +1,22 @@
 function init() {
 	// openDevTools();
+	window._startPerformance = performance.now();
 	console.log("Having DevTools open can cause performance issue with the Visual Event Editor. If you notice performance drop while having this window opened, please try to close it.");
 	showLoading();
 	document.title = "Drag_DevTools_VisualEventEditor";
 	loadDataMainWindow();
 	$.Drag.VisualEvent.setLightMode(document);
 	setAppropriateFontSize();
+	// openDevTools();
 	
 	document.body.setAttribute('data-RPGMAKER_NAME', $.Utils.RPGMAKER_NAME);
 	document.querySelector('#bottom-panel-rm-version').innerHTML = `RPG Maker ${$.Utils.RPGMAKER_NAME} v${$.Utils.RPGMAKER_VERSION},`;
 	document.querySelector('#bottom-panel-environment-version').innerHTML = `Chromium v${process.versions["chromium"]}, NodeJS v${process.versions["node"]}, NWJS v${process.versions["nw"]}, PIXI v${$.PIXI.VERSION},`;
 	document.querySelector('#bottom-panel-unsaved-status').innerHTML = `0 events unsaved.`;
 	document.querySelector('#title-visual-event-version').innerHTML = ` v${$.Drag.VisualEvent.version}`;
+	window.graphNodes = document.querySelector('#graphNodes');
+	window.graphSVG = document.querySelector('#graphSVG');
+	window.graphCamera = document.querySelector('#graph-camera');
 	$.Drag.VisualEvent.getHTTP($.Drag.VisualEvent.pluginVersionUrl, checkNewVersionAvailable);
 	
 	window._isGraphNode = true;
@@ -20,6 +25,7 @@ function init() {
 	
 	importEditorMods();
 	setupNodeList();
+	
 	const setupGraphEditorInterval = setInterval(() => {
 		if (($.Utils.RPGMAKER_NAME !== "MZ" || window._mzPluginCommandsLoaded) && window._dataLoaded >= $.Drag.VisualEvent.dataFiles.length) {						
 			if (!window._cacheLoadRequested)
@@ -27,6 +33,9 @@ function init() {
 			
 			if (!window._cacheLoaded)
 				return;
+			
+			if (window._invalidatedPluginCache)
+				$.Drag.VisualEvent.savePluginsCache();
 			
 			clearInterval(setupGraphEditorInterval);
 			
@@ -36,10 +45,12 @@ function init() {
 			if (window._cache.editor.search && window._cache.editor.search.open)
 				toggleSearch();
 			
-			window.nodes = [];
+			console.log(`Initialization completed in ${performance.now() - window._startPerformance}ms`);
+			
+			resetGraphState();
 			loadDummyNodes();
 			
-			setupEventList();
+			setupEventList();			
 			if (hasLastEventInCache())
 				restoreLastEvent();
 			else
@@ -112,9 +123,9 @@ function saveOptions() {
 	options.uiScale = parseInt(document.querySelector('#editor-options-ui-scale').value);
 };
 
-
-
 function restoreLastEvent() {
+	const start = performance.now();
+	console.log("Restoring last event from cache...");
 	const {targetType, mapId, targetId, pageId} = getLastEventFromCache();
 	if (!targetType || !targetId || (targetType === "Map Event" && !mapId))
 		return setupGraphEditor();
@@ -132,6 +143,7 @@ function restoreLastEvent() {
 		
 		reloadGraphEditor(targetId, targetType, pageId, true);
 	}
+	console.log(`Last event from cache restored in ${performance.now() - start}ms.`);
 };
 
 function readClipboard() {
@@ -286,112 +298,138 @@ function getGraph() {
 };
 
 function getGraphCamera() {
-	return document.querySelector('#graph-camera');
+	return window.graphCamera;
 };
 
 function getNodesGraph() {
-	return document.querySelector('#graphNodes');
+	return window.graphNodes;
 };
 
 function getGraphSVG() {
-	return document.querySelector('#graphSVG');
+	return window.graphSVG;
 };
 
 function reloadGraphEditor(id, type, pageId = null, refreshTopPanel = true, refreshLeftPanel = true) {
+	resetGraphState();
 	showLoading();
-	setTimeout(() => {
-		window._registerInputChange = false;
-		
-		window.data.targetId = id;
-		window.data.targetType = type;
-		window.data.pageId = pageId;
-		
-		window.nodes = [];
-		window.indentNodes = [];
-		
-		document.querySelector('#graphNodes').innerHTML = '';
-		document.querySelector('#graphSVG').innerHTML = '';
-		
-		if (!id || !type) {
-			document.querySelector('#topPanel').innerHTML = '';
-			hideLoading();
-			return;
-		}
-
-		const [x, y] = getGraphPositionFromCache();
-		setGraphPosition(x, y);
-		setGraphEditorScale(getGraphScaleFromCache());
-		cacheLastEvent();
-		
-		if (refreshTopPanel)
-			setupTopPanel();
-		
-		if (refreshLeftPanel)
-			switch (type) {
-				case "Common Event":
-					refreshCommonEventList();
-					break;
-				case "Troop Event":
-					refreshTroopEventList();
-					break;
+	// setTimeout(() => {
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			window._registerInputChange = false;
+			
+			window.data.targetId = id;
+			window.data.targetType = type;
+			window.data.pageId = pageId;
+			
+			getNodesGraph().innerHTML = '';
+			document.querySelector('#graphSVG').innerHTML = '';
+			
+			if (!id || !type) {
+				document.querySelector('#topPanel').innerHTML = '';
+				hideLoading();
+				return;
 			}
-		
-		document.querySelector('#playtest-button').classList.remove('hidden');
-		document.querySelector('#save-changes-button').classList.remove('hidden');
-		document.querySelector('#save-all-changes-button').classList.remove('hidden');
-		
-		ensureLeftPanelSelection();
-		// disableCullingGraphNodes();
-		setupGraphEditor();
-		triggerAllOnReadyOnChange();
-		autofitAllTextArea();
-		// rearrangeAllNodes();
-		// startCullingGraphNodes();
-		// enableCullingGraphNodes();
-		hideLoading();
-		// window._registerInputChange = true;
-	}, 5);
+
+			const [x, y] = getGraphPositionFromCache();
+			setGraphPosition(x, y);
+			setGraphEditorScale(getGraphScaleFromCache());
+			cacheLastEvent();
+			
+			if (refreshTopPanel)
+				setupTopPanel();
+			
+			if (refreshLeftPanel)
+				switch (type) {
+					case "Common Event":
+						refreshCommonEventList();
+						break;
+					case "Troop Event":
+						refreshTroopEventList();
+						break;
+				}
+			
+			document.querySelector('#playtest-button').classList.remove('hidden');
+			document.querySelector('#save-changes-button').classList.remove('hidden');
+			document.querySelector('#save-all-changes-button').classList.remove('hidden');
+			
+			ensureLeftPanelSelection();
+			disableCullingGraphNodes();
+			setupGraphEditor();
+			triggerAllOnReadyOnChange();
+			autofitAllTextArea();
+			// rearrangeAllNodes();
+			enableCullingGraphNodes();
+			enableCullingGraphCurves();
+			refreshAllNodesCull();
+			refreshAllCurvesCull();
+			hideLoading();
+			// window._registerInputChange = true;
+		});
+	});
+	// }, 5);
+};
+
+function resetGraphState() {
+	window.nodes = [];
+	window.indentNodes = [];
+	window.nodesReadyCount = 0;
+	
+	window._graphNodeQueue = [];
+	window._graphNodeQueueParams = {};
+	window._nodesCount = 0;
+	window._graphReady = false;
+	
+	if (window._processPendingNodeInputsRequest) {
+		cancelAnimationFrame(window._processPendingNodeInputsRequest);
+		window._processPendingNodeInputsRequest = null;
+	}
+	window._processingPendingNodeInputs = false;
+	window._pendingNodeInputs = [];
 };
 
 function setupGraphEditor() {
 	setupGraphEditorListeners();
+	resetGraphState();
 	
-	window.nodes = [];
-	
-	if (window.data.targetId) {
-		const start = performance.now();
-		if (hasGraphNodesInCache()) {
-			setupGraphNodesFromCache();
-			console.log(`Setup graph nodes from cache completed in ${performance.now() - start}ms`);
-		} else {
-			window.onNodesReady = deepCacheAllGraphNodes;
-			if (hasItemInEventCache("data", window.data.targetType, window.data.mapTargetId, window.data.targetId)) {
-				const dataCache = getEventCacheItem("data", window.data.targetType, window.data.mapTargetId, window.data.targetId);
-				if (window.data.targetType === "Common Event" || dataCache.pages[window.data.pageId || 0]) {
-					setupGraphNodes(dataCache);
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			if (window.data.targetId) {
+				const start = performance.now();
+				if (hasGraphNodesInCache()) {
+					setupGraphNodesFromCache();
+					console.log(`Setup graph nodes from cache completed in ${performance.now() - start}ms`);
 				} else {
-					// window.onNodesReady = deepCacheAllGraphNodes;
-					setupGraphNodes();
-					saveEventDataInCache();
+					window.onNodesReady = deepCacheAllGraphNodes;
+					if (hasItemInEventCache("data", window.data.targetType, window.data.mapTargetId, window.data.targetId)) {
+						const dataCache = getEventCacheItem("data", window.data.targetType, window.data.mapTargetId, window.data.targetId);
+						if (window.data.targetType === "Common Event" || dataCache.pages[window.data.pageId || 0]) {
+							setupGraphNodes(dataCache);
+						} else {
+							setupGraphNodes();
+							saveEventDataInCache();
+						}
+					} else {
+						setupGraphNodes();
+						saveEventDataInCache();
+					}
+					
+					console.log(`Setup graph nodes from data completed in ${performance.now() - start}ms`);
 				}
-			} else {
-				// window.onNodesReady = deepCacheAllGraphNodes;
-				setupGraphNodes();
-				saveEventDataInCache();
 			}
 			
-			console.log(`Setup graph nodes from data completed in ${performance.now() - start}ms`);
-		}
-	}
-	
-	if (window._onEditorReady)
-		window._onEditorReady();
-	triggerModsFunction("onEditorReady");
+			if (window._onEditorReady)
+				window._onEditorReady();
+			triggerModsFunction("onEditorReady");
+		});
+	});
 };
 
 function setupGraphNodesFromCache() {
+	const addedNodes = [];
 	const cacheNodes = getGraphNodesFromCache();
-	for (const cacheNode of cacheNodes) {	
+	window._nodesCount = cacheNodes.length;
+	
+	for (const cacheNode of cacheNodes) {
 		if (!cacheNode)
 			continue;
 
@@ -416,35 +454,83 @@ function setupGraphNodesFromCache() {
 			cacheNode.commandName = window._customNodes[cacheNode.commandCode].name;
 		}
 		
-		const node = addNodeFromParams({
-			x: cacheNode.x, y: cacheNode.y, nodeId: cacheNode.nodeId, isCustom: isCustom,
-			isPluginCommand: isPluginCommand, commandName: cacheNode.commandName, commandText: cacheNode.commandText, commandCategory: cacheNode.commandCategory,
-			commandCode: cacheNode.commandCode, parametersValues: cacheNode.parameters, parameterListsLength: cacheNode.listsLength
-		}, false, false);
-		
-		// if (isCustom) {
-			// const customNodeData = getCustomNodeData(getNodeCommandCode(node));
-			// if (customNodeData.onadd && typeof customNodeData.onadd === "function")
-				// customNodeData.onadd(this, node);
+		// if (isInGraphBounds(cacheNode.x, cacheNode.y, 0, 0, 300)) {
+			const node = addNodeFromParams({
+				x: cacheNode.x, y: cacheNode.y, nodeId: cacheNode.nodeId, isCustom: isCustom,
+				isPluginCommand: isPluginCommand, commandName: cacheNode.commandName, commandText: cacheNode.commandText, commandCategory: cacheNode.commandCategory,
+				commandCode: cacheNode.commandCode, parametersValues: cacheNode.parameters, parameterListsLength: cacheNode.listsLength
+			}, false, false);
+			addedNodes.push(cacheNode);
+		// } else {
+			// window._graphNodeQueueParams[cacheNode.nodeId] = {
+				// x: cacheNode.x,
+				// y: cacheNode.y,
+				// nodeId: cacheNode.nodeId,
+				// isCustom,
+				// isPluginCommand,
+				// commandName: cacheNode.commandName,
+				// commandText: cacheNode.commandText,
+				// commandCategory: cacheNode.commandCategory,
+				// commandCode: cacheNode.commandCode,
+				// parametersValues: cacheNode.parameters,
+				// parameterListsLength: cacheNode.listsLength,
+				// connectionsMap: cacheNode.connectionsMap
+			// };
+
+			// window._graphNodeQueue.push(cacheNode.nodeId);
 		// }
 	}
+
+	// for (const cacheNode of cacheNodes)
+		// if (cacheNode)
+			// rebuildListFromConnectionsMap(getNodeById(cacheNode.nodeId), cacheNode.connectionsMap);
 	
-	const test = setInterval(() => {
-		if (!window._allNodesReady)
-			return;
+	// const fragSVG = document.createDocumentFragment();
+	// for (const cacheNode of cacheNodes)
+		// if (cacheNode)
+			// reconnectNodeFromConnectionsMap(getNodeById(cacheNode.nodeId), cacheNode.connectionsMap, true, fragSVG, false);
+	
+	// document.querySelector('#graphSVG').appendChild(fragSVG);
+	
+	for (const cacheNode of addedNodes)
+		if (cacheNode)
+			rebuildListFromConnectionsMap(getNodeById(cacheNode.nodeId), cacheNode.connectionsMap);
+	
+	const fragSVG = document.createDocumentFragment();
+	for (const cacheNode of addedNodes)
+		if (cacheNode)
+			reconnectNodeFromConnectionsMap(getNodeById(cacheNode.nodeId), cacheNode.connectionsMap, true, fragSVG, false);
+	
+	getGraphSVG().appendChild(fragSVG);
+	
+	if (window._graphNodeQueue.length > 0)
+		processNodeQueue();
+	// else
+		// onAllNodeReady();
+};
+
+function processNodeQueue() {
+	const start = performance.now();
+	const frag = document.createDocumentFragment();
+	
+	while (window._graphNodeQueue.length > 0) {
+		const nodeId = window._graphNodeQueue.shift();
+		const params = window._graphNodeQueueParams[nodeId];
+
+		params._lazyLoadInputs = false;
+		const node = addNodeFromParams(params, false, false);
+		rebuildListFromConnectionsMap(node, params.connectionsMap);
+		reconnectNodeFromConnectionsMap(node, params.connectionsMap, false, null, false);
+		// node._curvesDrawn = false;
 		
-		for (const cacheNode of cacheNodes)
-			if (cacheNode)
-				rebuildListFromConnectionsMap(getNodeById(cacheNode.nodeId), cacheNode.connectionsMap);
-		
-		const fragSVG = document.createDocumentFragment();
-		for (const cacheNode of cacheNodes)
-			if (cacheNode)
-				reconnectNodeFromConnectionsMap(getNodeById(cacheNode.nodeId), cacheNode.connectionsMap, true, fragSVG, false);
-		
-		document.querySelector('#graphSVG').appendChild(fragSVG);
-		clearInterval(test);
-	}, 100);
+		if (performance.now() - start > 2)
+			break;
+	}
+
+	if (window._graphNodeQueue.length > 0)
+		requestAnimationFrame(processNodeQueue);
+	else
+		console.log(`Editor ready (${performance.now() - window._startPerformance}ms).`);
 };
 
 function setupGraphNodes(target) {
@@ -462,20 +548,14 @@ function setupGraphNodes(target) {
 	if (!target)
 		return console.log("ERROR: Setup Graph Node aborted, no target graph");
 	
-	const eventIsUnsaved = isUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
-	// const frag = document.createDocumentFragment();
-	
 	const name = getEventNodeName();
-	let node = addGraphNode(
+	let node = makeNodeFromParams(
 		{x: x, y: y, name: name, classList: "nodeEvent undeletable uncopyable", 
 		haveOutputExecNode: true, indent: 0, inputs: getEventInput(window.data.targetType, window.data.targetId, window.data.pageId || 0, parseInt(document.querySelector('#mapList').value) || 0)},
-		false, false); //, () => {
-			
+		false, false);
+	
 	window._indentNodes[0] = node;
 	x += Math.ceil((node.offsetWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
-	
-	// if (!eventIsUnsaved)
-		// deepCacheGraphNode(node);
 	
 	let list;
 	switch (window.data.targetType) {
@@ -511,7 +591,8 @@ function setupGraphNodes(target) {
 			continue;
 		
 		const commandParameters = $.Drag.VisualEvent.getCommandParameters(commandCode);
-		if (!Array.isArray(commandParameters)) //ignore command without parameters
+		//ignore command without parameters
+		if (!Array.isArray(commandParameters)) 
 			continue;
 		
 		const commandParametersIndex = $.Drag.VisualEvent.commandsParametersIndex[`command${commandCode}`];
@@ -527,69 +608,41 @@ function setupGraphNodes(target) {
 		const footer = getCommandFooter(commandCode, hasWarning);
 		
 		const prevNode = window._indentNodes[command.indent] ? window._indentNodes[command.indent] : window._indentNodes[command.indent - 1];
-		const prevNodeCommandCode = prevNode.getAttribute('data-commandCode');
+		const prevNodeCommandCode = parseInt(prevNode.getAttribute('data-commandCode'));
 		
-		if (prevNodeCommandCode !== "0") {
-			const dummyNodeWidth = getDummyNodeWidth(prevNodeCommandCode, command.parameters[0], command.parameters[1]);
-			x = Math.ceil((getNodePosition(prevNode)[0] + dummyNodeWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
+		// if (prevNodeCommandCode !== 0) {
+			// const dummyNodeWidth = getDummyNodeWidth(prevNodeCommandCode, command.parameters[0], command.parameters[1]);
+			// x = Math.ceil((getNodePosition(prevNode)[0] + dummyNodeWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
 			
-			const dummyNodeHeight = getDummyNodeHeight(commandCode, command.parameters[0], command.parameters[1]);
-			if (dummyNodeHeight > (window._highestHeightBranch[command.indent] || 0))
-				window._highestHeightBranch[command.indent] = dummyNodeHeight + nodeSnap.y;
-		} else
-			x = Math.ceil((getNodePosition(prevNode)[0] + prevNode.offsetWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
-		
-		const node2 = addGraphNode({
+			// const dummyNodeHeight = getDummyNodeHeight(commandCode, command.parameters[0], command.parameters[1]);
+			// if (dummyNodeHeight > (window._highestHeightBranch[command.indent] || 0))
+				// window._highestHeightBranch[command.indent] = dummyNodeHeight + nodeSnap.y;
+		// } else
+			// x = Math.ceil((getNodePosition(prevNode)[0] + prevNode.offsetWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
+		// console.log(x, y);
+		x += 500;
+		y = command.indent * 500;
+		const node2 = makeNodeFromParams({
 			x: x, y: y, name: name, commandCode: commandCode, attributes: attributes,
 			classList: classList + (hasWarning ? ' warning' : ''), haveInputExecNode: true, haveOutputExecNode: true, 
-			inputs: inputs, miscInputs: miscInputs, outputsExec: outputs, indent: command.indent, outputLabel: outputLabel, footer: footer
-		}, false, false);//, () => {
-			// if (!node2)
-				// return; //continue
-			
-			// x += Math.ceil((node2.offsetWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
-			// const prevNode = window._indentNodes[command.indent] ? window._indentNodes[command.indent] : window._indentNodes[command.indent - 1];
-			// const outputConnection = prevNode.querySelector(`.outputConnection.exec[data-connected="false"][data-indent="${command.indent}"]:not([data-keepUnconnected="true"])`);
-			// const inputConnection = node2.querySelector(`.inputConnection.exec[data-connected="false"]`);
-			// drawCurve(outputConnection, inputConnection);
-			
-			// window._indentNodes[command.indent] = node2;
-			
-			// if (!eventIsUnsaved)
-				// deepCacheGraphNode(node2);
-		// });
+			inputs: inputs, miscInputs: miscInputs, outputsExec: outputs, indent: command.indent, outputLabel: outputLabel, footer: footer,
+			_lazyLoadInputs: false
+		}, false, false);
 		
 		if (!node2)
 			continue;
 		
-		// console.log(outputs);
 		const outputConnection = prevNode.querySelector(`.outputConnection.exec[data-connected="false"][data-indent="${command.indent}"]:not([data-keepUnconnected="true"])`);
 		const inputConnection = node2.querySelector(`.inputConnection.exec[data-connected="false"]`);
-		drawCurve(outputConnection, inputConnection);
-		
-		// x += Math.ceil((node2.offsetWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
-		// if (!window._indentNodes[command.indent])
-			// x = Math.ceil((window._indentNodes[command.indent - 1].offsetWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
-		// else
-			// x += Math.ceil((node2.offsetWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
-		
+		// drawCurve(outputConnection, inputConnection);
+		connectConnections(outputConnection, inputConnection);
 		
 		window._indentNodes[command.indent] = node2;
-		
-		// if (!eventIsUnsaved)
-			// deepCacheGraphNode(node2);
 	}
 	
 	delete window._indentNodes;
-	// document.querySelector('#graphNodes').appendChild(frag);
-	
-	// if (!) 
-		// deepCacheAllGraphNodes();
-	
-	// }
-// );
-	
-	
+	onAllNodeReady();
+	// rearrangeAllNodes();
 };
 
 function getCommandClassList(commandCode) {
@@ -926,27 +979,31 @@ function setCommandParametersIndexs(commandParameters, commandParametersIndex) {
 
 function loadDummyNodes() {
 	window._preventAddNode = true;
+	
 	const now = performance.now();
-	const graph = document.querySelector('#graphNodes');
+	const graph = getNodesGraph();
+	
 	window.onNodesReady = registerDummyNodesSizes;
 	
 	window._dummyNodes = {native: {}};
-	for (const category in $.Drag.VisualEvent.commandsCategories)
+	for (const category in $.Drag.VisualEvent.commandsCategories) {
 		for (const commandCode of $.Drag.VisualEvent.commandsCategories[category]) {
 			window._dummyNodes.native[commandCode] = addNodeFromParams({
 				x: 0, y: 0, isPluginCommand: false, commandCode: parseInt(commandCode.replace('command', '')), commandName: "", commandText: "", commandCategory: ""
 			});
+			
+			window._dummyNodes.native[commandCode].isDummy = true;
 			
 			setNodePosition(window._dummyNodes.native[commandCode], -9999, -9999);
 			window._dummyNodes.native[commandCode].removeAttribute('data-nodeId');
 			
 			nodeResizeObserver.observe(window._dummyNodes.native[commandCode]);
 			graph.appendChild(window._dummyNodes.native[commandCode]);
-			
 		}
-			
+	}
+	
 	if ($.Utils.RPGMAKER_NAME === "MZ") 
-		for (const pluginName in $.Drag.VisualEvent.pluginJSDocData)
+		for (const pluginName in $.Drag.VisualEvent.pluginJSDocData) {
 			for (const commandName in $.Drag.VisualEvent.pluginJSDocData[pluginName].commands) {
 				if (!window._dummyNodes[pluginName])
 					window._dummyNodes[pluginName] = {};
@@ -954,6 +1011,8 @@ function loadDummyNodes() {
 				window._dummyNodes[pluginName][commandName] = addNodeFromParams({
 					x: 0, y: 0, isPluginCommand: true, commandCode: 357, commandName: commandName, commandText: $.Drag.VisualEvent.pluginJSDocData[pluginName].commands[commandName].text, commandCategory: pluginName
 				});
+				window._dummyNodes[pluginName][commandName].isDummy = true;
+				
 				setNodePosition(window._dummyNodes[pluginName][commandName], -9999, -9999);
 				window._dummyNodes[pluginName][commandName].removeAttribute('data-nodeId');
 				
@@ -961,6 +1020,7 @@ function loadDummyNodes() {
 				graph.appendChild(window._dummyNodes[pluginName][commandName]);
 				
 			}
+		}
 			
 	window._preventAddNode = false;
 	console.log(`Dummy nodes loaded in ${performance.now() - now}ms.`);
@@ -969,8 +1029,10 @@ function loadDummyNodes() {
 function registerDummyNodesSizes() {
 	for (const category in window._dummyNodes) 
 		for (const node of Object.values(window._dummyNodes[category])) {
-			node.setAttribute('data-width', node.offsetWidth);
-			node.setAttribute('data-height', node.offsetHeight);
+			// node.setAttribute('data-width', node.offsetWidth);
+			// node.setAttribute('data-height', node.offsetHeight);
+			node.width = node.offsetWidth;
+			node.height = node.offsetHeight;
 		}
 		
 	window.onNodesReady = null;
@@ -991,14 +1053,15 @@ function getDummyNode(commandCode, commandCategory, commandName) {
 function getDummyNodeWidth(commandCode, commandCategory, commandName) {
 	const dummyNode = getDummyNode(commandCode, commandCategory, commandName);
 	if (dummyNode)
-		return parseInt(dummyNode.getAttribute('data-width'));
+		return dummyNode.width || 0; //parseInt(dummyNode.getAttribute('data-width'));
 	return 0;
 };
 
 function getDummyNodeHeight(commandCode, commandCategory, commandName) {
 	const dummyNode = getDummyNode(commandCode, commandCategory, commandName);
 	if (dummyNode)
-		return parseInt(dummyNode.getAttribute('data-height'));
+		// return parseInt(dummyNode.getAttribute('data-height'));
+		return dummyNode.height || 0; //parseInt(dummyNode.getAttribute('data-height'));
 	return 0;
 };
 
@@ -1049,10 +1112,11 @@ function addNodeFromParams(params = {}, saveInHistory = false, cache = false, on
 	const outputLabel = getCommandOutputLabel(commandCode);
 	const name = params.name ? params.name : commandCode === 357 ? getCommandName(commandCode, params.commandCategory, params.commandText) : params.isCustom ? params.commandName : getCommandName(commandCode);
 	const footer = getCommandFooter(commandCode, hasWarning);
-	const node = addGraphNode({
+	
+	const node = makeNodeFromParams({
 		x: params.x, y: params.y, nodeId: params.nodeId, name: name, commandCode: commandCode, attributes: attributes, isCustom: params.isCustom,
 		classList: classList + (hasWarning ? ' warning' : ''), haveInputExecNode: haveInputExecNode, haveOutputExecNode: haveOutputExecNode, 
-		inputs: inputs, miscInputs: miscInputs, outputsExec: outputs, indent: 0, outputLabel: outputLabel, footer: footer
+		inputs: inputs, miscInputs: miscInputs, outputsExec: outputs, indent: 0, outputLabel: outputLabel, footer: footer, _lazyLoadInputs: params._lazyLoadInputs
 	}, saveInHistory, cache, () => {
 		if (params.parameterListsLength)
 			assignNodeListsLength(node, params.parameterListsLength);
@@ -1063,6 +1127,29 @@ function addNodeFromParams(params = {}, saveInHistory = false, cache = false, on
 	});
 	
 	return node;
+};
+
+function getDummyNode(commandCode) {
+	return commandCode === 357 ? null : window._dummyNodes.native[`command${commandCode}`];
+};
+
+function addNodeFromDummy(params, cache = false, saveInHistory = false, onNodeReady = null) {
+	const dummyNode = getDummyNode(params.commandCode);
+	if (dummyNode) {
+		console.log(`Adding Graph Node ${params.name} (${params.commandCode})`);
+		const node = dummyNode.cloneNode(true);
+		setNodePosition(node, params.x || 0, params.y || 0, false, cache);
+		setNodeOffset(node, 0, 0);
+		
+		if (!window._preventAddNode)
+			addNodeToGraphNode(node, saveInHistory, cache, null);
+		
+		requestAnimationFrame(() => {
+			onNodeInputsReady(node, onNodeReady);
+		});
+		
+		return node;
+	}
 };
 
 function assignNodeParametersValues(node, values) {
@@ -1080,6 +1167,7 @@ function assignNodeParametersValues(node, values) {
 			
 			const isList = input.getAttribute('data-islist') === "true";
 			if (isList) {
+				
 				//destroy existing inputs due to defaults values
 				const inputWrapper = $.Drag.VisualEvent.getAncestorById(input, 'input-wrapper');
 				if (inputWrapper.childElementCount > 1)
@@ -1381,6 +1469,9 @@ function applyPage(pageData, pageId = 0, sourceType) {
 
 function getParametersFromParametersValues(parameters, parametersValues, result = []) {
 	for (const [parameterId, parameter] of parameters.entries()) {
+		if (!parameter)
+			continue;
+		
 		if (parameter.type === 'interactive') {
 			if (!parameter.controller.notParam) {
 				parameter.controller.value = parametersValues[parameter.controller.parameterIndex !== undefined ? parameter.controller.parameterIndex : parameterId];
@@ -1513,15 +1604,20 @@ function onInputChange(input) {
 	if (!window._registerInputChange)
 		return;
 	
-		const node = $.Drag.VisualEvent.getAncestorById(input, 'graphNode');
+	const node = $.Drag.VisualEvent.getAncestorById(input, 'graphNode');
 	if (node) {
+		console.log(node);
+		console.log(window._registerInputChange);
+		console.log(node._preventInputChange);
+		if (node._preventInputChange)
+			return;
+		
 		if (!isUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0))
 			setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
 		
-		if (node) {
 			updateCacheGraphNodeParameters(node);
 			registerNodeReferences(node);
-		}
+			cacheNodeProperty(node, "parsedParameters", parseNodeInputs(node));
 	} else if ($.Drag.VisualEvent.getAncestorById(input, 'event-data-container'))
 		if (!isUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, null))
 			setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, null);

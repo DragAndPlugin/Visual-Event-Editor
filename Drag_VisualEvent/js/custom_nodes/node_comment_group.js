@@ -126,14 +126,11 @@ module.exports = [{
 			if (!node)
 				return;
 			
-			const eventCache = editor.getEventCache();
-			const nodeId = editor.getNodeId(node);
-			
 			if (width !== null)
-				eventCache.nodes[nodeId].widthContent = width;
+				editor.cacheNodeProperty(node, "widthContent", width);
 			
 			if (height !== null)
-				eventCache.nodes[nodeId].heightContent = height;
+				editor.cacheNodeProperty(node, "heightContent", height);
 		};
 		
 		NODE_COMMENT_GROUP.onUndoResizeCommentGroup = function(action) {
@@ -175,11 +172,7 @@ module.exports = [{
 			if (!node || !color)
 				return;
 			
-			const eventCache = editor.getEventCache();
-			const nodeId = editor.getNodeId(node);
-			
-			if (color)
-				eventCache.nodes[nodeId].headerColor = color;
+			editor.cacheNodeProperty(node, "headerColor", color);
 		};
 		
 		NODE_COMMENT_GROUP.onEndSetNodeHeaderColor = function(node, color) {
@@ -227,10 +220,7 @@ module.exports = [{
 				return;
 			
 			const value = textarea.value;
-			const eventCache = editor.getEventCache();
-			const nodeId = editor.getNodeId(node);
-			
-			eventCache.nodes[nodeId].commentHeaderContent = value;
+			editor.cacheNodeProperty(node, "commentHeaderContent", value);
 		};
 		
 		// group chain
@@ -266,11 +256,7 @@ module.exports = [{
 			if (!node)
 				return;
 			
-			const eventCache = editor.getEventCache();
-			const nodeId = editor.getNodeId(node);
-			
-			if (eventCache && nodeId)
-				eventCache.nodes[nodeId].chained = chained;
+			editor.cacheNodeProperty(node, "chained", chained);
 		};
 		
 		NODE_COMMENT_GROUP.onUndoChainCommentGroup = function(action) {
@@ -312,7 +298,11 @@ module.exports = [{
 		
 		const nodes = editor.nodes;
 		const groupRect = groupNode.getBoundingClientRect();
-		for (const node of nodes) {
+		for (const nodeData of nodes) {
+			if (!nodeData)
+				continue;
+			
+			const node = nodeData.node;
 			if (node && node !== groupNode && NODE_COMMENT_GROUP.isNodeInsideCommentGroup(node, groupRect))
 				editor.selectNode(node);
 		}

@@ -687,9 +687,14 @@
 				
 				const editor = $.Drag.VisualEvent.getEditor();
 				if (editor && eventType && eventId) {
-					editor.loadEvent(eventId, eventType, pageId, mapId);
-					if (nodeId !== undefined)
-						editor.onNodesReadyEx = (() => editor.focusNode(nodeId));
+					if (editor.isEventSelected(eventType, mapId, eventId, pageId)) {
+						if (nodeId !== undefined)
+							editor.focusNode(nodeId)
+					} else {
+						editor.loadEvent(eventId, eventType, pageId, mapId);
+						if (nodeId !== undefined)
+							editor.onNodesReadyEx = (() => editor.focusNode(nodeId));
+					}
 					$.Drag.VisualEvent.focusEditor();
 				}
 			};

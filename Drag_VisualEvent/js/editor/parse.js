@@ -2,7 +2,7 @@
 function getExecutionSequence(node = getFirstNode(), onlySelected = false, _sequence = [], _nodesIds = [], _flatSequence = []) {
 	const register = onlySelected === false || (onlySelected === true && isNodeSelected(node));
 	
-	const nodeData = {};
+	const data = {};
 	if (register) {
 		const nodeId = getNodeId(node);
 		
@@ -15,36 +15,35 @@ function getExecutionSequence(node = getFirstNode(), onlySelected = false, _sequ
 			
 		_nodesIds.push(nodeId);
 		
-		nodeData.node = node;
-		nodeData.nodeId = nodeId;
-		// = {node: node, nodeId: nodeId};
-		_sequence.push(nodeData);
-		_flatSequence.push(nodeData);
+		data.node = node;
+		data.nodeId = nodeId;
+		_sequence.push(data);
+		_flatSequence.push(data);
 	}
 	
-	const outputs = getNodeConnections(node).outputs;
+	const outputs = [...getNodeConnections(node).outputs];
 	const mainOutput = outputs.pop();
 	
 	if (outputs.length > 0) {
 		if (register)
-			nodeData.subSequence = [];
+			data.subSequence = [];
 		
 		for (const [i, output] of outputs.entries()) {
 			if (register)
-				nodeData.subSequence[i] = new Array(0);
+				data.subSequence[i] = new Array(0);
 			
 			if (isConnectionConnected(output)) {
 				const outputNode = getConnectionConnectedNodes(output)[0];
 				if (outputNode)
 					if (register)
-						getExecutionSequence(outputNode, onlySelected, nodeData.subSequence[i], _nodesIds, _flatSequence);
+						getExecutionSequence(outputNode, onlySelected, data.subSequence[i], _nodesIds, _flatSequence);
 					else 
 						getExecutionSequence(outputNode, onlySelected, _sequence, _nodesIds, _flatSequence);
 			}
 		}
 	} else
 		if (register)
-			nodeData.subSequence = null;
+			data.subSequence = null;
 	
 	if (mainOutput && isConnectionConnected(mainOutput)) {
 		const mainOutputNode = getConnectionConnectedNodes(mainOutput)[0];
@@ -82,8 +81,6 @@ function parseEventDataFromEditor(onlySelected = false, sequence = null) {
 	const topPanel = document.querySelector('#topPanel');
 	if (!topPanel)
 		return null;
-	
-	// const [nodes, loopOnNodeId] = getMainExecutionSequence();
 	
 	switch (window.data.targetType) {
 		case "Common Event":
@@ -163,131 +160,12 @@ function parseEventDataFromEditor(onlySelected = false, sequence = null) {
 	// enableCullingGraphNodes();
 };
 
-function parseEventConditions() {
-	const firstNode = getFirstNode();
-	const conditionConnection = getNodeConnectionsById(firstNode, 0).input;
-	if (isConnectionConnected(conditionConnection)) {
-		let sConditions = "";
-		let node = getConnectionConnectedNodes(conditionConnection)[0];
-		let inputsCount = getNodeConnectedConnections(node).inputs.length;
-		const queue = [[node, [inputsCount, inputsCount]]];
-		
-		while (queue.length > 0) {
-			node = queue[0][0];
-			sConditions = parseNodeCondition(node, queue, sConditions);
-			
-			if (queue[0][1][0] <= 0)
-				queue.shift();
-			else {
-				node = getNodeConnectedNodes(node).inputs[queue[0][1][1] - queue[0][1][0]];
-				inputsCount = getNodeConnectedConnections(node).inputs.length;
-				
-				queue[0][1][0]--;
-				queue.unshift([node, [inputsCount, inputsCount]]);
-			}
-			
-		}
-		
-		return sConditions;
-	} else
-		return null;
-};
-
-function parseNodeCondition(node, queue, sConditions) {
-	const code = getNodeCommandCode(node);
-	const params = parseNodeInputs(node);
-	const customNodeData = getCustomNodeData(code);
-	if (typeof customNodeData.parseCondition === "function")
-		sConditions = customNodeData.parseCondition(params, queue, sConditions);
-	else
-		switch (code) {
-			case "custom_node_event_conditions_and":
-				if (queue[0][1][0] === queue[0][1][1])
-					sConditions += "(";
-				else if (queue[0][1][0] === 0)
-					sConditions += ")";
-				else
-					sConditions += " && ";
-				break;
-			case "custom_node_event_conditions_or":
-				if (queue[0][1][0] === queue[0][1][1])
-					sConditions += "(";
-				else if (queue[0][1][0] === 0)
-					sConditions += ")";
-				else
-					sConditions += " || ";
-				break;
-			case "custom_node_event_conditions_not":
-				if (queue[0][1][0] === queue[0][1][1])
-					sConditions += "!";
-				break;
-			case "custom_node_event_conditions_switch":
-				sConditions += `s${params[0]}`;
-				break;
-			case "custom_node_event_conditions_variable":
-				sConditions += `v${params.join('_')}`;
-				break;
-			case "custom_node_event_conditions_selfswitch":
-				sConditions += `ss${params[0]}`;
-				break;
-			case "custom_node_event_conditions_item":
-				sConditions += `i${params[0]}`;
-				break;
-		};
-	
-	return sConditions;
-};
-
-function _parseNodesBehavior(startingNode = getFirstNode(), indent = 0) { //obsolete, don't use
-	// const [nodes, loop] = getMainExecutionSequence(startingNode);
-	const nodes = getExecutionSequence(startingNode)[0];
-	const nodesBehavior = [];
-	// console.log(`parsing ${nodes.length} nodes... `, nodes, `with indent ${indent}`);
-	for (const [nodeIndex, node] of nodes.entries()) {
-		
-		if (loop.start === getNodeId(node)) {
-			nodesBehavior.push({code: 112, indent: indent, parameters: []});
-			indent++;
-		}
-		
-		const commandCode = getNodeCommandCode(node);
-		// console.log(`parsing ${commandCode}`);
-		if (!commandCode)
-			continue;
-		
-		const nodeInputs = getNodeInputs(node);
-		const command = {
-			code: commandCode,
-			indent: indent,
-			parameters: parseNodeInputs(node, nodeInputs)
-		};
-		nodesBehavior.push(command);
-		
-		if (typeof window[`parseNode${commandCode}`] === "function")
-			window[`parseNode${commandCode}`](command, node, nodesBehavior, nodeInputs);
-		
-		if (loop.end === getNodeId(node)) {
-			nodesBehavior.push({code: 113, indent: indent, parameters: []});
-			indent--;
-			nodesBehavior.push({code: 413, indent: indent, parameters: []});
-		}
-	}
-	
-	nodesBehavior.push({code: 0, indent: indent, parameters: Array(0)}); //end of behavior
-	return nodesBehavior;
-};
-
 function parseNodesBehavior(startingNode = getFirstNode(), indent = 0, sequence = null, onlySelected = false, addEndBehavior = true) {
 	if (!sequence)
 		sequence = getExecutionSequence(startingNode, onlySelected)[0];
 	
-	// if (window._parseOnlySelected === undefined)
-		// window._parseOnlySelected = !!onlySelected;
-	
 	const nodesBehavior = [];
 	for (const data of sequence) {
-		// if (window._parseOnlySelected && data.node && !isNodeSelected(data.node))
-			// continue;
 		
 		if (data.jumpLabel) {
 			const labelId = `LABEL_VISUAL_EVENT_EDITOR_${data.jumpLabel}`;
@@ -306,29 +184,34 @@ function parseNodesBehavior(startingNode = getFirstNode(), indent = 0, sequence 
 		if (!commandCode)
 			continue;
 		
-		const isCustom = node.getAttribute('data-isCustom') === "true";
+		const isCustom = node.data.isCustom;
 		
 		const nodeInputs = getNodeInputs(node);
 		const command = {
 			code: commandCode,
 			indent: indent,
-			parameters: parseNodeInputs(node, nodeInputs)
+			parameters: cacheNodeHasProperty(node, "parsedParameters") ? $.Drag.VisualEvent.deepCopyJSON(getCacheNodeProperty(node, "parsedParameters")) : parseNodeInputs(node, nodeInputs)
 		};
 		
 		if (!isCustom) {
 			nodesBehavior.push(command);
-			if (typeof window[`parseNode${commandCode}`] === "function")
-				window[`parseNode${commandCode}`](command, node, nodesBehavior, nodeInputs, data.subSequence);
+			try {
+				if (typeof window[`parseNode${commandCode}`] === "function")
+					window[`parseNode${commandCode}`](command, node, nodesBehavior, nodeInputs, data.subSequence);
+			} catch (error) {
+				console.error(`Couldn't parse correctly command ${commandCode}, please retry. Error : `, error);
+			}				
 		} else
-			if (typeof window._customNodes[commandCode].parse === "function")
-				window._customNodes[commandCode].parse(window, command, node, nodesBehavior, nodeInputs, data.subSequence);
+			try {
+				if (typeof window._customNodes[commandCode].parse === "function")
+					window._customNodes[commandCode].parse(window, command, node, nodesBehavior, nodeInputs, data.subSequence);
+			} catch (error) {
+				console.error(`Couldn't parse properly custom node ${commandCode}, please retry or contact author of the custom code. Error : `, error);
+			}
 	}
 	
 	if (addEndBehavior)
-		nodesBehavior.push({code: 0, indent: indent, parameters: Array(0)}); //end of behavior
-	
-	// if (indent === 0)
-		// window._parseOnlySelected = undefined;
+		nodesBehavior.push({code: 0, indent: indent, parameters: Array(0)});
 	
 	return nodesBehavior;
 };
@@ -478,7 +361,6 @@ function parseNode111(command, node, nodesBehavior, nodesInputs, sequence) { //c
 	const ifConnection = getNodeConnectionsById(node, 0).output; 
 	if (isConnectionConnected(ifConnection)) {
 		const connectionConnectedNode = getConnectionConnectedNodes(ifConnection)[0];
-		// const subbranchNodes = getMainExecutionSequence(connectionConnectedNode);
 		nodesBehavior.push(...parseNodesBehavior(connectionConnectedNode, command.indent + 1, sequence[0]));
 	}
 	
@@ -492,7 +374,6 @@ function parseNode111(command, node, nodesBehavior, nodesInputs, sequence) { //c
 		});
 	
 		const connectionConnectedNode = getConnectionConnectedNodes(elseConnection)[0];
-		// const subbranchNodes = getMainExecutionSequence(connectionConnectedNode);
 		nodesBehavior.push(...parseNodesBehavior(connectionConnectedNode, command.indent + 1, sequence[1]));
 	} 
 	
@@ -512,7 +393,6 @@ function parseNode112(command, node, nodesBehavior, nodesInputs, sequence) { //l
 	const outputConnection = getNodeConnectionsById(node, 0).output; 
 	if (isConnectionConnected(outputConnection)) {			
 		const connectionConnectedNode = getConnectionConnectedNodes(outputConnection)[0];
-		// const subbranchNodes = getMainExecutionSequence(connectionConnectedNode);
 		nodesBehavior.push(...parseNodesBehavior(connectionConnectedNode, command.indent + 1, sequence[0]));
 	} else
 		nodesBehavior.push({code: 0, indent: command.indent + 1, parameters: Array(0)});
@@ -585,7 +465,7 @@ function parseNode224(command, node, nodesBehavior) { //flash screen
 	parseNode223(command, node, nodesBehavior);
 };
 
-function parseNode232(command, node, nodesBehavior) { //move picture have an extra parameter 0 at index 1 for no reason (wtf ?)
+function parseNode232(command, node, nodesBehavior) { //move picture have an extra parameter 0 at index 1 for no reason (?)
 	$.Drag.VisualEvent.insert(command.parameters, 1, 0);
 };
 
@@ -623,7 +503,6 @@ function parseNode301(command, node, nodesBehavior, nodesInputs, sequence) { //b
 		const winOutputConnection = getNodeConnectionsById(node, 0).output; 
 		if (isConnectionConnected(winOutputConnection)) {			
 			const connectionConnectedNode = getConnectionConnectedNodes(winOutputConnection)[0];
-			// const subbranchNodes = getMainExecutionSequence(connectionConnectedNode);
 			nodesBehavior.push(...parseNodesBehavior(connectionConnectedNode, command.indent + 1, sequence[0]));
 		} else
 			nodesBehavior.push({code: 0, indent: command.indent + 1, parameters: Array(0)});
@@ -640,7 +519,6 @@ function parseNode301(command, node, nodesBehavior, nodesInputs, sequence) { //b
 		const escapeOutputConnection = getNodeConnectionsById(node, 1).output;
 		if (isConnectionConnected(escapeOutputConnection)) {
 			const connectionConnectedNode = getConnectionConnectedNodes(escapeOutputConnection)[0];
-			// const subbranchNodes = getMainExecutionSequence(connectionConnectedNode);
 			nodesBehavior.push(...parseNodesBehavior(connectionConnectedNode, command.indent + 1, sequence[1]));
 		} else
 			nodesBehavior.push({code: 0, indent: command.indent + 1, parameters: Array(0)});
@@ -657,7 +535,6 @@ function parseNode301(command, node, nodesBehavior, nodesInputs, sequence) { //b
 		const loseOutputConnection = getNodeConnectionsById(node, 2).output;
 		if (isConnectionConnected(loseOutputConnection)) {
 			const connectionConnectedNode = getConnectionConnectedNodes(loseOutputConnection)[0];
-			// const subbranchNodes = getMainExecutionSequence(connectionConnectedNode); //replace all of those by get main exec sequence ? to avoid duplicated entries in nodesbehavior data
 			nodesBehavior.push(...parseNodesBehavior(connectionConnectedNode, command.indent + 1, sequence[2]));
 		} else
 			nodesBehavior.push({code: 0, indent: command.indent + 1, parameters: Array(0)});

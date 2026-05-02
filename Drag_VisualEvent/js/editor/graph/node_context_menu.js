@@ -46,7 +46,13 @@ function copyNodes() {
 	const selectedNodes = getSelectedNodes().filter(node => !node.classList.contains('uncopyable'));
 	
 	for (const [nodeIndex, node] of selectedNodes.entries()) {
-		window._nodeClipboard.nodes.push(node.cloneNode(true));
+		const clonedNode = cloneNode(node);
+		clonedNode.data = {
+			id: node.data.id,
+			commandCode: node.data.commandCode,
+			isCustom: node.data.isCustom,
+		};
+		window._nodeClipboard.nodes.push(clonedNode);
 		
 		const connections = getNodeConnections(node);					
 		window._nodeClipboard.connections[nodeIndex] = [];
@@ -82,11 +88,9 @@ function pasteNodes(useNodeListPosition = false) {
 	const graphEditorRect = document.querySelector('#graphEditor').getBoundingClientRect();
 	
 	const cursorPosition = getCursorPosition();
-	const x = useNodeListPosition ? window._nodeListx : cursorPosition[0]; //graphEditorRect.width / 2 - graphEditorRect.x;
-	const y = useNodeListPosition ? window._nodeListy : cursorPosition[1]; //graphEditorRect.height / 2 - graphEditorRect.y - document.querySelector('#bottom-panel').getBoundingClientRect().height;
+	const x = useNodeListPosition ? window._nodeListx : cursorPosition[0];
+	const y = useNodeListPosition ? window._nodeListy : cursorPosition[1];
 	let [graphx, graphy] = getGraphCoordinatesFromAbsolute(x, y);
-	// graphx = parseInt(graphx / nodeSnap.x) * nodeSnap.x;
-	// graphy = parseInt(graphy / nodeSnap.y) * nodeSnap.y;
 	
 	const firstNodePosition = window._nodeClipboard.positions[0];
 	const clones = [];
@@ -94,7 +98,11 @@ function pasteNodes(useNodeListPosition = false) {
 		//clone and add node
 		const clone = node.cloneNode(true);
 		clones.push(clone);
-		clone.removeAttribute('data-nodeId');
+		clone.data = {
+			commandCode: node.data.commandCode,
+			isCustom: node.data.isCustom,
+			node: clone,
+		};
 		addNodeToGraphNode(clone);
 		
 		//place copied node
@@ -129,27 +137,27 @@ function pasteNodes(useNodeListPosition = false) {
 			if (connectionTarget !== -1) {
 				const targetNode = clones[connectionTarget];
 				const targetConnection = getNodeConnectionsById(targetNode, 0).input;
-				drawCurve(connection.output, targetConnection);
+				connectConnections(connection.output, targetConnection);
 			}
 		}
 		
-		const nodeCache = $.Drag.VisualEvent.deepCopyJSON(getGraphNodeFromCache(window._nodeClipboard.nodes[nodeIndex]));
-		nodeCache.nodeId = getNodeId(node);
-		nodeCache.x = getNodePosition(node)[0];
-		nodeCache.y = getNodePosition(node)[1];
-		nodeCache.connectionsMap = getNodeConnectionsMap(node); //connections maps seems to not be calculated correctly sometimes, to fix
-		eventCache.nodes[nodeCache.nodeId] = nodeCache;
+		const nodeCache = getGraphNodeFromCache(window._nodeClipboard.nodes[nodeIndex]);
+		const copiedNodeCache = nodeCache ? $.Drag.VisualEvent.deepCopyJSON(nodeCache) : null;
+		if (copiedNodeCache) {
+			copiedNodeCache.nodeId = getNodeId(node);
+			copiedNodeCache.x = getNodePosition(node)[0];
+			copiedNodeCache.y = getNodePosition(node)[1];
+			copiedNodeCache.connectionsMap = getNodeConnectionsMap(node); //connections maps seems to not be calculated correctly sometimes, to fix
+			eventCache.nodes[copiedNodeCache.nodeId] = copiedNodeCache;
+		}
 	}
 	
 	//history
 	if (clones.length > 0)
 		addToUndoHistory({type: "addNode", target: clones, cache: clones.map(node => getGraphNodeFromCache(node)), connectionsMap: clones.map(node => getNodeConnectionsMap(node))});
 	
-	
 	//cache
 	setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
-	// for (const node of clones)
-		// cacheGraphNode(node);
 	
 	closeNodeListMenu();
 };

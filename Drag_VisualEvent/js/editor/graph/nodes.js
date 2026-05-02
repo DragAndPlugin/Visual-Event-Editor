@@ -1,31 +1,38 @@
-function addGraphNode(params = {}, saveInHistory = false, cache = false, onNodeReady = null) {
-	console.log(`Adding Graph Node ${params.name} (${params.commandCode})`);
+function makeNodeFromParams(params = {}, saveInHistory = false, cache = false, onNodeReady = null) {	
+	//node data
 	const node = document.createElement('div');
+	const nodeId = params.nodeId !== undefined && params.nodeId !== null ? params.nodeId : window.nodes.length;
+	const isCustom = params.isCustom || false;
+	const commandCode = params.commandCode || 0;
+	
+	const nodeData = {
+		id: nodeId,
+		commandCode: commandCode,
+		isCustom: isCustom,
+		node: node,
+		inputs: [],
+		outputs: [],
+	};
+	node.data = nodeData;
+	
+	node.setAttribute('data-commandCode', commandCode); //required for CSS selector
+	const customNodeData = isCustom ? getCustomNodeData(params.commandCode) : null;
+	
+	//node HTML	
+	node.setAttribute('id', 'graphNode');
 	
 	if (params.classList)
 		for (const classSplit of params.classList.split(' ').filter(item => item !== ''))
 			node.classList.add(classSplit);
-		
-	const nodeId = params.nodeId !== undefined && params.nodeId !== null ? params.nodeId : window.nodes.length;
-	node.setAttribute('data-nodeId', nodeId);
-	
-	node.setAttribute('id', 'graphNode');
-	node.setAttribute('data-commandCode', params.commandCode || 0);
-	
-	const isCustom = params.isCustom;
-	const customNodeData = isCustom ? getCustomNodeData(params.commandCode) : null;
-	if (isCustom)
-		node.setAttribute('data-isCustom', 'true');
 	
 	if (params.attributes)
 		for (const attribute of params.attributes)
 			node.setAttribute(attribute[0], attribute[1]);
 	
-	node.innerHTML = isCustom && customNodeData.header ? 
+	let nodeContent = isCustom && customNodeData.header ? 
 	`<div id="node-header" style="${isCustom ? `background-color: ${customNodeData.color || ''};` : ''}">${customNodeData.header}</div>`
 	: `<p id="node-header" class="${params.headerClassList ? params.headerClassList : ""}" style="${isCustom ? `background-color: ${customNodeData.color || ''};` : ''}">${params.name || ""}</p>`;
 	
-	let nodeContent = ``;
 	nodeContent += `
 		<div class="mBottom05 relative ${params.inputOutputContainerClassList ? params.inputOutputContainerClassList : ""}">
 			<div id="input-container">`;
@@ -42,37 +49,70 @@ function addGraphNode(params = {}, saveInHistory = false, cache = false, onNodeR
 	}
 	
 	params.inputs = params.inputs || [];
-	node.setAttribute('data-_inputsReady', 'false');
-	setTimeout(() => {
-		const inputContainer = node.querySelector('#input-container');
-		let inputContainerHTML = '';
+	if (!window._pendingNodeInputs)
+		window._pendingNodeInputs = [];
+
+	const immediateLoadInputs = params._lazyLoadInputs === false ? true : isInGraphBounds(params.x, params.y);
+	const connectionIdOffset = params.haveInputExecNode ? 1 : 0;
+	const lastConnectionId = params.inputs.length - 1 + connectionIdOffset;
+	for (const [i, input] of params.inputs.entries()) {
+		const connectionId = i + connectionIdOffset;
+		nodeContent += `
+				<span id="node-input" class="nodeInput ${input.type === "empty" ? 'hidden' : ''}">
+					<b>${input.text || input.name || ""}</b>
+					<span data-connected="false" data-nodeId="${nodeId}" data-connectionId="${connectionId}" class="inputConnection"></span>
+					${input.desc ? '<span class="node-input-desc">' + input.desc + '</span>' : '<br>'}
+					<div id="input-wrapper">
+		`;
 		
-		for (const [i, input] of params.inputs.entries()) {
-			inputContainerHTML += `
-					<span id="node-input" class="nodeInput ${input.type === "empty" ? 'hidden' : ''}">
-						<b>${input.text || input.name || ""}</b>
-						<span data-connected="false" data-nodeId="${nodeId}" data-connectionId="${params.haveInputExecNode && params.haveTargetNode ? i + 2 : params.haveInputExecNode || params.haveTargetNode ? i + 1 : i}" class="inputConnection"></span>
-						${input.desc ? '<span class="node-input-desc">' + input.desc + '</span>' : '<br>'}
-						<div id="input-wrapper">
-			`;
-			
-			const values = input.isList ? Array.isArray(input.value) ? input.value : [input.value] : [input.value]; 
+		const values = input.isList ? Array.isArray(input.value) ? input.value : [input.value] : [input.value]; 
+		
+		if (immediateLoadInputs) {
 			for (const [j, value] of values.entries()) {
 				input.value = value;
-				inputContainerHTML += `
-							<div class="firstChildWidth100">
-								${$.Drag.VisualEvent.getInputField(input)}
-							</div>
+				nodeContent += `
+						<div class="firstChildWidth100">
+							${$.Drag.VisualEvent.getInputField(input)}
+						</div>
 				`;
 			}
-			inputContainerHTML += `	
+		} else {
+			nodeContent += `
+						<div class="firstChildWidth100">
+							<span>${values.join(' ')}</span>
 						</div>
-					</span>
-			`;
+				`; //show interactive values ?
+			
+			node._preventInputChange = true;
+			window._pendingNodeInputs.push({
+				node: node,
+				nodeId: nodeId,
+				input: input,
+				inputId: connectionId,
+				values: values,
+				isLast: connectionId === lastConnectionId,
+				onNodeReady: onNodeReady
+			});
 		}
-		inputContainer.innerHTML += inputContainerHTML;
-		onNodeInputsReady(node, onNodeReady);
-	}, 1);
+		
+		nodeContent += `	
+					</div>
+				</span>
+		`;
+	}
+	
+	if (!params.inputs.length || immediateLoadInputs) {
+		node._inputsReady = true;
+		requestAnimationFrame(() => onNodeInputsReady(node, onNodeReady));
+	}
+	
+	if (!immediateLoadInputs && !window._processingPendingNodeInputs) {
+		window._processingPendingNodeInputs = true;
+		requestAnimationFrame(() => {
+			processPendingNodeInputs();
+			window._processingPendingNodeInputs = false;
+		});
+	}
 	
 	params.miscInputs = params.miscInputs || [];
 	if (params.miscInputs.length > 0) {
@@ -131,41 +171,226 @@ function addGraphNode(params = {}, saveInHistory = false, cache = false, onNodeR
 			${params.footer ? params.footer : ''}
 		</div>
 		${isCustom && customNodeData.body && typeof customNodeData.body === "string" ? customNodeData.body : ''}
-		${(params.content || "")}`;
-		
-	// setTimeout(() => { 
-		node.innerHTML += nodeContent; 
-		
-		setNodePosition(node, params.x || 0, params.y || 0, false, cache);
-		setNodeOffset(node, 0, 0);
-		
-		if (!window._preventAddNode)
-			addNodeToGraphNode(node, saveInHistory, cache, null, null);
-	// }, 1);
+		${(params.content || "")}
+	`;
+	
+	node.innerHTML = nodeContent; 
+	
+	setNodePosition(node, params.x || 0, params.y || 0, false, cache);
+	setNodeOffset(node, 0, 0);
+	
+	if (!window._preventAddNode) {
+		console.log(`Adding Graph Node ${params.name} (${params.commandCode})`);
+		addNodeToGraphNode(node, saveInHistory, cache, null);
+	}
 	
 	return node;
 };
 
-function onNodeInputsReady(node, onNodeReady) {
-	if (onNodeReady)
-		onNodeReady();
+function addNodeToGraphNode(node, saveInHistory = false, cache = false, frag = null) {
+	const graphNode = getNodesGraph();
+	if (!graphNode || !node)
+		return;
 	
-	node.removeAttribute('data-_inputsReady');
+	if (!node.data)
+		node.data = {};
+	
+	//id
+	if (node.data.id === null || node.data.id === undefined)
+		node.data.id = window.nodes.length;
+	
+	registerNode(node.data);
+	
+	node.data.inputs = Array.from(node.querySelectorAll('.inputConnection'));
+	for (const [i, inputConnection] of node.data.inputs.entries()) {
+		inputConnection.nodeId = node.data.id;
+		inputConnection.connectionId = i;
+		inputConnection.connected = false;
+	}
+	
+	node.data.outputs = Array.from(node.querySelectorAll('.outputConnection'));
+	for (const [i, outputConnection] of node.data.outputs.entries()) {
+		outputConnection.nodeId = node.data.id;
+		outputConnection.connectionId = i;
+		outputConnection.connected = false;
+	}
+	
+	//listeners
+	nodeResizeObserver.observe(node);
+	node.onmousedown = onMouseDownGraphEditorNode.bind(null, node);
+	node.onmouseup = onMouseUpGraphEditorNode.bind(null, node);
+	node.addEventListener("dblclick", () => focusNode(null, node));
+	
+	const nodeHeader = node.firstElementChild;
+	nodeHeader.onmouseover = onNodeHeaderMouseOver.bind(null, node); 
+	nodeHeader.onmousemove = onNodeHeaderMouseMove.bind(null, node);
+	nodeHeader.onmouseout = onNodeHeaderMouseOut.bind(null, node);
+	
+	//add && init
+	if (frag)
+		frag.appendChild(node);
+	else
+		graphNode.appendChild(node);
+	
 	triggerAllOnReadyOnChange(node);
 	autofitAllTextArea(node);
-	registerNodeReferences(node);
+	
+	onNodeResize(node);
+	refreshNodeCull(node);
+	
+	if (node.data.isCustom) {
+		const customNodeData = getCustomNodeData(getNodeCommandCode(node));
+		if (customNodeData.onadd && typeof customNodeData.onadd === "function")
+			customNodeData.onadd(this, node);
+	}
+	
+	//cache
+	if (cache) {
+		if (node._inputsReady) {
+			cacheGraphNode(node);
+			registerNodeReferences(node);
+		} else
+			node._cacheNodeOnInputsReady = true;
+	}
+
+	//undo redo history
+	if (saveInHistory)
+		addToUndoHistory({type: "addNode", target: [node], cache: [getGraphNodeFromCache(node)]});
+	
+	node.isDeleted = false;
+	triggerModsFunction("onAddNode", [node]);
+};
+
+function registerNode(nodeData) {
+	window.nodes[nodeData.id] = nodeData;
+};
+
+function attributeNodeId(node, nodeId) {
+	if (!window.nodes.includes(node.data)) {
+		if (node.data && node.data.id) {
+			registerNode(node.data)
+		} else {
+			if (nodeId === null)
+				// nodeId = window.nodes.push(node) - 1;
+				nodeId = window.nodes.length;
+			// else 
+				// window.nodes[nodeId] = node;
+			// window.nodes[nodeId] = node;
+			
+			// node.setAttribute('data-nodeId', nodeId);
+			// node.nodeId = nodeId;
+			
+			for (const element of node.querySelectorAll('*[data-nodeId="0"]')) {
+				element.setAttribute('data-nodeId', nodeId);
+				element.nodeId = nodeId;
+			}
+		}
+	}
+	
+	return nodeId || 0;
+};
+
+function processPendingNodeInputs() {
+    if (!window._pendingNodeInputs || !window._pendingNodeInputs.length) 
+		return;
+
+    const start = performance.now();
+    while (window._pendingNodeInputs.length && (performance.now() - start) < 1) {
+        const pendingNodeInputs = window._pendingNodeInputs.shift();
+        buildNodeInputs(pendingNodeInputs);
+    }
+
+    if (window._pendingNodeInputs.length)
+        window._processPendingNodeInputsRequest = requestAnimationFrame(processPendingNodeInputs);
+	else if (!window._nodesCount || window._nodesCount === window.nodes.length)
+		onAllNodeReady();
+};
+
+function buildNodeInputs(params) {
+	const inputWrapper = params.node.querySelector(`#node-input span[data-connectionId="${params.inputId}"] ~ #input-wrapper`);
+	if (!inputWrapper)
+		return;
+	
+	let inputContainerHTML = '';
+	for (const [j, value] of params.values.entries()) {
+		params.input.value = value;
+		inputContainerHTML += `
+				<div class="firstChildWidth100">
+					${$.Drag.VisualEvent.getInputField(params.input)}
+				</div>
+		`;
+	}
+	inputWrapper.innerHTML = inputContainerHTML;
+	
+	if (params.isLast)
+		// requestAnimationFrame(() => {
+			onNodeInputsReady(params.node, params.onNodeReady);
+		// });
+};
+
+function onNodeInputsReady(node, onNodeReady) {
+	node._inputsReady = true;
+	
+	if (onNodeReady)
+		onNodeReady();
+
+	triggerAllOnReadyOnChange(node);
+	autofitAllTextArea(node)
+	
+	if (!node.isDummy) {
+		updateNodeReadyCountGauge();
+		registerNodeReferences(node);
+		
+		if (node._cacheNodeOnInputsReady) {
+			cacheGraphNode(node);
+			registerNodeReferences(node);
+		}
+	}
 	
 	triggerModsFunction("onNodeReady", [node]);
 	for (const mod of Object.values(window._mods))
 		if (typeof mod.onNodeReady === "function")
 			mod.onNodeReady(window, node);
-	
-	if (!document.querySelector('#graphNode[data-_inputsReady="false"]'))
-		onAllNodeReady();					
+		
+	node._preventInputChange = false;
 };
 
-function onAllNodeReady() {
+function updateNodeReadyCountGauge() {
+	window.nodesReadyCount++;
+	const gauge = document.querySelector('#node-ready-gauge');
+	const length = window._nodesCount ? window._nodesCount : window.nodes.length;
+	
+	gauge.classList.remove('hidden');
+	gauge.firstElementChild.style.width = `${Math.floor(window.nodesReadyCount / length * 100)}%`;
+	gauge.children[1].innerHTML = `Loading nodes... ${window.nodesReadyCount}/${length}`;
+	
+	hideNodeReadyCountGauge();
+};
+
+function hideNodeReadyCountGauge() {
+	if (window._hideNodeReadyCountGaugeInterval)
+		clearInterval(window._hideNodeReadyCountGaugeInterval);
+	
+	const gauge = document.querySelector('#node-ready-gauge');
+	let opacity = 1;
+	gauge.style.opacity = opacity;
+	
+	window._hideNodeReadyCountGaugeInterval = setInterval(() => {
+		opacity = Math.max(0, opacity - 0.01);
+		gauge.style.opacity = opacity;
+		
+		if (opacity <= 0) {
+			gauge.classList.add('hidden');
+			gauge.style.opacity = 1;
+			clearInterval(window._hideNodeReadyCountGaugeInterval);
+			delete window._hideNodeReadyCountGaugeInterval;
+		}
+	}, 10);
+};
+
+function onAllNodeReady() {	
 	console.log(`All nodes (${window.nodes.length}) ready.`);
+	hideNodeReadyCountGauge();
 	window._registerInputChange = true;
 	
 	if (window.onNodesReady) {
@@ -178,69 +403,22 @@ function onAllNodeReady() {
 		window.onNodesReadyEx = null;
 	}
 	
-	window._allNodesReady = true;
+	window._graphReady = true;
+
+	if (window._startPerformance) {
+		console.log(`Editor ready (${performance.now() - window._startPerformance}ms).`);
+		delete window._startPerformance;
+	}
 };
 
-function addNodeToGraphNode(node, saveInHistory = false, cache = false, nodeId = null, frag = null) {
-	const graphNode = document.querySelector("#graphNodes");
-	if (!graphNode || !node)
-		return;
+function cloneNode(node) {
+	const clone = node.cloneNode(true);
 	
-	//id
-	if (!window.nodes.includes(node)) {
-		if (node.hasAttribute('data-nodeId')) {
-			window.nodes[getNodeId(node)] = node;
-		} else {
-			if (nodeId === null)
-				nodeId = window.nodes.push(node) - 1;
-			else 
-				window.nodes[nodeId] = node;
-			
-			node.setAttribute('data-nodeId', nodeId);
-			for (const element of node.querySelectorAll('*[data-nodeId="0"]'))
-				element.setAttribute('data-nodeId', nodeId);
-		}
-	}
+	clone.nodeId = node.data.nodeId;
+	clone.commandCode = node.data.commandCode;
+	clone.isCustom = node.data.isCustom;
 	
-	//listeners
-	nodeResizeObserver.observe(node);
-	node.onmousedown = onMouseDownGraphEditorNode.bind(null, node);
-	node.onmouseup = onMouseUpGraphEditorNode.bind(null, node);
-	node.addEventListener("dblclick", () => focusNode(null, node));
-	
-	const nodeHeader = node.querySelector('#node-header');
-	nodeHeader.onmouseover = onNodeHeaderMouseOver.bind(null, node); 
-	nodeHeader.onmousemove = onNodeHeaderMouseMove.bind(null, node);
-	nodeHeader.onmouseout = onNodeHeaderMouseOut.bind(null, node);
-	
-	//add && init
-	if (frag)
-		frag.appendChild(node);
-	else
-		graphNode.appendChild(node);
-	
-	triggerAllOnReadyOnChange();
-	autofitAllTextArea();
-	onNodeResize(node);
-	
-	if (node.getAttribute('data-isCustom') === 'true') {
-		const customNodeData = getCustomNodeData(getNodeCommandCode(node));
-		if (customNodeData.onadd && typeof customNodeData.onadd === "function")
-			customNodeData.onadd(this, node);
-	}
-	
-	//cache
-	if (cache) {
-		cacheGraphNode(node);
-		registerNodeReferences(node);
-	}
-
-	//undo redo history
-	if (saveInHistory)
-		addToUndoHistory({type: "addNode", target: [node], cache: [getGraphNodeFromCache(node)]});
-	
-	node.setAttribute('data-_ready', 'true');
-	triggerModsFunction("onAddNode", [node]);
+	return clone;
 };
 
 function onUndoAddNode(action) {
@@ -266,58 +444,6 @@ function onRedoAddNode(action) {
 
 addHistoryHandler("addNode", "Add Node", onUndoAddNode, onRedoAddNode);
 
-function addNodeOutput(node, outputExec, position) {
-	const nodeId = node.getAttribute('data-nodeId');
-	const outputContainer = node.querySelector('#output-container');
-	const outputConnectionId = outputContainer.childElementCount;
-	const outputIndent = parseInt(outputContainer.querySelector('#main-exec-output > span').getAttribute('data-indent')) + 1;
-	
-	if (position < 0)
-		position = outputContainer.childElementCount - 1 + position;
-	
-	let childAtPos = outputContainer.children[position];
-	if (!childAtPos)
-		childAtPos = outputContainer.children[0];
-	
-	childAtPos.insertAdjacentHTML("beforebegin", `
-		<span class="nodeOutput" id="secondary-exec-output">
-			<span>${outputExec.name || ""}</span></b>
-			${outputExec.type !== undefined ? $.Drag.VisualEvent.getInputField(outputExec) : ''}
-			<span data-connected="false" data-nodeId="${nodeId}" data-connectionId="${outputConnectionId}" data-indent="${outputIndent}" class="exec outputConnection"></span>
-		</span>`
-	);
-};
-
-function removeNodeOutput(node, position) {
-	const nodeOutputs = node.querySelectorAll('#secondary-exec-output');
-	const output = nodeOutputs[position];
-	if (output)
-		output.remove();
-};
-
-function showNodeOutput(node, outputId) {
-	const output = node.querySelector(`.nodeOutput:nth-child(${outputId})`)
-	if (!output)
-		return;
-	
-	output.classList.remove('hidden');
-	refreshNode(node);
-};
-
-function hideNodeOutput(node, outputId) {
-	const output = node.querySelector(`.nodeOutput:nth-child(${outputId})`)
-	if (!output)
-		return;
-	
-	output.classList.add('hidden');
-	const connection = output.querySelector('.outputConnection');
-	if (isConnectionConnected(connection))
-		removeConnectionCurves(connection);
-		
-	refreshNode(node);
-};
-
-
 //delete
 function deleteNode(node, saveInHistory = false) {
 	if (node.classList.contains('undeletable'))
@@ -336,6 +462,7 @@ function deleteNode(node, saveInHistory = false) {
 	uncacheGraphNode(node);
 	removeNodeReferences(node);
 	nodeResizeObserver.unobserve(node);
+	node.data.isDeleted = true;
 	node.remove();
 };
 
@@ -361,8 +488,8 @@ function moveNode(event) {
 	const scale = getGraphEditorScale();
 	const scaleMult = 100 / (scale * 100);
 	
-	const mousex = parseInt(window.nodeMouseDown.getAttribute('data-mousex')) || 0;
-	const mousey = parseInt(window.nodeMouseDown.getAttribute('data-mousey')) || 0;
+	const mousex = window.nodeMouseDown.mouseX || 0; //parseInt(window.nodeMouseDown.getAttribute('data-mousex')) || 0;
+	const mousey = window.nodeMouseDown.mouseY || 0; //parseInt(window.nodeMouseDown.getAttribute('data-mousey')) || 0;
 	
 	const xMouseMovement = (event.x - mousex) * scaleMult;
 	const yMouseyMovement = (event.y - mousey) * scaleMult;	
@@ -384,8 +511,8 @@ function getNodeOffset(node) {
 	if (!node)
 		return [0, 0];
 	
-	const x = parseInt(node.getAttribute('data-xOffset')) || 0;
-	const y = parseInt(node.getAttribute('data-yOffset')) || 0;
+	const x = node.xOffset || 0; //parseInt(node.getAttribute('data-xOffset')) || 0;
+	const y = node.yOffset || 0; //parseInt(node.getAttribute('data-yOffset')) || 0;
 	return [x, y];
 };
 
@@ -395,8 +522,10 @@ function setNodeOffset(node, x, y, curveOffset = false) {
 	
 	const [xOffset, yOffset] = getNodeOffset(node);
 	if (xOffset !== x || yOffset !== y) {
-		node.setAttribute('data-xOffset', x);
-		node.setAttribute('data-yOffset', y);
+		// node.setAttribute('data-xOffset', x);
+		// node.setAttribute('data-yOffset', y);
+		node.xOffset = x;
+		node.yOffset = y;
 	
 		const [xNode, yNode] = getNodePosition(node);
 		node.style.left = `${xNode + x}px`;
@@ -418,11 +547,11 @@ function setNodeOffset(node, x, y, curveOffset = false) {
 };
 
 function getNodePosition(node) {
-	if (!node || node.id !== "graphNode")
+	if (!node || !node.data)
 		return [0, 0];
 	
-	const x = parseInt(node.getAttribute('data-x'));
-	const y = parseInt(node.getAttribute('data-y'));
+	const x = node.data.x || 0; //parseInt(node.getAttribute('data-x'));
+	const y = node.data.y || 0; //parseInt(node.getAttribute('data-y'));
 	return [x, y];
 };
 
@@ -436,10 +565,10 @@ function setNodePosition(node, x = 0, y = 0, saveInHistory = false, cache = true
 	
 	const nodePosition = getNodePosition(node);
 	if (saveInHistory && (nodePosition[0] !== x || nodePosition[1] !== y))
-		addToUndoHistory({type: "moveNode", target: [getNodeId(node)], movement: [nodePosition[0] - x, nodePosition[1] - y]}); //from: nodePosition, to: [x, y]
-	
-	node.setAttribute('data-x', x);
-	node.setAttribute('data-y', y);
+		addToUndoHistory({type: "moveNode", target: [getNodeId(node)], movement: [nodePosition[0] - x, nodePosition[1] - y]});
+
+	node.data.x = x;
+	node.data.y = y;
 	node.style.left = `${x}px`;
 	node.style.top = `${y}px`;
 	
@@ -488,169 +617,219 @@ function onRedoMoveNode(action) {
 
 addHistoryHandler("moveNode", "Move Node", onUndoMoveNode, onRedoMoveNode);
 
-function resetAllNodesPositions() {
-	const noInputNodes = getAllNodesWithoutInputConnection();
-	for (const [i, node] of noInputNodes.entries()) {
-		const executionSequence = getMainExecutionSequence(node)[0];
-		resetNodesPosition(executionSequence);
-	} 
-};
-
-function resetNodesPosition(nodes, _isSubBranch = false) {
-	for (const node of nodes) {
-		if (node.getAttribute('data-_positionReset') === "true")
-			continue;
-		
-		const inputNodes = getInputConnectedNodes(node);
-		if (inputNodes.length === 0) {
-			const nodeSnap = getNodeSnap();
-			setNodePosition(node, nodeSnap.x * 2, nodeSnap.y * 2, false, false);
-			node.setAttribute('data-_positionReset', 'true');
-			continue;
-		}
-		
-		for (const inputNode of inputNodes) {
-			placeNodeNextTo(node, inputNode, "xy");
-			inputNode.setAttribute('data-_positionReset', 'true');
-		}
-		
-		const outputs = getOutputConnectedNodes(node);
-		for (let j = 0; j < outputs.secondaryOutputNodes.length; j++) {
-			const outputNode = outputs.secondaryOutputNodes[j];
-			if (!outputNode)
-				continue;
-			
-			placeNodeNextTo(outputNode, node, "xy");
-			outputNode.setAttribute('data-_positionReset', 'true');
-			
-			resetNodesPosition(getMainExecutionSequence(outputNode)[0], true);
-		}
-	}
-	
-	if (!_isSubBranch)
-		for (const node of document.querySelectorAll('#graphNode[data-_positionReset="true"]'))
-			node.removeAttribute('data-_positionReset');
-};
-
+//rearrange nodes
 function rearrangeAllNodes(resetAllPositions = true) {
-	setTimeout(() => {
-		const now = performance.now();
-		const graphEditorScale = getGraphEditorScale();
-		setGraphEditorScale(1, false, false, false, false);
-		
-		const noInputNodes = getAllNodesWithoutInputConnection();
-		const nodeSnap = getNodeSnap();
-		let yOffset = nodeSnap.y * 2;
-		for (const [i, node] of noInputNodes.entries()) {
-			const executionSequence = getMainExecutionSequence(node)[0];
+	setLoadingText(`Organizing nodes...`);
+	showLoading();
+	disableCullingGraphNodes();
+	
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			const start = performance.now();
+
+			const nodeSnap = getNodeSnap();
+			const graph = makeGraphLayout();
+			const roots = getRootNodesFromGraphLayout(graph);
+
 			if (resetAllPositions)
-				resetNodesPosition(executionSequence); //400ms
+				resetNodesPositionsFromGraphLayout(graph, roots, nodeSnap);
+
+			const positions = getPositionsFromGraphLayout(graph, roots, nodeSnap);
+			for (const [node, pos] of positions) 
+				setNodePosition(node, pos.x, pos.y, false, true);
+
+			redrawAllCurves();
+			refreshAllNodesCull();
+			refreshAllCurvesCull();
+			enableCullingGraphNodes();
 			
-			const heightMap = getNodesHeightMap(executionSequence); //200ms
-			rearrangeNodes(executionSequence, heightMap, yOffset); //450ms
-			yOffset += heightMap.reduce((sum, a) => sum + a + nodeSnap.y * 2, 0) + nodeSnap.y * 2;
-		} 
-		
-		for (const node of document.querySelectorAll("*[data-_rearranged]"))
-			node.removeAttribute('data-_rearranged');
-			
-		setGraphEditorScale(graphEditorScale, false, true, false, false);
-		redrawAllCurves(); //1300ms
-		console.log(`rearrange all node took ${performance.now() - now}ms`);
-	}, 1);
+			console.log(`Rearrange all nodes took ${performance.now() - start}ms`);
+			hideLoading();
+		});
+	});
 };
 
-function getNodesHeightMap(nodes) {
-	const heightMap = makeNodesHeightMap(nodes)[1];
-	
-	for (const node of document.querySelectorAll('*[data-heightMapped]'))
-		node.removeAttribute('data-heightMapped');
-	
-	return heightMap;
-};
+function makeGraphLayout() {
+	const graph = new Map();
 
-function makeNodesHeightMap(nodes, _index = 0, _heightMap = [0]) {
-	const height = getNodesHighestHeight(nodes);
-	if (!_heightMap[_index] || height > _heightMap[_index])
-		_heightMap[_index] = height;	
-	
-	for (const node of nodes) {
-		if (node.getAttribute('data-heightMapped') === 'true')
-			continue;
-		node.setAttribute('data-heightMapped', 'true');
-		
-		const outputs = getOutputConnectedNodes(node);
-		if (outputs.secondaryOutputNodes.length) {
-			for (const [i, outputNode] of outputs.secondaryOutputNodes.entries()) {
-				if (i > 0)
-					_index++;
-				_index = makeNodesHeightMap(getMainExecutionSequence(outputNode)[0], _index, _heightMap)[0];
-			}
-			
-			if (outputs.mainOutputNode) {
-				_index++;
-				_index = makeNodesHeightMap(getMainExecutionSequence(outputs.mainOutputNode)[0], _index, _heightMap)[0];
-			}
-		}
-	}
-	
-	return [_index, _heightMap];
-};
-
-function getNodesHighestHeight(nodes) {
-	let lowestY = -Infinity;
-	for (const node of nodes)
-		lowestY = Math.max(lowestY, node.getBoundingClientRect().height);
-	
-	return lowestY !== -Infinity ? lowestY : 0;
-};
-
-function rearrangeNodes(nodes = getMainExecutionSequence()[0], heightmap = getNodesHeightMap(nodes), yOffset = 0, _index = 0) {
-	const nodeSnap = getNodeSnap();
-	const height = yOffset + heightmap.slice(0, _index).reduce((sum, a) => sum + a + nodeSnap.y * 2, 0);
-	for (const node of nodes) {
-		if (node.getAttribute('data-_rearranged') === 'true')
+	for (const nodeData of window.nodes) {
+		if (!nodeData)
 			continue;
 		
-		node.setAttribute('data-_rearranged', 'true');
-		
-		const [nodex, nodey] = getNodePosition(node);
-		setNodePosition(node, nodex, height, false, true);
-		
-		const outputs = getOutputConnectedNodes(node);
-		if (outputs.secondaryOutputNodes.length) {
-			for (const [i, outputNode] of outputs.secondaryOutputNodes.entries()) {		
-				if (i > 0)
-					_index++;				
-				const subNodes = getMainExecutionSequence(outputNode)[0];
-				_index = rearrangeNodes(subNodes, heightmap, yOffset, _index);
-			}
-			
-			if (outputs.mainOutputNode) {
-				_index++;
-				const subNodes = getMainExecutionSequence(outputs.mainOutputNode)[0];
-				_index = rearrangeNodes(subNodes, heightmap, yOffset, _index);
-			}
-		}
+		const node = nodeData.node;
+		const [x, y] = getNodePosition(node);
+
+		graph.set(node, {node, id: getNodeId(node), x, y, width: node.offsetWidth || 0, height: node.offsetHeight || 0, inputs: [], mainOutput: null, branchOutputs: []});
 	}
 
-	return _index;
+	for (const [node, data] of graph) {
+		const outputs = getOutputConnectedNodes(node);
+
+		if (outputs.mainOutputNode && graph.has(outputs.mainOutputNode))
+			data.mainOutput = outputs.mainOutputNode;
+
+		if (outputs.secondaryOutputNodes && outputs.secondaryOutputNodes.length)
+			data.branchOutputs = outputs.secondaryOutputNodes.filter(outputNode => outputNode && graph.has(outputNode));
+	}
+
+	for (const [node, data] of graph) {
+		if (data.mainOutput && graph.has(data.mainOutput))
+			graph.get(data.mainOutput).inputs.push(node);
+
+		for (const branchNode of data.branchOutputs)
+			if (graph.has(branchNode))
+				graph.get(branchNode).inputs.push(node);
+	}
+
+	return graph;
 };
 
-function placeNodeNextTo(targetNode, sourceNode, axis) {
-	// const rect = sourceNode.getBoundingClientRect();
-	const nodeSnap = getNodeSnap();
-	const x = axis.includes('x') ? getNodePosition(sourceNode)[0] + sourceNode.offsetWidth + (nodeSnap.x * 2) : getNodePosition(targetNode)[0];
-	const y = axis.includes('y') ? getNodePosition(sourceNode)[1] : getNodePosition(targetNode)[1];
-	
-	setNodePosition(targetNode, x, y, false, false);
+function getRootNodesFromGraphLayout(graph) {
+	const roots = [];
+
+	for (const [node, data] of graph)
+		if (!data.inputs.length)
+			roots.push(node);
+
+	roots.sort((node1, node2) => {
+		const data1 = graph.get(node1);
+		const data2 = graph.get(node2);
+		if (data1.y !== data2.y) 
+			return data1.y - data2.y;
+		return data1.x - data2.x;
+	});
+
+	return roots;
+};
+
+function resetNodesPositionsFromGraphLayout(graph, roots, nodeSnap) {
+	const visited = new Set();
+	const positions = new Map();
+
+	let y = nodeSnap.y * 2;
+
+	for (const root of roots) {
+		if (visited.has(root))
+			continue;
+
+		const height = resetGraphLayoutSubbranch(root, graph, positions, visited, nodeSnap, nodeSnap.x * 2, y);
+		y += height + nodeSnap.y * 2;
+	}
+
+	for (const [node, pos] of positions) {
+		const data = graph.get(node);
+		data.x = pos.x;
+		data.y = pos.y;
+	}
+};
+
+function resetGraphLayoutSubbranch(node, graph, newPositions, visited, nodeSnap, x, y) {
+	if (!graph.has(node) || visited.has(node))
+		return 0;
+
+	visited.add(node);
+
+	const data = graph.get(node);
+	newPositions.set(node, {x, y});
+
+	let currentY = y;
+	let maxY = y + data.height;
+
+	for (const branchNode of data.branchOutputs) {
+		const branchHeight = resetGraphLayoutSubbranch(branchNode, graph, newPositions, visited, nodeSnap, x + data.width + nodeSnap.x * 2, currentY);
+		currentY += Math.max(branchHeight, data.height) + nodeSnap.y * 2;
+		maxY = Math.max(maxY, currentY);
+	}
+
+	if (data.mainOutput) {
+		const mainY = data.branchOutputs.length ? currentY : y;
+		const mainHeight = resetGraphLayoutSubbranch(data.mainOutput, graph, newPositions, visited, nodeSnap, x + data.width + nodeSnap.x * 2, mainY);
+		maxY = Math.max(maxY, mainY + mainHeight);
+	}
+
+	return Math.max(data.height, maxY - y);
+};
+
+function getPositionsFromGraphLayout(graph, roots, nodeSnap) {
+	const positions = new Map();
+	const visited = new Set();
+
+	let y = nodeSnap.y * 2;
+
+	for (const root of roots) {
+		if (visited.has(root))
+			continue;
+
+		const subbranchHeight = getPositionsFromSubbranch(root, graph, positions, visited, nodeSnap, nodeSnap.x * 2, y);
+		y += subbranchHeight + nodeSnap.y * 2;
+	}
+
+	return positions;
+}
+
+function getPositionsFromSubbranch(node, graph, positions, visited, nodeSnap, x, y) {
+	if (!graph.has(node))
+		return 0;
+
+	if (visited.has(node)) {
+		const existing = positions.get(node);
+		if (!existing)
+			return graph.get(node).height;
+		
+		return graph.get(node).height;
+	}
+
+	visited.add(node);
+
+	const data = graph.get(node);
+	positions.set(node, {x, y});
+
+	const subbranchX = x + data.width + nodeSnap.x * 2;
+	let currentY = y;
+	let subbranchHeight = 0;
+
+	for (const branchNode of data.branchOutputs) {
+		const branchHeight = getPositionsFromSubbranch(branchNode, graph, positions, visited, nodeSnap, subbranchX, currentY);
+		const height = Math.max(branchHeight, graph.get(branchNode) ? graph.get(branchNode).height : 0);
+		currentY += height + nodeSnap.y * 2;
+		subbranchHeight += height + nodeSnap.y * 2;
+	}
+
+	let mainOutputHeight = 0;
+	if (data.mainOutput) {
+		const mainOutputY = data.branchOutputs.length ? currentY : y;
+		mainOutputHeight = getPositionsFromSubbranch(data.mainOutput, graph, positions, visited, nodeSnap, subbranchX, mainOutputY);
+	}
+
+	if (data.branchOutputs.length || data.mainOutput) 
+		return Math.max(data.height, (data.branchOutputs.length ? subbranchHeight : 0) + (data.mainOutput ? Math.max(mainOutputHeight, graph.get(data.mainOutput) ? graph.get(data.mainOutput).height : 0) : 0));
+
+	return data.height;
 };
 
 function refreshNode(node) {
 	redrawNodeCurves(node);
 	const connections = getNodeConnections(node);
 	for (const connection of connections.inputs.concat(connections.outputs))
-		setConnectionConnected(connection, getConnectionCurves(connection).length > 0)
+		setConnectionConnected(connection, isConnectionConnected(connection))
+};
+
+function getNodeConnectedNodes(node) {
+	if (!node)
+		return null;
+	
+	const connectedConnections = getNodeConnectedConnections(node);
+	if (!connectedConnections)
+		return null;
+	
+	const connectedNodes = {inputs: [], outputs: []}; 
+	for (const connection of connectedConnections.inputs) 
+		connectedNodes.inputs = connectedNodes.inputs.concat(getConnectionConnectedNodes(connection));
+	
+	for (const connection of connectedConnections.outputs)
+		connectedNodes.outputs = connectedNodes.outputs.concat(getConnectionConnectedNodes(connection));
+	
+	return connectedNodes;
 };
 
 function getInputConnectedNodes(node) {
@@ -661,26 +840,24 @@ function getInputConnectedNodes(node) {
 };
 
 function getOutputConnectedNodes(node) {
-	const curves = getNodeCurves(node);
-	if (!curves)
+	if (!node)
 		return null;
 	
-	const outputCurves = curves.secondaryOutputs;
-	if (!outputCurves)
-		return null;
+	const outputConnections = [...getNodeConnections(node).outputs];
+	const mainOutputConnection = outputConnections.pop();
 	
-	const curvesRightConnection = outputCurves.map(curve => getCurveRightConnection(curve));			
-	const nodes = curvesRightConnection.map(connection => getConnectionNode(connection));
-	
-	const mainOutputCurveRightConnection = curves.mainOutput ? getCurveRightConnection(curves.mainOutput) : null;
-	const mainOutputNode = mainOutputCurveRightConnection ? getConnectionNode(mainOutputCurveRightConnection) : null;
-	if (mainOutputNode) { // not useful ?
-		const index = nodes.indexOf(mainOutputNode);
-		if (index > -1)
-			nodes.splice(index, 1);
+	const nodes = [];
+	for (const outputConnection of outputConnections) {
+		if (!isConnectionConnected(outputConnection))
+			continue;
+		
+		nodes.push(getConnectionConnectedNodes(outputConnection)[0]);
 	}
 	
-	return {secondaryOutputNodes: nodes, mainOutputNode: mainOutputNode};
+	return {
+		secondaryOutputNodes: nodes, 
+		mainOutputNode: isConnectionConnected(mainOutputConnection) ? getConnectionConnectedNodes(mainOutputConnection)[0] : null
+	};
 };
 
 function getAllNodesWithoutInputConnection() {
@@ -688,42 +865,35 @@ function getAllNodesWithoutInputConnection() {
 };
 
 function getAllNodesWithoutInputConnectionConnected() {
-	return Array.from(document.querySelectorAll('.exec.inputConnection[data-connected="false"]')).map(connection => getConnectionNode(connection))
+	return window.nodes.filter(nodeData => nodeData && nodeData.node && (!nodeData.node.inputs.length || !isConnectionConnected(nodeData.node.inputs[0])));
+};
+
+function getNodeIsCustom(node) {
+	if (!node || !node.data)
+		return false;
+	
+	return node.data.isCustom || false;
 };
 
 function getNodeCommandCode(node) {
-	if (node.getAttribute('data-isCustom') !== "true")
-		return parseInt(node.getAttribute('data-commandCode')) || 0;
-	else
-		return node.getAttribute('data-commandCode') || "";
+	if (!node || !node.data)
+		return "";
+	
+	return node.data.commandCode;
 };
 
 function getNodeCommandName(node) {
+	if (!node || !node.data)
+		return "";
+	
 	const commandCode = getNodeCommandCode(node);
-	if (node.getAttribute('data-isCustom') !== "true")
-		if (commandCode === 357) {
+	if (!getNodeIsCustom(node)) {
+		if (commandCode === 357)
 			return node.getAttribute('data-pluginCommandName');
-		} else
+		else
 			return $.Drag.VisualEvent.getCommandName(commandCode);
-	else
+	} else
 		return window._customNodes[commandCode].name || "";
-};
-
-function attributeNodeId(node, nodeId) {
-	if (!window.nodes.includes(node)) {
-		if (node.hasAttribute('data-nodeId')) {
-			window.nodes[getNodeId(node)] = node;
-		} else {
-			if (nodeId === null)
-				nodeId = window.nodes.push(node) - 1;
-			else 
-				window.nodes[nodeId] = node;
-			
-			node.setAttribute('data-nodeId', nodeId);
-			for (const element of node.querySelectorAll('*[data-nodeId="0"]'))
-				element.setAttribute('data-nodeId', nodeId);
-		}
-	}
 };
 
 function getEventNodeName() {
@@ -743,6 +913,7 @@ function getEventNodeName() {
 function focusNode(nodeId, node) {
 	if (!node && nodeId)
 		node = getNodeById(nodeId);
+	
 	if (!node)
 		return;
 
@@ -762,22 +933,26 @@ function focusNode(nodeId, node) {
 };
 
 function getFirstNode() {
-	return window.nodes[0];
+	return window.nodes[0].node;
+};
+
+function getNodeDataById(nodeId) {
+	return window.nodes[nodeId] || null;
 };
 
 function getNodeById(nodeId) {
-	return document.querySelector(`#graphNode[data-nodeId="${nodeId}"]`);
+	const nodeData = getNodeDataById(nodeId);
+	return nodeData ? nodeData.node : null;
 };
 
 function getNodeId(node) {
-	if (!node)
+	if (!node || !node.data)
 		return -1;
 	
-	return parseInt(node.getAttribute('data-nodeId'));
+	return node.data.id; 
 };
 
 // node selection
-
 function getSelectedNodes() {
 	return Array.from(document.querySelectorAll('#graphNode.selected'));
 };
@@ -795,7 +970,7 @@ function selectNode(node, saveInHistory = false) {
 	node.classList.add('selected');
 	
 	
-	if (node.getAttribute('data-isCustom') == "true") {
+	if (node.data.isCustom) {
 		const customNodeData = getCustomNodeData(getNodeCommandCode(node));
 		if (customNodeData.onselect && typeof customNodeData.onselect === "function")
 			customNodeData.onselect(this, node);
@@ -804,7 +979,7 @@ function selectNode(node, saveInHistory = false) {
 
 function selectAllNodes() {
 	for (const node of window.nodes)
-		selectNode(node);
+		selectNode(node.node);
 	
 	// addToUndoHistory({type: "selectNode", target: window.nodes.map(node => getNodeId(node))});
 	
@@ -888,7 +1063,7 @@ function getNodeCommandDescription(node) {
 		return "";
 	
 	const commandCode = getNodeCommandCode(node);
-	if (node.getAttribute('data-isCustom') == 'true') {
+	if (node.data.isCustom) {
 		const customNodeData = getCustomNodeData(commandCode);
 		return customNodeData && customNodeData.description ? customNodeData.description : "";
 	} else if (commandCode === 357) {

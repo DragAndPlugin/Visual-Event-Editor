@@ -37,18 +37,28 @@
 function drawCurve(from, to, curve, frag = null) { //version with graph camera and transform translate3d
 	if (!from || !to)
 		return;
-
+	
+	let fromPoint = from;
+	let toPoint = to;
+	if (isCullingGraphNodesEnabled()) {
+		if (isConnection(from) && isNodeCulled(getConnectionNode(from)))
+			fromPoint = getCulledNodeOutputAnchor(getConnectionNode(from));
+		
+		if (isConnection(to) && isNodeCulled(getConnectionNode(to)))
+			toPoint = getCulledNodeInputAnchor(getConnectionNode(to));
+	}
+	
 	const scale = getGraphEditorScale();
 	const [cameraX, cameraY] = getGraphPosition();
 
-	const fromRect = !Array.isArray(from) ? from.getBoundingClientRect() : null;
-	const toRect = !Array.isArray(to) ? to.getBoundingClientRect() : null;
+	const fromRect = !Array.isArray(fromPoint) ? fromPoint.getBoundingClientRect() : null;
+	const toRect = !Array.isArray(toPoint) ? toPoint.getBoundingClientRect() : null;
 
-	const screenFromX = fromRect ? fromRect.left + fromRect.width / 2 : from[0];
-	const screenFromY = fromRect ? fromRect.top + fromRect.height / 2 : from[1];
+	const screenFromX = fromRect ? fromRect.left + fromRect.width / 2 : fromPoint[0];
+	const screenFromY = fromRect ? fromRect.top + fromRect.height / 2 : fromPoint[1];
 
-	const screenToX = toRect ? toRect.left + toRect.width / 2 : to[0];
-	const screenToY = toRect ? toRect.top + toRect.height / 2 : to[1];
+	const screenToX = toRect ? toRect.left + toRect.width / 2 : toPoint[0];
+	const screenToY = toRect ? toRect.top + toRect.height / 2 : toPoint[1];
 
 	// convert screen → graph coordinates
 	const fromx = (screenFromX - cameraX) / scale;
@@ -60,11 +70,15 @@ function drawCurve(from, to, curve, frag = null) { //version with graph camera a
 	if (!curve)
 		curve = createCurve(from, to, frag ? frag : null);
 
-	const curveData = `M ${fromx},${fromy} ${makeCubicBezierCurve(fromx + 20, fromy, tox, toy)}`;
-
 	curve.setAttribute('data-coords', `${fromx},${fromy},${tox},${toy}`);
-	curve.setAttributeNS(null, "d", curveData);
-}
+	curve.from = [fromx, fromy];
+	curve.to = [tox, toy];
+	curve.setAttributeNS(null, "d", getCurveShape(fromx, fromy, tox, toy));
+};
+
+function getCurveShape(fromx, fromy, tox, toy) {
+	return `M ${fromx},${fromy} L ${fromx},${fromy} ${makeCubicBezierCurve(fromx + 50, fromy, tox - 20, toy)} L ${tox} ${toy}`;
+};
 
 function makeCubicBezierCurve(fromx, fromy, tox, toy) {
 	//https://codepen.io/explosion/pen/YGrpwd
@@ -121,20 +135,21 @@ function offsetCurve(curve, leftOffset = [0, 0], rightOffset = [0, 0]) {
 	if (!curve)
 		return;
 	
-	const coords = curve.getAttribute('data-coords').split(',').map(Number);
-	const fromx = coords[0] + leftOffset[0];
-	const fromy = coords[1] + leftOffset[1];
-	const tox = coords[2] + rightOffset[0];
-	const toy = coords[3] + rightOffset[1];
+	const fromx = curve.from[0] + leftOffset[0];
+	const fromy = curve.from[1] + leftOffset[1];
+	const tox = curve.to[0] + rightOffset[0];
+	const toy = curve.to[1] + rightOffset[1];
+
 	curve.setAttribute('data-coords', `${fromx},${fromy},${tox},${toy}`);
-	
-	const curveData = `M ${fromx},${fromy} ${makeCubicBezierCurve(fromx + 20, fromy, tox, toy)}`; 
-	curve.setAttributeNS(null, "d", curveData);
+	curve.from = [fromx, fromy];
+	curve.to = [tox, toy];
+	curve.setAttributeNS(null, "d", getCurveShape(fromx, fromy, tox, toy));
 };
 
 function createCurve(from, to, container) {
 	if (!container)
 		container = document.querySelector('#graphSVG');
+	
 	const curve = document.createElementNS("http://www.w3.org/2000/svg", 'path')
 	curve.setAttribute('id', "curve");
 	
@@ -159,6 +174,16 @@ function createCurve(from, to, container) {
 	return curve;
 };
 
+function isCurve(curve) {
+	if (!curve)
+		return false;
+
+	if (!(curve instanceof HTMLElement) || curve.getAttribute('id') !== "curve")
+		return false;
+	
+	return true;
+};
+
 function connectCurve(from, to, curve, disconnect = true, history = false) {	
 	if (!curve)
 		return drawCurve(from, to);
@@ -166,59 +191,93 @@ function connectCurve(from, to, curve, disconnect = true, history = false) {
 	if (disconnect)
 		disconnectCurve(curve);
 	
-	//register state before curve connection
-	// const action = {};
-	// if (from && to && history) {
-		// const nodes = [getNodeById(curve.getAttribute('data-leftNodeId')), getNodeById(curve.getAttribute('data-rightNodeId')), getConnectionNode(from), getConnectionNode(to)];
-		// const nodeIds = nodes.map(node => getNodeId(node));
-		// const action = history ? {type: "connect", nodeId: nodeId, beforeConnectionsMap: getNodeConnectionsMap(node)} : {};
-	// }
-	
 	if (from)
 		setConnectionConnected(from, true);
 	
 	if (to)
 		setConnectionConnected(to, true);
 	
+	// if (from && to)
+		// connectConnections(from, to);
+	
 	if (to && to.getAttribute("data-curveColor"))
 		curve.style.stroke = to.getAttribute("data-curveColor");
 	else if (from && from.getAttribute("data-curveColor"))
 		curve.style.stroke = from.getAttribute("data-curveColor");
 	
+	curve.leftNodeId = from ? parseInt(from.getAttribute('data-nodeId')) : null;
+	curve.leftConnectionId = from ? parseInt(from.getAttribute('data-connectionId')) : null;
 	curve.setAttribute('data-leftNodeId', from ? from.getAttribute('data-nodeId') : null);
 	curve.setAttribute('data-leftConnectionId', from ? from.getAttribute('data-connectionId') : null);
 	
+	curve.rightNodeId = to ? parseInt(to.getAttribute('data-nodeId')) : null;
+	curve.rightConnectionId = to ? parseInt(to.getAttribute('data-connectionId')) : null;
 	curve.setAttribute('data-rightNodeId', to ? to.getAttribute('data-nodeId') : null);
 	curve.setAttribute('data-rightConnectionId', to ? to.getAttribute('data-connectionId') : null); 
-	
-	// if (history) {
-		// action.afterConnectionsMap = getNodeConnectionsMap(node);
-		// addToUndoHistory(action);
-	// }
 };
 
-// function onUndoConnect(action) {
-	// const curve = getCurveById(action.nodeId, action.connectionId, action.dir);
-	// if (curve)
-		// removeCurve(curve);
+function connectPendingCurve(node) {
+	const pendingCurve = window._pendingCurve;
+	if (!pendingCurve)
+		return;
 	
-	// const node = getNodeById(action.nodeId);
-	// reconnectNodeFromConnectionsMap(node, action.beforeConnectionsMap);
-	// cacheGraphNode(node, null, action.beforeConnectionsMap);
-	// cacheGraphNode(node, null, action.beforeConnectionsMap);
-// };
+	const leftNodeId = pendingCurve.leftNodeId;
+	const rightNodeId = pendingCurve.rightNodeId;
 
-// function onRedoConnect(action) {
-	// const connections = getNodeConnectionsById();
-	// const from = connections.
-	// connectCurve(action.from, action.to, null);
+	if (rightNodeId === null && leftNodeId === null)
+		return;
 	
-	// const node = getNodeById(action.nodeId);
-	// reconnectNodeFromConnectionsMap(node, action.afterConnectionsMap);
-	// cacheGraphNode(node, null, action.afterConnectionsMap);
-// };
-
-// addHistoryHandler("connect", "Connect", onUndoConnect, onRedoConnect);
+	if (rightNodeId === null || leftNodeId === null) {
+		let outputConnection;
+		let inputConnection;
+		let connectedNode;
+		
+		if (rightNodeId === null) { //connect to node input
+			outputConnection = getCurveLeftConnection(pendingCurve);
+			inputConnection = getNodeConnections(node).inputs[0];
+			connectedNode = getConnectionNode(outputConnection);
+		} else if (leftNodeId === null) { //connect to node output
+			outputConnection = getNodeConnections(node).outputs[0];
+			inputConnection = getCurveRightConnection(pendingCurve);
+			connectedNode = getConnectionNode(inputConnection);
+		} 
+		
+		if (outputConnection && inputConnection) {
+			connectCurve(outputConnection, inputConnection, pendingCurve);
+			connectConnections(outputConnection, inputConnection, false);
+			
+			pendingCurve.isPending = false;
+			pendingCurve.isTemp = false;
+			window._pendingCurve = null;
+			
+			updateCacheGraphNodeConnectionsMap(node);
+			if (connectedNode)
+				updateCacheGraphNodeConnectionsMap(connectedNode);
+		}
+	} else { //insert between two nodes
+		const leftNode = getNodeById(leftNodeId);
+		const rightNode = getNodeById(rightNodeId);
+		let outputConnection = getNodeConnections(leftNode).outputs[0];
+		let inputConnection = getNodeConnections(node).inputs[0];
+		
+		connectCurve(outputConnection, inputConnection, pendingCurve);
+		connectConnections(outputConnection, inputConnection, false);
+		
+		pendingCurve.isPending = false;
+		pendingCurve.isTemp = false;
+		window._pendingCurve = null;
+		
+		outputConnection = getNodeConnections(node).outputs[0];
+		inputConnection = getNodeConnections(rightNode).inputs[0];
+		// drawCurve(outputConnection, inputConnection);
+		connectConnections(outputConnection, inputConnection);
+		redrawNodeCurves(node);
+		
+		updateCacheGraphNodeConnectionsMap(node);
+		updateCacheGraphNodeConnectionsMap(leftNode);
+		updateCacheGraphNodeConnectionsMap(rightNode);
+	}
+};
 
 function disconnectCurve(curve) {
 	if (!curve)
@@ -232,6 +291,9 @@ function disconnectCurve(curve) {
 	const rightConnectionCurves = getConnectionCurves(rightConnection);
 	if (rightConnection && rightConnectionCurves.length === 1)
 		setConnectionConnected(rightConnection, false);
+	
+	if (leftConnection && rightConnection)
+		disconnectConnections(leftConnection, rightConnection);
 };
 
 function removeCurve(curve, cache = true, history = false) {
@@ -239,7 +301,13 @@ function removeCurve(curve, cache = true, history = false) {
 		return;
 	
 	if (history)
-		addToUndoHistory({type: 'disconnect', leftNodeId: parseInt(curve.getAttribute('data-leftNodeId')), leftConnectionId: parseInt(curve.getAttribute('data-leftConnectionId')), rightNodeId: parseInt(curve.getAttribute('data-rightNodeId')), rightConnectionId: parseInt(curve.getAttribute('data-rightConnectionId'))});
+		addToUndoHistory({
+			type: 'disconnect', 
+			leftNodeId: curve.leftNodeId,
+			leftConnectionId: curve.leftConnectionId,
+			rightNodeId: curve.rightNodeId,
+			rightConnectionId: curve.rightConnectionId,
+		});
 	
 	disconnectCurve(curve);
 	curve.remove();
@@ -247,10 +315,10 @@ function removeCurve(curve, cache = true, history = false) {
 	if (cache) {
 		setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
 		
-		const leftNodeId = parseInt(curve.getAttribute('data-leftNodeId'));
+		const leftNodeId = curve.leftNodeId; //parseInt(curve.getAttribute('data-leftNodeId'));
 		if (leftNodeId !== null)
 			updateCacheGraphNodeConnectionsMap(getNodeById(leftNodeId));
-		const rightNodeId = parseInt(curve.getAttribute('data-rightNodeId'));
+		const rightNodeId = curve.rightNodeId; //parseInt(curve.getAttribute('data-rightNodeId'));
 		if (rightNodeId !== null)
 			updateCacheGraphNodeConnectionsMap(getNodeById(rightNodeId));
 	}
@@ -282,35 +350,37 @@ function moveCurves(event) {
 	if (!window.nodeMouseDown)
 		return;
 	
-	const nodeId = parseInt(window.nodeMouseDown.getAttribute('data-nodeId'));
+	const nodeId = window.nodeMouseDown.nodeId;
 	for (const input of window.nodeMouseDown.querySelectorAll('.inputConnection')) {
 		const inputId = parseInt(input.getAttribute('data-connectionId'));
 		for (const curve of document.querySelectorAll(`path[data-rightNodeId="${nodeId}"][data-rightConnectionId="${inputId}"]`)) {
-			const fromId = parseInt(curve.getAttribute('data-leftNodeId'));
-			const outputId = parseInt(curve.getAttribute('data-leftConnectionId'));
+			const fromId = curve.leftNodeId;
+			const outputId = curve.leftConnectionId;
 			const output = document.querySelector(`#graphNode[data-nodeId="${fromId}"] .outputConnection[data-connectionId="${outputId}"]`);
 			
-			drawCurve(output, input, curve);
+			// drawCurve(output, input, curve);
+			connectConnections(output, input, true, curve);
 		}
 	}
+	
 	for (const output of window.nodeMouseDown.querySelectorAll('.outputConnection')) {
 		const outputId = parseInt(output.getAttribute('data-connectionId'));
 		for (const curve of document.querySelectorAll(`path[data-leftNodeId="${nodeId}"][data-leftConnectionId="${outputId}"]`)) {
-			const toId = parseInt(curve.getAttribute('data-rightNodeId'));
-			const inputId = parseInt(curve.getAttribute('data-rightConnectionId'));
+			const toId = curve.rightNodeId;
+			const inputId = curve.rightConnectionId;
 			const input = document.querySelector(`#graphNode[data-nodeId="${toId}"] .inputConnection[data-connectionId="${inputId}"]`);
 			
-			drawCurve(output, input, curve);
+			// drawCurve(output, input, curve);
+			connectConnections(output, input, true, curve);
 		}
 	}
 };
 
 function redrawAllCurves() {
-	// disableCullingGraphNodes();
 	if (window._redrawAllCurvesInterval)
 		clearInterval(window._redrawAllCurvesInterval);
 	
-	const curves = Array.from(getAllCurves());
+	const curves = [...getAllCurves()];
 	window._redrawAllCurvesInterval = setInterval(() => {
 		if (curves.length > 0) {
 			const curve = curves.shift();
@@ -319,45 +389,74 @@ function redrawAllCurves() {
 		else
 			clearInterval(window._redrawAllCurvesInterval);
 	}, 1);
-	// for (const curve of curves)
-		// setTimeout(() => redrawCurve(curve), 1);
-	// enableCullingGraphNodes();
 };
 
 function redrawCurve(curve) {
 	if (!curve)
 		return;
 	
-	const toId = parseInt(curve.getAttribute('data-rightNodeId'));
-	const inputId = parseInt(curve.getAttribute('data-rightConnectionId'));
-	const fromId = parseInt(curve.getAttribute('data-leftNodeId'));
-	const outputId = parseInt(curve.getAttribute('data-leftConnectionId'));
+	const toId = curve.rightNodeId;
+	const inputId = curve.rightConnectionId;
+	const fromId = curve.leftNodeId;
+	const outputId = curve.leftConnectionId;
+	const leftNode = getNodeById(fromId);
+	const rightNode = getNodeById(toId);
 	
-	if (isCullingGraphNodesEnabled()) {
-		const input = document.querySelector(`#graphNode[data-nodeId="${toId}"]:not(.culled-node) .inputConnection[data-connectionId="${inputId}"]`);
-		const output = document.querySelector(`#graphNode[data-nodeId="${fromId}"]:not(.culled-node) .outputConnection[data-connectionId="${outputId}"]`)
+	if (!leftNode || !rightNode)
+		return;
+	
+	// let from;
+	// let to;
+	
+	// if (isCullingGraphNodesEnabled()) {
+		// if (isNodeCulled(leftNode))
+			// from = getCulledNodeOutputAnchor(leftNode);
+		// else
+			// from = getNodeConnectionsById(leftNode, outputId).output;
 		
-		if (!input || !output)
-			return;
-		
-		drawCurve(output, input, curve);
-	} else {
-		const input = document.querySelector(`#graphNode[data-nodeId="${toId}"] .inputConnection[data-connectionId="${inputId}"]`);
-		const output = document.querySelector(`#graphNode[data-nodeId="${fromId}"] .outputConnection[data-connectionId="${outputId}"]`)
-		
-		if (!input || !output)
-			return;
-		
-		drawCurve(output, input, curve);
-	}
+		// if (isNodeCulled(rightNode))
+			// to = getCulledNodeInputAnchor(rightNode);
+		// else
+			// to = getNodeConnectionsById(rightNode, inputId).input;
+	// } else {
+		const from = getNodeConnectionsById(leftNode, outputId).output;
+		const to = getNodeConnectionsById(rightNode, inputId).input;
+	// }
+
+	if (!from || !to)
+		return;
+	
+	drawCurve(from, to, curve);
+};
+
+function drawNodeCurves(node) {
+	const connectionsMap = getNodeConnectionsMap(node);
+	reconnectNodeFromConnectionsMap(node, connectionsMap);
+	node._curvesDrawn = true;
 };
 
 function redrawNodeCurves(node) {
+	// if (!node._curvesDrawn)
+		// return;
+	
+	// const connectionsMap = getNodeConnectionsMap(node);
+	// reconnectNodeFromConnectionsMap(node, connectionsMap);
+	// return;
+	
 	const curves = getNodeCurves(node);
 	for (const curve of curves.inputs)
 		redrawCurve(curve);
+		// if (isCurve(curve))
+			
+		// else if (Array.isArray(curve))
+			// drawCurve(curve[0], curve[1]);
+		
 	for (const curve of curves.outputs)
 		redrawCurve(curve);
+		// if (isCurve(curve))
+			
+		// else if (Array.isArray(curve))
+			// drawCurve(curve[0], curve[1]);
 };
 
 function getNodeCurves(node) {
@@ -365,14 +464,27 @@ function getNodeCurves(node) {
 		return null;
 	
 	const curves = {inputs: [], outputs: [], mainOutput: null, secondaryOutputs: []};
-	
 	const connectedConnections = getNodeConnectedConnections(node);
-	for (const connection of connectedConnections.inputs)
-		curves.inputs = curves.inputs.concat(getConnectionCurves(connection));
+	
+	for (const connection of connectedConnections.inputs) {
+		const connectionCurves = getConnectionCurves(connection);
+		// for (const [i, connectionCurve] of connectionCurves.entries()) {
+			// if (!connectionCurve)
+				// curves.inputs.push([getConnectionConnectedConnections(connection)[i], connection]);
+			// else
+				// curves.inputs.push(connectionCurve);
+		// }
+			
+		curves.inputs = curves.inputs.concat(connectionCurves);
+	}
 	
 	for (const connection of connectedConnections.outputs) {
-		const curve = getConnectionCurves(connection)[0];
+		let curve = getConnectionCurves(connection)[0];
+		// if (!curve)
+			// curve = [connection, getConnectionConnectedConnections(connection)[0]];
+		
 		curves.outputs.push(curve);
+		
 		if (connection.parentElement.id === "main-exec-output")
 			curves.mainOutput = curve;
 		else 
@@ -382,8 +494,27 @@ function getNodeCurves(node) {
 	return curves;
 };
 
+function getConnectionCurves(connection) {
+	if (!connection)
+		return null;
+	
+	const nodeId = connection.nodeId;
+	const connectionType = getConnectionType(connection);
+	const connectionId = connection.connectionId;
+	
+	if (connectionType === "inputConnection")
+		return Array.from(document.querySelectorAll(`path[data-rightNodeId="${nodeId}"][data-rightConnectionId="${connectionId}"]`));
+	else {
+		const curve = document.querySelector(`path[data-leftNodeId="${nodeId}"][data-leftConnectionId="${connectionId}"]`);
+		if (curve)
+			return [curve];
+		else 
+			return [];
+	}
+};
+
 function getAllCurves() {
-	return document.querySelectorAll(`path`);
+	return getGraphSVG().children || [];
 };
 
 function getCurveById(nodeId, connectionId, dir) {
@@ -397,60 +528,12 @@ function setCurveConnectionId(curve, id, dir) {
 	if (!curve)
 		return;
 	
-	if (dir === "left")
+	if (dir === "left") {
 		curve.setAttribute("data-leftConnectionId", id);
-	else
+		curve.leftConnectionId = id;
+	} else {
 		curve.setAttribute("data-rightConnectionId", id);
-};
-
-function connectPendingCurve(node) {
-	const pendingCurve = document.querySelector('#graphSVG #curve[data-_pending="true"');
-	if (!pendingCurve)
-		return;
-	
-	const leftNodeId = pendingCurve.getAttribute('data-leftNodeId');
-	const rightNodeId = pendingCurve.getAttribute('data-rightNodeId');
-	
-	if (rightNodeId === "null" && leftNodeId === "null")
-		return;
-	
-	if (rightNodeId === "null" || leftNodeId === "null") {
-		let outputConnection;
-		let inputConnection;
-		let connectedNode;
-		
-		if (rightNodeId === "null") { //connect to node input
-			outputConnection = getCurveLeftConnection(pendingCurve);
-			inputConnection = getNodeConnections(node).inputs[0];
-			connectedNode = getConnectionNode(outputConnection);
-		} else if (leftNodeId === "null") { //connect to node output
-			outputConnection = getNodeConnections(node).outputs[0];
-			inputConnection = getCurveRightConnection(pendingCurve);
-			connectedNode = getConnectionNode(inputConnection);
-		} 
-	
-		if (outputConnection && inputConnection) {
-			connectCurve(outputConnection, inputConnection, pendingCurve);
-			pendingCurve.removeAttribute('data-_pending');
-			pendingCurve.removeAttribute('data-_temp');
-			
-			updateCacheGraphNodeConnectionsMap(node);
-			if (connectedNode)
-				updateCacheGraphNodeConnectionsMap(connectedNode);
-		}
-	} else { //insert between two nodes
-		const leftNode = getNodeById(parseInt(leftNodeId));
-		const rightNode = getNodeById(parseInt(rightNodeId));
-		
-		connectCurve(getNodeConnections(leftNode).outputs[0], getNodeConnections(node).inputs[0], pendingCurve);
-		pendingCurve.removeAttribute('data-_pending');
-		pendingCurve.removeAttribute('data-_temp');
-			
-		drawCurve(getNodeConnections(node).outputs[0], getNodeConnections(rightNode).inputs[0])
-		
-		updateCacheGraphNodeConnectionsMap(node);
-		updateCacheGraphNodeConnectionsMap(leftNode);
-		updateCacheGraphNodeConnectionsMap(rightNode);
+		curve.rightConnectionId = id;
 	}
 };
 
@@ -458,7 +541,7 @@ function getCurveLeftNodeId(curve) {
 	if (!curve)
 		return null;
 	
-	return parseInt(curve.getAttribute('data-leftNodeId'));
+	return curve.leftNodeId;
 };
 
 function getCurveLeftNode(curve) {
@@ -473,7 +556,7 @@ function getCurveRightNodeId(curve) {
 	if (!curve)
 		return null;
 	
-	return parseInt(curve.getAttribute('data-rightNodeId'));
+	return curve.rightNodeId;
 };
 
 function getCurveRightNode(curve) {
@@ -482,4 +565,78 @@ function getCurveRightNode(curve) {
 	
 	const rightNodeId = getCurveRightNodeId(curve);
 	return getNodeById(rightNodeId);
+};
+
+function getCurveLeftConnection(curve) {
+	if (!curve)
+		return null;
+	
+	const leftNodeId = curve.leftNodeId;
+	const node = getNodeById(leftNodeId);
+	
+	if (!node)
+		return null;
+	
+	const leftConnectionId = curve.leftConnectionId;
+	return getNodeConnectionsById(node, leftConnectionId).output;
+	
+	// const leftConnection = document.querySelector(`.outputConnection[data-nodeId="${leftNodeId}"][data-connectionId="${leftConnectionId}"]`);
+	// return leftConnection;
+};
+
+function getCurveRightConnection(curve) {
+	if (!curve)
+		return null;
+	
+	const rightNodeId = curve.rightNodeId;
+	const node = getNodeById(rightNodeId);
+	
+	if (!node)
+		return null;
+	
+	const rightConnectionId = curve.rightConnectionId;
+	return getNodeConnectionsById(node, rightConnectionId).input;
+	
+	// const rightConnection = document.querySelector(`.inputConnection[data-nodeId="${rightNodeId}"][data-connectionId="${rightConnectionId}"]`);
+	// return rightConnection;
+};
+
+function getCurveFromPosition(curve) {
+	if (!curve)
+		return [0, 0];
+	
+	return curve.from;
+};
+
+function getCurveToPosition(curve) {
+	if (!curve)
+		return [0, 0];
+	
+	return curve.to;
+};
+
+function getCurveWidth(curve) {
+	if (!curve)
+		return 0;
+	
+	return Math.abs(curve.from[0] - curve.to[0]);
+};
+
+function getCurveHeight(curve) {
+	if (!curve)
+		return 0;
+	
+	return Math.abs(curve.from[1] - curve.to[1]);
+};
+
+function getCurveBounds(curve) {
+	if (!curve)
+		return [0, 0, 0, 0];
+
+	const x = Math.min(curve.from[0], curve.to[0]);
+	const y = Math.min(curve.from[1], curve.to[1]);
+	const width = Math.abs(curve.from[0] - curve.to[0]);
+	const height = Math.abs(curve.from[1] - curve.to[1]);
+
+	return [x, y, width, height];
 };

@@ -4,6 +4,7 @@
 function setupNodeList() {
 	const RMName = $.Utils.RPGMAKER_NAME;
 	const nodeList = document.querySelector('#nodeList');
+	const parser = new DOMParser();
 	let html =  ``;
 	
 	//native commands
@@ -28,7 +29,6 @@ function setupNodeList() {
 			html += `</div>`;
 		}
 	}
-	
 	nodeList.innerHTML += html;
 	
 	//import plugin commands
@@ -40,8 +40,9 @@ function setupNodeList() {
 			window._mzPluginCommandsLoaded = true;
 		
 		for (const plugin of pluginList) {
-			console.log(`Importing commands from ${plugin}...`); 
-			$.Drag.VisualEvent.fetchPluginCommands(plugin, function(pluginData) {
+			console.log(`Importing commands from ${plugin}...`);
+			
+			function makePluginCommandHTML(pluginData) {
 				html = ``;
 				if (pluginData.commands && Object.keys(pluginData.commands).length > 0) {
 					html += `<div><p data-commandCategory="${plugin}">${plugin.toUpperCase()}</p>`;
@@ -57,13 +58,31 @@ function setupNodeList() {
 					
 					console.log(`Successfully imported ${Object.keys(pluginData.commands).length} commands from ${plugin} !`); 
 				}
-				nodeList.innerHTML += html;
+				
+				if (html)
+					nodeList.appendChild(parser.parseFromString(html, 'text/html').body.firstChild);
 				
 				pluginReady++;
 				if (pluginReady >= pluginList.length)
 					window._mzPluginCommandsLoaded = true;
+			};
+			
+			try {
+				if (!$.Drag.VisualEvent.validatePluginCache(plugin)) {
+					console.log(`${plugin} cache invalidated, fetch and parse...`); 
+					window._invalidatedPluginCache = true;
+					$.Drag.VisualEvent.fetchPluginCommands(plugin, makePluginCommandHTML, false, true);
+				} else {
+					console.log(`${plugin} cache validated !`); 
+					makePluginCommandHTML($.Drag.VisualEvent.pluginJSDocData[plugin]);
+				}
+			} catch(error) {
+				console.error(`Couldn't import commands from ${plugin}. Error : ${error}`);
 				
-			}, false, true);
+				pluginReady++;
+					if (pluginReady >= pluginList.length)
+						window._mzPluginCommandsLoaded = true;
+			}
 		}
 	} else
 		window._mzPluginCommandsLoaded = true;
@@ -178,9 +197,7 @@ function closeNodeListMenu() {
 	nodeList.style.display = "none";
 	window._nodeListDisplayed = false;
 	
-	const pendingCurves = document.querySelectorAll('#graphSVG > #curve[data-_pending="true"]');
-	for (const curve of pendingCurves)
-		removeCurve(curve, true, true);
+	removeCurve(window._pendingCurve, true, true);
 };
 
 function addNodeFromNodeList(elem) {			

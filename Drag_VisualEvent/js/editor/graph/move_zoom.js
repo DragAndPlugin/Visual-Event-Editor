@@ -20,7 +20,7 @@ window._graphEditorMovedDist = 0;
 	
 	// window._graphEditorMovedDist += Math.abs(event.x - mousex) + Math.abs(event.y - mousey);
 	// if (window._graphEditorMovedDist >= window._graphEditorCullMoveTreshold)
-		// startCullingGraphNodes();
+		// refreshAllNodesCull();
 // };
 
 function moveGraphEditor(event) { //movement for graph camera using translate position & movement
@@ -40,6 +40,12 @@ function moveGraphEditor(event) { //movement for graph camera using translate po
 	graphEditor.setAttribute('data-mousey', event.y);
 
 	window._graphEditorMoved = true;
+	window._graphEditorMovedDist += Math.abs(event.x - mousex) + Math.abs(event.y - mousey);
+	
+	if (window._graphEditorMovedDist >= window._graphEditorCullMoveTreshold) {
+		refreshAllNodesCull();
+		refreshAllCurvesCull();
+	}
 };
 
 function getGraphPosition() {
@@ -79,7 +85,22 @@ function graphToScreen(x, y) {
     ];
 }
 
+function isInGraphBounds(x, y, width = 0, height = 0, margin = 0) {
+	if (!window.graphBounds)
+		return false;
+
+	return !(
+		x + width < graphBounds.left - margin ||
+		x > graphBounds.right + margin ||
+		y + height < graphBounds.top - margin ||
+		y > graphBounds.bottom + margin
+	);
+};
+
 function setGraphPosition(x, y, resetDataMouse = true) {
+	if (x === window._xGraph && y === window._yGraph)
+		return;
+	
 	const graphEditor = document.querySelector('#graphEditor');
 	
 	if (resetDataMouse) {
@@ -104,7 +125,7 @@ function setGraphPosition(x, y, resetDataMouse = true) {
 	// graphSVG.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
 	
 	//set nodes
-	// const graphNodes = document.querySelector('#graphNodes');
+	// const graphNodes = getNodesGraph();
 	// graphNodes.style.left = `${xScaled}px`;
 	// graphNodes.style.top = `${yScaled}px`;
 	// graphNodes.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
@@ -114,6 +135,7 @@ function setGraphPosition(x, y, resetDataMouse = true) {
 	graphCamera.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
 	
 	cacheGraphPosition(x, y);
+	window.graphBounds = getGraphBounds();
 };
 
 function disableGraphZoom() {
@@ -239,13 +261,16 @@ function getGraphEditorScale() {
 };
 
 function setGraphEditorScale(scale, showScale = true, redrawCurves = true, refreshCulling = true, saveInCache = false) {
+	if (scale === window._graphScale)
+		return;
+	
 	window._graphScale = scale;
 	
 	const graphEditor = document.querySelector('#graphEditor');
 	graphEditor.style.backgroundSize = `calc(var(--bgSizeGraphEditor) * ${scale}) calc(var(--bgSizeGraphEditor) * ${scale})`;
 	document.documentElement.style.setProperty('--graph-scale', scale);
 	// old version for graphnode and graphsvg using absolute position and top left movement
-	// document.querySelector('#graphNodes').style.transform = `scale(${scale})`;
+	// getNodesGraph().style.transform = `scale(${scale})`;
 	// document.querySelector('#graphSVG').style.transform = `scale(${scale})`;
 	
 	//for graph camera using transform translate position & scale
@@ -257,14 +282,18 @@ function setGraphEditorScale(scale, showScale = true, redrawCurves = true, refre
 	const [xGraphEditor, yGraphEditor] = getGraphPosition();
 	setGraphPosition(xGraphEditor, yGraphEditor, false);
 	
+	window.graphBounds = getGraphBounds();
+	
 	// if (redrawCurves)
 		// redrawAllCurves();
 	
 	if (saveInCache)
 		cacheGraphScale(scale);
 	
-	// if (refreshCulling)
-		// startCullingGraphNodes();
+	if (refreshCulling) {
+		refreshAllNodesCull();
+		refreshAllCurvesCull();
+	}
 	
 	if (!showScale)
 		return;
@@ -283,4 +312,35 @@ function setGraphEditorScale(scale, showScale = true, redrawCurves = true, refre
 		eShowScale.style.transition = 'opacity linear 3s';
 		eShowScale.style.opacity = 0;
 	}, 100);
+};
+
+// function getGraphEditorBounds() {
+	// const graphEditor = document.querySelector('#graphEditor').getBoundingClientRect();
+	// const graphNodes = getNodesGraph().getBoundingClientRect();
+	// const scale = getGraphEditorScale();
+
+	// return {
+		// left: graphEditor.left,
+		// right: graphEditor.right,
+		// top: graphEditor.top,
+		// bottom: graphEditor.bottom,
+		// graphLeft: graphNodes.left,
+		// graphTop: graphNodes.top,
+		// scale: scale,
+	// };
+// };
+
+function getGraphBounds(margin = 0) {
+	const graphEditor = document.querySelector('#graphEditor');
+	const graphEditorRect = graphEditor.getBoundingClientRect();
+
+	const scale = getGraphEditorScale();
+	const [x, y] = getGraphPosition();
+
+	return {
+		left: (-x) / scale - margin,
+		top: (-y) / scale - margin,
+		right: (graphEditorRect.width - x) / scale + margin,
+		bottom: (graphEditorRect.height - y) / scale + margin
+	};
 };

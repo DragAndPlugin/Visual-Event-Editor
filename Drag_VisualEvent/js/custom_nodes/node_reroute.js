@@ -39,7 +39,8 @@ module.exports = [{
 			
 			const beforeConnectionsMap = [editor.getGraphNodeFromCache(node).connectionsMap, editor.getGraphNodeFromCache(leftNode).connectionsMap, editor.getGraphNodeFromCache(rightNode).connectionsMap];
 			
-			curve.setAttribute('data-_pending', 'true');
+			curve.isPending = true;
+			editor._pendingCurve = curve;
 			editor.connectPendingCurve(node);
 			
 			editor.addToUndoHistory({type: "addNode", target: [node]});

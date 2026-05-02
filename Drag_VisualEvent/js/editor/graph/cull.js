@@ -1,76 +1,135 @@
-window._graphEditorCullMoveTreshold = 750;
-function startCullingGraphNodes() {
+window._graphEditorCullMoveTreshold = 100;
+
+//nodes
+function refreshAllNodesCull() {
 	window._graphEditorMovedDist = 0;
-	// disableCullingGraphNodes();
-	// return;
 	
-	// console.warn("culling");
-	const graphRect = graphEditor.getBoundingClientRect();
-	
-	const treshold = window._graphEditorCullMoveTreshold;
-	const [lGraphEditor, tGraphEditor] = getGraphCoordinatesFromAbsolute(0 - treshold, 0 - treshold);
-	const [rGraphEditor, bGraphEditor] = getGraphCoordinatesFromAbsolute(graphRect.width + treshold, graphRect.height + treshold);
-	
-	requestCullingNodes(0, lGraphEditor, rGraphEditor, tGraphEditor, bGraphEditor);
+	for (const nodeData of window.nodes) {
+		if (!nodeData)
+			continue;
+		
+		const node = nodeData.node;
+		if (!node)
+			continue; 
+		
+		refreshNodeCull(node);
+	}
 };
 
-function requestCullingNodes(nodeId, left, right, top, bottom) {
-	if (window._cullTimeout)
-		clearTimeout(window._cullTimeout);
-	
-	window._cullTimeout = setTimeout(() => {
-		handleCullingNode(nodeId, left, right, top, bottom);
-	}, 1);
-};
-
-function handleCullingNode(nodeId = 0, left, right, top, bottom) {
-	window._cullTimeout = null;
-
-	const node = getNodeById(nodeId);
+function refreshNodeCull(node) {
 	if (!node)
-		return onCullingNodesEnd();
+		return; 
 	
-	const [xNode, yNode] = getNodePosition(node);	
-	const wNode = parseInt(node.getAttribute('data-width'));
-	const hNode = parseInt(node.getAttribute('data-height'));
-	
-	//hide node outside of graph editor 
-	if ((xNode > right) || (xNode + wNode < left) || (yNode + hNode < top) || (yNode > bottom))
-		cullGraphNode(node);
-	else 
+	const nodePosition = getNodePosition(node);
+	if (isInGraphBounds(nodePosition[0], nodePosition[1], node.width || 0, node.height || 0, 200))
 		uncullGraphNode(node);
-	
-	requestCullingNodes(++nodeId, left, right, top, bottom);
-};
-
-function onCullingNodesEnd() {
-	// console.warn("end cull");
-	//unhide nodes connected to visible nodes
-	// for (const node of document.querySelectorAll('#graphNode:not(.culled-node)')) {
-		// const connectedNodes = getNodeConnectedNodes(node);
-		// for (const connectedNode of connectedNodes.inputs.concat(connectedNodes.outputs))
-			// uncullGraphNode(connectedNode);
-	// }
+	else 
+		cullGraphNode(node);
 };
 
 function cullGraphNode(node) {
+	if (isNodeCulled(node))
+		return;
+	
+	node._preventResize = false;
 	node.classList.add('culled-node');
-	node.setAttribute('data-unculled-resize', false);
+	node.isCulled = true;
+	
+	// if (node._curvesDrawn)
+		redrawNodeCurves(node);
 };
 
 function uncullGraphNode(node) {
+	if (!isNodeCulled(node))
+		return;
+	
+	node._preventResize = true;
 	node.classList.remove('culled-node');
-	node.setAttribute('data-unculled-resize', true);
+	node.isCulled = false;
+	
+	// if (node._curvesDrawn)
+		redrawNodeCurves(node);
+	// else
+		// drawNodeCurves(node);
 };
 
 function enableCullingGraphNodes() {
-	document.querySelector('#graphNodes').setAttribute('data-culling-nodes-enabled', "true");
+	getNodesGraph().setAttribute('data-culling-nodes-enabled', "true");
+	window._nodeCullingEnabled = true;
 };
 
 function disableCullingGraphNodes() {
-	document.querySelector('#graphNodes').setAttribute('data-culling-nodes-enabled', "false");
+	getNodesGraph().setAttribute('data-culling-nodes-enabled', "false");
+	window._nodeCullingEnabled = false;
 };
 
 function isCullingGraphNodesEnabled() {
-	return document.querySelector('#graphNodes').getAttribute('data-culling-nodes-enabled') === "true";
+	return window._nodeCullingEnabled === true;
+};
+
+function isNodeCulled(node) {
+	return node.isCulled === true;
+};
+
+function getCulledNodeOutputAnchor(node) {
+	const [x, y] = getNodePosition(node);
+	return graphToScreen(x + node.width, y + node.height / 2);
+};
+
+function getCulledNodeInputAnchor(node) {
+	const [x, y] = getNodePosition(node);
+	return graphToScreen(x, y + node.height / 2);
+};
+
+//curves
+function refreshAllCurvesCull() {
+	window._graphEditorMovedDist = 0;
+	
+	for (const curve of getGraphSVG().children) {
+		if (!curve)
+			continue;
+		
+		refreshCurveCull(curve);
+	}
+};
+
+function refreshCurveCull(curve) {
+	if (!curve)
+		return; 
+	
+	const [x, y, width, height] = getCurveBounds(curve);
+	if (isInGraphBounds(x, y, width, height, 200))
+		uncullCurve(curve);
+	else 
+		cullCurve(curve);
+};
+
+function cullCurve(curve) {
+	if (isCurveCulled(curve))
+		return;
+	
+	curve.classList.add('culled-curve');
+	curve.isCulled = true;
+};
+
+function uncullCurve(curve) {
+	if (!isCurveCulled(curve))
+		return;
+	
+	curve.classList.remove('culled-curve');
+	curve.isCulled = false;
+};
+
+function enableCullingGraphCurves() {
+	getGraphSVG().setAttribute('data-culling-curves-enabled', "true");
+	window._curveCullingEnabled = true;
+};
+
+function disableCullingGraphCurves() {
+	getGraphSVG().setAttribute('data-culling-curves-enabled', "false");
+	window._curveCullingEnabled = false;
+};
+
+function isCurveCulled(curve) {
+	return curve.isCulled === true;
 };

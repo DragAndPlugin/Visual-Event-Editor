@@ -784,6 +784,11 @@ div#functionList {
 	display: none;
 }
 
+#graphSVG[data-culling-curves-enabled="true"] #curve.culled-curve {
+	display: none;
+}
+
+
 #show-scale, #undo-redo-notification {
 	position: absolute;
     font-size: 2.5em;
@@ -1037,7 +1042,7 @@ div#functionList {
 
 #output-container > * {
 	margin-right: 0.625em;
-	margin-bottom: 0.625em;
+	margin-bottom: 0.575em;
 }
 
 #node-input {
@@ -1057,6 +1062,7 @@ div#functionList {
 
 .node-input-exec {
     margin: 0;
+	margin-left: 0.625em !important;
 }
 
 #input-wrapper {
@@ -1531,4 +1537,43 @@ img.noBrokenIcon::after {
 	transform: translate(0%, -100%);
 	margin-left: 1em;
     margin-top: -1em;
+}
+
+#node-ready-gauge {
+	background: black;
+	width: 10em;
+	height: 1.5em;
+	position: absolute;
+	bottom: 4em;
+	right: 1em;
+	border-radius: 0.2em;
+	border: 0.0625em solid white;
+	overflow: hidden;
+	z-index: 2;
+}
+
+#node-ready-gauge > div {
+	background: forestgreen;
+	width: 100%;
+	height: 100%;
+	border: 0.0625em solid white;
+	box-sizing: border-box;
+}
+
+#node-ready-gauge > span {
+	color: var(--color);
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: max-content;
+	font-size: 0.8em;
+	--outlineColor: black;
+	text-shadow: -1px -1px 0 var(--outlineColor), 0px -1px 0 var(--outlineColor), 1px -1px 0 var(--outlineColor), -1px 0px 0 var(--outlineColor), 1px 0px 0 var(--outlineColor), -1px 1px 0 var(--outlineColor), 0px 1px 0 var(--outlineColor), 1px 1px 0 var(--outlineColor);
+}
+
+#graphEditor.zooming #graphNode .nodeInput,
+#graphEditor.zooming #graphNode .node-misc-input,
+#graphEditor.zooming #graphNode #input-wrapper {
+	visibility: hidden;
 }

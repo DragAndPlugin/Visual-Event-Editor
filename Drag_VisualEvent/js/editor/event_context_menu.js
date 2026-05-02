@@ -91,8 +91,11 @@ function deleteCommonEventCache() {
 		clearEventNodesCache("Common Event", 0, eventId);
 		setAsSaved("Common Event", eventId);
 		
-		if (eventId === window.data.targetId && window.data.targetType === "Common Event")
-		reloadGraphEditor(window.data.targetId, window.data.targetType);
+		if (eventId === window.data.targetId && window.data.targetType === "Common Event") {
+			reloadGraphEditor(window.data.targetId, window.data.targetType);
+			setGraphEditorScale(1);
+			setGraphPosition(500, 200);
+		}
 	
 		refreshCommonEventList();
 		hideCommonEventContextMenu();
@@ -294,8 +297,11 @@ function deleteTroopEventCache() {
 		clearEventNodesCache("Troop Event", 0, eventId);
 		setAsSaved("Troop Event", eventId);
 		
-		if (eventId === window.data.targetId && window.data.targetType === "Troop Event")
+		if (eventId === window.data.targetId && window.data.targetType === "Troop Event") {
+			setGraphEditorScale(1);
+			setGraphPosition(500, 200);
 			reloadGraphEditor(window.data.targetId, window.data.targetType, 0);
+		}
 		
 		refreshTroopEventList();
 		hideTroopEventContextMenu();
@@ -541,8 +547,11 @@ function deleteMapEventCache() {
 		// window.data.loadedMap.events[eventId] = mapEvent;
 		setAsSaved("Map Event", eventId, window.data.mapTargetId);
 		
-		if (eventId === window.data.targetId && window.data.targetType === "Map Event")
+		if (eventId === window.data.targetId && window.data.targetType === "Map Event") {
 			reloadGraphEditor(window.data.targetId, window.data.targetType, 0);
+			setGraphEditorScale(1);
+			setGraphPosition(500, 200);
+		}
 		
 		refreshMapEventList();
 		hideMapEventContextMenu();

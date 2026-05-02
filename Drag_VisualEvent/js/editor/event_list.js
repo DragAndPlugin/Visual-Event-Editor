@@ -1,4 +1,5 @@
 function setupEventList() {
+	const start = performance.now();
 	const eventContainer = document.querySelector('#event-container');
 	
 	const expandedCount = window._cache.editor.eventListCollapsed ? Object.values(window._cache.editor.eventListCollapsed).reduce((acc, val) => val ? acc - 1 : acc, 3) : 3;
@@ -77,6 +78,8 @@ function setupEventList() {
 	const mapList = document.querySelector('#mapList');
 	if (mapList.value !== "0")
 		loadMapData(parseInt(mapList.value));
+	
+	console.log(`Event list setup completed in ${performance.now() - start}ms`);
 };
 
 function toggleEventList(type) {
@@ -202,10 +205,13 @@ function onCommonEventSelectChange(select) {
 };
 
 function getCommonEventList() {			
+	const start = performance.now();
 	const commonEventCount = getCommonEventCount();
 	const min = Math.floor(window.data.targetId / 100) * 100;
 	const max = Math.min(min + 100, commonEventCount);
-	return getRangedCommonEventList(min, max);
+	const list = getRangedCommonEventList(min, max);
+	console.log(`Common event list built in ${performance.now() - start}ms`);
+	return list;
 };
 
 function getRangedCommonEventList(min = 1, max = min + 100) {
@@ -254,10 +260,13 @@ function onTroopEventSelectChange(select) {
 };
 
 function getTroopEventList() {
+	const start = performance.now();
 	const troopEventCount = getTroopEventCount();
 	const min = Math.floor(troopEventCount / 100) * 100;
 	const max = Math.min(min + 100, troopEventCount);
-	return getRangedTroopEventList(min, max);
+	list =  getRangedTroopEventList(min, max);
+	console.log(`Troop event list built in ${performance.now() - start}ms`);
+	return list;
 };
 
 function getRangedTroopEventList(min = 1, max = min + 100) {
@@ -366,14 +375,26 @@ function selectEvent(div) {
 	if (!div)
 		return;
 	
-	ensureLeftPanelSelection(div);
-	saveEventInCache();
+	showLoading();
+	setLoadingText("Saving event in cache...");
+	// setLoadingText("Loading event...");
 	
-	const eventId = parseInt(div.getAttribute('data-eventId'));
-	const eventType = div.getAttribute('data-eventType');
-	const pageId = hasItemInEventCache("lastPage", eventType, window.data.mapTargetId, eventId) ? getEventCacheItem("lastPage", eventType, window.data.mapTargetId, eventId) : 0;
-	
-	reloadGraphEditor(eventId, eventType, pageId, true);
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			// if (!window._graphReady)
+				// return selectEvent(div);
+			
+			ensureLeftPanelSelection(div);
+			saveEventInCache();
+			
+			const eventId = parseInt(div.getAttribute('data-eventId'));
+			const eventType = div.getAttribute('data-eventType');
+			const pageId = hasItemInEventCache("lastPage", eventType, window.data.mapTargetId, eventId) ? getEventCacheItem("lastPage", eventType, window.data.mapTargetId, eventId) : 0;
+			
+			setLoadingText("Loading event...");
+			reloadGraphEditor(eventId, eventType, pageId, true);
+		});
+	});
 };
 
 function ensureLeftPanelSelection(target) {
@@ -399,4 +420,23 @@ function getLeftPanelEventTarget() {
 		default:
 			return null;
 	}
+};
+
+function isEventSelected(type = window.data.targetType, mapId = window.data.mapTargetId, eventId = window.data.targetId, pageId = window.data.pageId) {
+	if (window.data.targetType !== type)
+		return false;
+	
+	switch (type) {
+		case "Common Event":
+			return window.data.targetId === eventId;
+			break;
+		case "Map Event":
+			return window.data.mapTargetId === mapId && window.data.targetId === eventId && window.data.pageId === pageId;
+			break;
+		case "Troop Event":
+			return window.data.targetId === eventId && window.data.pageId === pageId;
+			break;
+	};
+	
+	return false;
 };
