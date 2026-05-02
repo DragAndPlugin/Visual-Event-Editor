@@ -343,6 +343,9 @@ function reloadGraphEditor(id, type, pageId = null, refreshTopPanel = true, refr
 					case "Common Event":
 						refreshCommonEventList();
 						break;
+					case "Map Event":
+						refreshMapEventList();
+						break;
 					case "Troop Event":
 						refreshTroopEventList();
 						break;
@@ -505,8 +508,6 @@ function setupGraphNodesFromCache() {
 	
 	if (window._graphNodeQueue.length > 0)
 		processNodeQueue();
-	// else
-		// onAllNodeReady();
 };
 
 function processNodeQueue() {
@@ -521,7 +522,6 @@ function processNodeQueue() {
 		const node = addNodeFromParams(params, false, false);
 		rebuildListFromConnectionsMap(node, params.connectionsMap);
 		reconnectNodeFromConnectionsMap(node, params.connectionsMap, false, null, false);
-		// node._curvesDrawn = false;
 		
 		if (performance.now() - start > 2)
 			break;
@@ -553,6 +553,10 @@ function setupGraphNodes(target) {
 		{x: x, y: y, name: name, classList: "nodeEvent undeletable uncopyable", 
 		haveOutputExecNode: true, indent: 0, inputs: getEventInput(window.data.targetType, window.data.targetId, window.data.pageId || 0, parseInt(document.querySelector('#mapList').value) || 0)},
 		false, false);
+		
+	updateCacheGraphNodeParameters(node);
+	registerNodeReferences(node);
+	cacheNodeProperty(node, "parsedParameters", parseNodeInputs(node));
 	
 	window._indentNodes[0] = node;
 	x += Math.ceil((node.offsetWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
@@ -610,16 +614,6 @@ function setupGraphNodes(target) {
 		const prevNode = window._indentNodes[command.indent] ? window._indentNodes[command.indent] : window._indentNodes[command.indent - 1];
 		const prevNodeCommandCode = parseInt(prevNode.getAttribute('data-commandCode'));
 		
-		// if (prevNodeCommandCode !== 0) {
-			// const dummyNodeWidth = getDummyNodeWidth(prevNodeCommandCode, command.parameters[0], command.parameters[1]);
-			// x = Math.ceil((getNodePosition(prevNode)[0] + dummyNodeWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
-			
-			// const dummyNodeHeight = getDummyNodeHeight(commandCode, command.parameters[0], command.parameters[1]);
-			// if (dummyNodeHeight > (window._highestHeightBranch[command.indent] || 0))
-				// window._highestHeightBranch[command.indent] = dummyNodeHeight + nodeSnap.y;
-		// } else
-			// x = Math.ceil((getNodePosition(prevNode)[0] + prevNode.offsetWidth + nodeSnap.x) / nodeSnap.x) * nodeSnap.x;
-		// console.log(x, y);
 		x += 500;
 		y = command.indent * 500;
 		const node2 = makeNodeFromParams({
@@ -634,15 +628,17 @@ function setupGraphNodes(target) {
 		
 		const outputConnection = prevNode.querySelector(`.outputConnection.exec[data-connected="false"][data-indent="${command.indent}"]:not([data-keepUnconnected="true"])`);
 		const inputConnection = node2.querySelector(`.inputConnection.exec[data-connected="false"]`);
-		// drawCurve(outputConnection, inputConnection);
 		connectConnections(outputConnection, inputConnection);
+		
+		updateCacheGraphNodeParameters(node2);
+		registerNodeReferences(node2);
+		cacheNodeProperty(node2, "parsedParameters", parseNodeInputs(node2));
 		
 		window._indentNodes[command.indent] = node2;
 	}
 	
 	delete window._indentNodes;
 	onAllNodeReady();
-	// rearrangeAllNodes();
 };
 
 function getCommandClassList(commandCode) {
@@ -1606,9 +1602,6 @@ function onInputChange(input) {
 	
 	const node = $.Drag.VisualEvent.getAncestorById(input, 'graphNode');
 	if (node) {
-		console.log(node);
-		console.log(window._registerInputChange);
-		console.log(node._preventInputChange);
 		if (node._preventInputChange)
 			return;
 		
