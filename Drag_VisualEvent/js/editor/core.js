@@ -2,21 +2,24 @@ function init() {
 	// openDevTools();
 	window._startPerformance = performance.now();
 	console.log("Having DevTools open can cause performance issue with the Visual Event Editor. If you notice performance drop while having this window opened, please try to close it.");
+	
 	showLoading();
+	
 	document.title = "Drag_DevTools_VisualEventEditor";
 	loadDataMainWindow();
 	$.Drag.VisualEvent.setLightMode(document);
 	setAppropriateFontSize();
-	// openDevTools();
 	
 	document.body.setAttribute('data-RPGMAKER_NAME', $.Utils.RPGMAKER_NAME);
 	document.querySelector('#bottom-panel-rm-version').innerHTML = `RPG Maker ${$.Utils.RPGMAKER_NAME} v${$.Utils.RPGMAKER_VERSION},`;
 	document.querySelector('#bottom-panel-environment-version').innerHTML = `Chromium v${process.versions["chromium"]}, NodeJS v${process.versions["node"]}, NWJS v${process.versions["nw"]}, PIXI v${$.PIXI.VERSION},`;
 	document.querySelector('#bottom-panel-unsaved-status').innerHTML = `0 events unsaved.`;
 	document.querySelector('#title-visual-event-version').innerHTML = ` v${$.Drag.VisualEvent.version}`;
+	
 	window.graphNodes = document.querySelector('#graphNodes');
 	window.graphSVG = document.querySelector('#graphSVG');
 	window.graphCamera = document.querySelector('#graph-camera');
+	
 	$.Drag.VisualEvent.getHTTP($.Drag.VisualEvent.pluginVersionUrl, checkNewVersionAvailable);
 	
 	window._isGraphNode = true;
@@ -156,7 +159,6 @@ function readClipboard() {
 
 function setAppropriateFontSize() {
 	const screenWidth = window.screen.width;
-	
 	const fontSize = Math.min(Math.max(screenWidth * 0.01, 8), 16);
 	setFontSize(fontSize);
 };
@@ -205,7 +207,6 @@ function loadMapData(mapId, fromRestore = false) {
 
 function requestLoadDataMap(mapId = window.data.mapTargetId, callback) {				
 	const filename = $.Drag.VisualEvent.getMapFileName(mapId);
-	// $.Drag.VisualEvent.loadDataFile(filename, callback ? callback : onDataMapLoad);
 	const map = require(`./data/${$.Drag.VisualEvent.getMapFileName(mapId)}.json`);
 	if (callback)
 		callback(map);
@@ -245,7 +246,6 @@ function focusPlayTestWindow() {
 };
 
 function openGameFolder() {
-	// nw.Shell.showItemInFolder()
 	require('child_process').exec('start "" ""');
 };
 
@@ -312,7 +312,7 @@ function getGraphSVG() {
 function reloadGraphEditor(id, type, pageId = null, refreshTopPanel = true, refreshLeftPanel = true) {
 	resetGraphState();
 	showLoading();
-	// setTimeout(() => {
+	
 	requestAnimationFrame(() => {
 		requestAnimationFrame(() => {
 			window._registerInputChange = false;
@@ -356,20 +356,19 @@ function reloadGraphEditor(id, type, pageId = null, refreshTopPanel = true, refr
 			document.querySelector('#save-all-changes-button').classList.remove('hidden');
 			
 			ensureLeftPanelSelection();
-			disableCullingGraphNodes();
 			setupGraphEditor();
+			
 			triggerAllOnReadyOnChange();
 			autofitAllTextArea();
-			// rearrangeAllNodes();
+			
 			enableCullingGraphNodes();
 			enableCullingGraphCurves();
+			
 			refreshAllNodesCull();
 			refreshAllCurvesCull();
 			hideLoading();
-			// window._registerInputChange = true;
 		});
 	});
-	// }, 5);
 };
 
 function resetGraphState() {
@@ -505,9 +504,16 @@ function setupGraphNodesFromCache() {
 			reconnectNodeFromConnectionsMap(getNodeById(cacheNode.nodeId), cacheNode.connectionsMap, true, fragSVG, false);
 	
 	getGraphSVG().appendChild(fragSVG);
+		
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			if (!window._pendingNodeInputs.length)
+				onAllNodeReady();
+		});
+	});
 	
-	if (window._graphNodeQueue.length > 0)
-		processNodeQueue();
+	// if (window._graphNodeQueue.length > 0)
+		// processNodeQueue();
 };
 
 function processNodeQueue() {
@@ -834,7 +840,6 @@ function makeInputsFromPluginCommand(pluginName, commandName, commandText, comma
 	const inputs = $.Drag.VisualEvent.getPluginCommandParameters(pluginName, commandName);
 	
 	for (const input of inputs) {
-		// input.pluginName = pluginName.split("/")[pluginName.split("/").length - 1];
 		input.pluginName = pluginName;
 		input.data = `data-parameterName="${input.name}" data-parameterText="${input.text || ""}"`;
 		input.isPluginParameter = true;
@@ -919,7 +924,6 @@ function getEventInput(type = "", id = 0, pageId = 0, mapId = 0) {
 			
 			const moveType = $.Drag.VisualEvent.getInteractiveInputParameters("selectAutonomousMovementType");
 			moveType.controller.value = pageData.moveType;
-			// moveType.dependances[0].showSummary = false;
 			moveType.dependances[3].thisEventOnly = true;
 			moveType.dependances[3].mapId = mapId;
 			moveType.dependances[3].x = eventData.x;
@@ -1026,8 +1030,6 @@ function loadDummyNodes() {
 function registerDummyNodesSizes() {
 	for (const category in window._dummyNodes) 
 		for (const node of Object.values(window._dummyNodes[category])) {
-			// node.setAttribute('data-width', node.offsetWidth);
-			// node.setAttribute('data-height', node.offsetHeight);
 			node.width = node.offsetWidth;
 			node.height = node.offsetHeight;
 		}
@@ -1050,15 +1052,16 @@ function getDummyNode(commandCode, commandCategory, commandName) {
 function getDummyNodeWidth(commandCode, commandCategory, commandName) {
 	const dummyNode = getDummyNode(commandCode, commandCategory, commandName);
 	if (dummyNode)
-		return dummyNode.width || 0; //parseInt(dummyNode.getAttribute('data-width'));
+		return dummyNode.width || 0;
+	
 	return 0;
 };
 
 function getDummyNodeHeight(commandCode, commandCategory, commandName) {
 	const dummyNode = getDummyNode(commandCode, commandCategory, commandName);
 	if (dummyNode)
-		// return parseInt(dummyNode.getAttribute('data-height'));
-		return dummyNode.height || 0; //parseInt(dummyNode.getAttribute('data-height'));
+		return dummyNode.height || 0;
+	
 	return 0;
 };
 
@@ -1542,7 +1545,6 @@ function getMapEventsInRange(mapId, startId, endId) {
 	return events;
 };
 
-
 //-------------------------------------------------------------------------------------------------------
 // INPUTS 
 
@@ -1608,9 +1610,11 @@ function onInputChange(input) {
 		if (!isUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0))
 			setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
 		
+			console.log(node, input);
 			updateCacheGraphNodeParameters(node);
 			registerNodeReferences(node);
 			cacheNodeProperty(node, "parsedParameters", parseNodeInputs(node));
+			console.log(node, parseNodeInputs(node));
 	} else if ($.Drag.VisualEvent.getAncestorById(input, 'event-data-container'))
 		if (!isUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, null))
 			setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, null);
@@ -1688,7 +1692,6 @@ function toggleLeftPanelCollapse(elem) {
 	const leftPanelWidth = parseInt(window.getComputedStyle(document.documentElement).getPropertyValue('--leftPanelWidth'));
 	const screenWidth = window.screen.width;
 	
-	// if (leftPanelWidth / screenWidth * 100 < 4)
 	if (leftPanelWidth <= 0)
 		setLeftPanelWidth(screenWidth * 0.15);
 	else
@@ -1769,14 +1772,12 @@ function handleSelectionBox(event) {
 
 function clearSelectionBox() {
 	const selectionBox = document.querySelector('#selection-box');
+	
 	selectionBox.style.width = 0;
 	selectionBox.style.height = 0;
 	selectionBox.style.left = 0;
 	selectionBox.style.top = 0;
 	selectionBox.style.borderWidth = 0;
-	
-	// if (window._selectionBoxSelectedNodes && window._selectionBoxSelectedNodes.length > 0)
-		// addToUndoHistory({type: "selectNode", target: window._selectionBoxSelectedNodes.map(node => getNodeId(node))});
 	
 	delete window._selectionBoxSelectedNodes;
 };
