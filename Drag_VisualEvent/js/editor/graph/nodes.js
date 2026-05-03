@@ -219,9 +219,9 @@ function addNodeToGraphNode(node, saveInHistory = false, cache = false, frag = n
 	nodeResizeObserver.observe(node);
 	node.onmousedown = onMouseDownGraphEditorNode.bind(null, node);
 	node.onmouseup = onMouseUpGraphEditorNode.bind(null, node);
-	node.addEventListener("dblclick", () => focusNode(null, node));
 	
 	const nodeHeader = node.firstElementChild;
+	nodeHeader.addEventListener("dblclick", () => focusNode(null, node));
 	nodeHeader.onmouseover = onNodeHeaderMouseOver.bind(null, node); 
 	nodeHeader.onmousemove = onNodeHeaderMouseMove.bind(null, node);
 	nodeHeader.onmouseout = onNodeHeaderMouseOut.bind(null, node);
@@ -323,9 +323,7 @@ function buildNodeInputs(params) {
 	inputWrapper.innerHTML = inputContainerHTML;
 	
 	if (params.isLast)
-		// requestAnimationFrame(() => {
-			onNodeInputsReady(params.node, params.onNodeReady);
-		// });
+		onNodeInputsReady(params.node, params.onNodeReady);
 };
 
 function onNodeInputsReady(node, onNodeReady) {
@@ -391,7 +389,6 @@ function hideNodeReadyCountGauge() {
 function onAllNodeReady() {	
 	console.log(`All nodes (${window.nodes.length}) ready.`);
 	hideNodeReadyCountGauge();
-	window._registerInputChange = true;
 	
 	if (window.onNodesReady) {
 		window.onNodesReady();
@@ -404,6 +401,7 @@ function onAllNodeReady() {
 	}
 	
 	window._graphReady = true;
+	window._registerInputChange = true;
 
 	if (window._startPerformance) {
 		console.log(`Editor ready (${performance.now() - window._startPerformance}ms).`);
@@ -488,8 +486,8 @@ function moveNode(event) {
 	const scale = getGraphEditorScale();
 	const scaleMult = 100 / (scale * 100);
 	
-	const mousex = window.nodeMouseDown.mouseX || 0; //parseInt(window.nodeMouseDown.getAttribute('data-mousex')) || 0;
-	const mousey = window.nodeMouseDown.mouseY || 0; //parseInt(window.nodeMouseDown.getAttribute('data-mousey')) || 0;
+	const mousex = window.nodeMouseDown.mouseX || 0;
+	const mousey = window.nodeMouseDown.mouseY || 0;
 	
 	const xMouseMovement = (event.x - mousex) * scaleMult;
 	const yMouseyMovement = (event.y - mousey) * scaleMult;	
@@ -511,8 +509,8 @@ function getNodeOffset(node) {
 	if (!node)
 		return [0, 0];
 	
-	const x = node.xOffset || 0; //parseInt(node.getAttribute('data-xOffset')) || 0;
-	const y = node.yOffset || 0; //parseInt(node.getAttribute('data-yOffset')) || 0;
+	const x = node.xOffset || 0;
+	const y = node.yOffset || 0;
 	return [x, y];
 };
 
@@ -522,8 +520,6 @@ function setNodeOffset(node, x, y, curveOffset = false) {
 	
 	const [xOffset, yOffset] = getNodeOffset(node);
 	if (xOffset !== x || yOffset !== y) {
-		// node.setAttribute('data-xOffset', x);
-		// node.setAttribute('data-yOffset', y);
 		node.xOffset = x;
 		node.yOffset = y;
 	
@@ -550,8 +546,8 @@ function getNodePosition(node) {
 	if (!node || !node.data)
 		return [0, 0];
 	
-	const x = node.data.x || 0; //parseInt(node.getAttribute('data-x'));
-	const y = node.data.y || 0; //parseInt(node.getAttribute('data-y'));
+	const x = node.data.x || 0;
+	const y = node.data.y || 0;
 	return [x, y];
 };
 
@@ -600,7 +596,7 @@ function onUndoMoveNode(action) {
 	for (const nodeId of nodeIds) {
 		const node = getNodeById(nodeId);
 		const nodePosition = getNodePosition(node);
-		setNodePosition(node, nodePosition[0] - action.movement[0], nodePosition[1] - action.movement[1]); //action.from[0], action.from[1]
+		setNodePosition(node, nodePosition[0] - action.movement[0], nodePosition[1] - action.movement[1]);
 		redrawNodeCurves(node);
 	}
 };
@@ -610,7 +606,7 @@ function onRedoMoveNode(action) {
 	for (const nodeId of nodeIds) {
 		const node = getNodeById(nodeId);
 		const nodePosition = getNodePosition(node);
-		setNodePosition(node, nodePosition[0] + action.movement[0], nodePosition[1] + action.movement[1]); //action.to[0], action.to[1]
+		setNodePosition(node, nodePosition[0] + action.movement[0], nodePosition[1] + action.movement[1]);
 		redrawNodeCurves(node);
 	}
 };
@@ -899,16 +895,6 @@ function getNodeCommandName(node) {
 function getEventNodeName() {
 	return `${window.data.targetType.toUpperCase()} ${String(window.data.targetId).padStart(4, '0')}${window.data.targetType === "Troop Event" || window.data.targetType === "Map Event" ? ': Page ' + ((window.data.pageId || 0) + 1) : ''}`;
 };
-
-// function focusNode(nodeId, node) {
-	// if (!node && nodeId)
-		// node = getNodeById(nodeId);
-	// if (!node)
-		// return;
-	
-	// const nodePosition = getNodePosition(node);
-	// setGraphPosition(-nodePosition[0] + (window.outerWidth / 2) - (node.offsetWidth / 2), -nodePosition[1] + (window.outerHeight / 2) - (node.offsetHeight / 2));
-// };
 
 function focusNode(nodeId, node) {
 	if (!node && nodeId)
