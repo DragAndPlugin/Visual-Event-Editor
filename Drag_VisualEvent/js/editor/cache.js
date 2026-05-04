@@ -371,20 +371,18 @@ function getGraphScaleFromCache() {
 };
 
 //nodes			
-function deepCacheAllGraphNodes(type = window.data.targetType, mapTargetId = window.data.mapTargetId, targetId = window.data.targetId, pageId = window.data.pageId) {	
-	// if (type === window.data.targetType, mapTargetId === window.data.mapTargetId, targetId === window.data.targetId, pageId === window.data.pageId)
-		// for (const node of window.nodes)
-			// deepCacheGraphNode(node, type, mapTargetId, targetId, pageId);
-	// else {
-		const eventKeys = getMatchingEventKeys(type, mapTargetId, targetId, pageId);
-		for (const eventKey of eventKeys) {
-			const eventCache = getEventCache(type, eventKey);
-			if (!eventCache || !eventCache.nodes)
-				continue;
-			
-			eventCache._nodes = $.Drag.VisualEvent.deepCopyJSON(eventCache.nodes);
-		}
-	// }
+function deepCacheAllGraphNodes(type = window.data.targetType, mapTargetId = window.data.mapTargetId, targetId = window.data.targetId, pageId = window.data.pageId, overwrite = true) {	
+	const eventKeys = getMatchingEventKeys(type, mapTargetId, targetId, pageId);
+	for (const eventKey of eventKeys) {
+		const eventCache = getEventCache(type, eventKey);
+		if (!eventCache || !eventCache.nodes)
+			continue;
+		
+		if (!overwrite && eventCache._nodes)
+			continue;
+		
+		eventCache._nodes = $.Drag.VisualEvent.deepCopyJSON(eventCache.nodes);
+	}
 };
 
 function deepCacheGraphNode(node, type = window.data.targetType, mapTargetId = window.data.mapTargetId, targetId = window.data.targetId, pageId = window.data.pageId) {
