@@ -125,24 +125,52 @@ function discardCommonEventChanges() {
 
 function changeMaximumCommonEvents(element) {
 	const maximum = parseInt(element.parentElement.querySelector('input').value);
-	const commonEventCount = window._cache.graph["Common Event"].ceCount ? window._cache.graph["Common Event"].ceCount : window.data.$dataCommonEvents.length;
+	const commonEventCount = getCommonEventCount();
 	
 	if (maximum > commonEventCount) {
 		const count = maximum - commonEventCount;
-		for (let i = 1; i <= count; i++)
-			setAsUnsaved("Common Event", commonEventCount + i);
+		for (let i = 1; i <= count; i++) {
+			if (!window.data.$dataCommonEvents[commonEventCount + i])
+				window.data.$dataCommonEvents[commonEventCount + i] = $.Drag.VisualEvent.getDefaultCommonEvent();
+		}
 	} else if (maximum < commonEventCount)
 		for (let i = maximum + 1; i <= commonEventCount; i++)
 			clearCommonEvent(i);
 	
 	window._cache.graph["Common Event"].ceCount = maximum;
 	
-	if (window.data.targetId > maximum && window.data.targetType === "Common Event") {
-		window.data.targetId = maximum;
-		reloadGraphEditor(window.data.targetId, window.data.targetType);
-	}
-	refreshCommonEventList();
+	if (window.data.targetId > maximum && window.data.targetType === "Common Event")
+		reloadGraphEditor(maximum, window.data.targetType);
+	else
+		refreshCommonEventList();
+	
 	hideCommonEventContextMenu();
+};
+
+function clearCommonEvent(eventId = null) {
+	if (eventId === null) {
+		const contextmenu = document.querySelector('#common-event-contextmenu');
+		if (!contextmenu)
+			return;
+		eventId = parseInt(contextmenu.getAttribute('data-eventId'));
+	}
+	
+	if (!eventId)
+		return;
+	
+	setAsUnsaved("Common Event", eventId);
+	
+	const commonEvent = $.Drag.VisualEvent.getDefaultCommonEvent();
+	commonEvent.id = eventId;
+	
+	clearEventNodesCache("Common Event", 0, eventId);
+	saveEventDataInCache(commonEvent, "Common Event", 0, eventId);		
+	
+	updateCommonEventListName(eventId, "");
+	hideCommonEventContextMenu();
+	
+	if (eventId === window.data.targetId && window.data.targetType === "Common Event")
+		reloadGraphEditor(window.data.targetId, window.data.targetType);
 };
 
 function copyCommonEvent() {
@@ -180,32 +208,6 @@ function pasteCommonEvent() {
 	
 	updateCommonEventListName(eventId);
 	hideCommonEventContextMenu();
-};
-
-function clearCommonEvent(eventId = null) {
-	if (eventId === null) {
-		const contextmenu = document.querySelector('#common-event-contextmenu');
-		if (!contextmenu)
-			return;
-		eventId = parseInt(contextmenu.getAttribute('data-eventId'));
-	}
-	
-	if (!eventId)
-		return;
-	
-	setAsUnsaved("Common Event", eventId);
-	
-	const defaultCommonEvent = $.Drag.VisualEvent.getDefaultCommonEvent();
-	defaultCommonEvent.id = eventId;
-	
-	clearEventNodesCache("Common Event", 0, eventId);
-	saveEventDataInCache(defaultCommonEvent, "Common Event", 0, eventId);		
-	
-	updateCommonEventListName(eventId, "");
-	hideCommonEventContextMenu();
-	
-	if (eventId === window.data.targetId && window.data.targetType === "Common Event")
-		reloadGraphEditor(window.data.targetId, window.data.targetType);
 };
 
 //troop event
@@ -345,18 +347,24 @@ function discardTroopEventChanges() {
 
 function changeMaximumTroopEvents(element) {
 	const maximum = parseInt(element.parentElement.querySelector('input').value);
-	const eventCount = window._cache.graph["Troop Event"].count ? window._cache.graph["Troop Event"].count : window.data.$dataTroops.length;
+	const eventCount = getTroopEventCount();
 	
 	if (maximum > eventCount) {
 		const count = maximum - eventCount;
-		for (let i = 1; i <= count; i++) 
-			setAsUnsaved("Troop Event", eventCount + i);
+		for (let i = 1; i <= count; i++)
+			if (!window.data.$dataCommonEvents[eventCount + i])
+				window.data.$dataTroops[eventCount + i] = $.Drag.VisualEvent.getDefaultTroopEvent();
 	} else if (maximum < eventCount)
 		for (let i = maximum + 1; i <= eventCount; i++)
 			clearTroopEvent(i);
 	
 	window._cache.graph["Troop Event"].count = maximum;
-	refreshTroopEventList();
+	
+	if (window.data.targetId > maximum && window.data.targetType === "Troop Event")
+		reloadGraphEditor(maximum, window.data.targetType);
+	else
+		refreshTroopEventList();
+	
 	hideTroopEventContextMenu();
 };
 
