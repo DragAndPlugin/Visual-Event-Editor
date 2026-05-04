@@ -310,11 +310,17 @@ function getGraphSVG() {
 };
 
 function reloadGraphEditor(id, type, pageId = null, refreshTopPanel = true, refreshLeftPanel = true) {
+	if (window._requestReloadGraphEditor) {
+		cancelAnimationFrame(window._requestReloadGraphEditor);
+		console.log("Pending request reload graph editor canceled, new request received...");
+	}
+		
 	resetGraphState();
 	showLoading();
 	
-	requestAnimationFrame(() => {
+	window._requestReloadGraphEditor = requestAnimationFrame(() => {
 		requestAnimationFrame(() => {
+			window._requestReloadGraphEditor = null;
 			window._registerInputChange = false;
 			
 			window.data.targetId = id;
@@ -401,7 +407,7 @@ function setupGraphEditor() {
 					setupGraphNodesFromCache();
 					console.log(`Setup graph nodes from cache completed in ${performance.now() - start}ms`);
 				} else {
-					window.onNodesReady = deepCacheAllGraphNodes;
+					window.onNodesReady = (() => deepCacheAllGraphNodes(window.data.targetType, window.data.mapTargetId, window.data.targetId, window.data.pageId, false));
 					if (hasItemInEventCache("data", window.data.targetType, window.data.mapTargetId, window.data.targetId)) {
 						const dataCache = getEventCacheItem("data", window.data.targetType, window.data.mapTargetId, window.data.targetId);
 						if (window.data.targetType === "Common Event" || dataCache.pages[window.data.pageId || 0]) {
@@ -1247,35 +1253,39 @@ function getEventPageData(eventType, eventId, pageId, parseIfCurrent = true) {
 
 function saveAll() {
 	showLoading();
-	setupAutoSave();
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			setupAutoSave();
 
-	let events = getAllEventCacheItems("data", "Common Event");
-	for (const ev of events)
-		if (isUnsaved("Common Event", ev.id))
-			apply("Common Event", 0, ev.id);
-		else
-			console.log(`Common Event ${ev.id} is already saved.`)
-	save(false, "Common Event");
-	
-	events = getAllEventCacheItems("data", "Troop Event");
-	for (const ev of events)
-		if (isUnsaved("Troop Event", ev.id))
-			apply("Troop Event", 0, ev.id);
-		else
-			console.log(`Troop Event ${ev.id} is already saved.`)
-	save(false, "Troop Event");
-	
-	if (window.data.mapTargetId && window.data.loadedMap) {
-		events = getAllEventCacheItems("data", "Map Event", window.data.mapTargetId);
-		for (const ev of events)
-			if (isUnsaved("Map Event", ev.id, window.data.mapTargetId))
-				apply("Map Event", window.data.mapTargetId, ev.id);
-			else
-				console.log(`Map ${window.data.mapTargetId} Event ${ev.id} is already saved.`)
-		save(false, "Map Event");
-	}
-		
-	hideLoading();
+			let events = getAllEventCacheItems("data", "Common Event");
+			for (const ev of events)
+				if (isUnsaved("Common Event", ev.id))
+					apply("Common Event", 0, ev.id);
+				else
+					console.log(`Common Event ${ev.id} is already saved.`)
+			save(false, "Common Event");
+			
+			events = getAllEventCacheItems("data", "Troop Event");
+			for (const ev of events)
+				if (isUnsaved("Troop Event", ev.id))
+					apply("Troop Event", 0, ev.id);
+				else
+					console.log(`Troop Event ${ev.id} is already saved.`)
+			save(false, "Troop Event");
+			
+			if (window.data.mapTargetId && window.data.loadedMap) {
+				events = getAllEventCacheItems("data", "Map Event", window.data.mapTargetId);
+				for (const ev of events)
+					if (isUnsaved("Map Event", ev.id, window.data.mapTargetId))
+						apply("Map Event", window.data.mapTargetId, ev.id);
+					else
+						console.log(`Map ${window.data.mapTargetId} Event ${ev.id} is already saved.`)
+				save(false, "Map Event");
+			}
+				
+			hideLoading();
+		});
+	});
 };
 
 function save(shouldApply = true, type = window.data.targetType, mapId = window.data.mapTargetId, targetId = window.data.targetId) {
@@ -1288,6 +1298,9 @@ function save(shouldApply = true, type = window.data.targetType, mapId = window.
 	const backupPath = window._cache.editor.options.backupLocation;
 	switch (type) {
 		case "Common Event":
+			if (window.data.$dataCommonEvents.length - 1 > getCommonEventCount())
+				window.data.$dataCommonEvents.length = getCommonEventCount() + 1;
+			
 			if (requestBackup)
 				$.Drag.VisualEvent.requestBackup('data/', 'CommonEvents', 'json', backupPath, backupFormat, saveCommonEvents);
 			else
@@ -1303,6 +1316,9 @@ function save(shouldApply = true, type = window.data.targetType, mapId = window.
 			
 			break;
 		case "Troop Event":
+			if (window.data.$dataTroops.length - 1 > getTroopEventCount())
+				window.data.$dataTroops.length = getTroopEventCount() + 1;
+			
 			if (requestBackup)
 				$.Drag.VisualEvent.requestBackup('data/', 'Troops', 'json', backupPath, backupFormat, saveTroopEvents);
 			else
@@ -1781,5 +1797,3 @@ function clearSelectionBox() {
 	
 	delete window._selectionBoxSelectedNodes;
 };
-
-
