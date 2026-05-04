@@ -1,22 +1,22 @@
 module.exports = [{
-	category: "Flow Control", //string, category in node list 
-	name: "Reroute", //string, name of the node
-	engine: ["MV", "MZ"], //string/array of strings, default ["MV", "MZ"], node will not be available in engine not listed here here
-	event_type: ["common", "map", "troop"], //string, array of strings, default ["common", "map", "troop"], node will not be available in event type not listed here // TO DO
-	id: "custom_node_reroute", //string, unique id for this node, will overwrite/be overwritten by other custom nodes with the same id
-	exec_input: true, //boolean, default true, define if node have input execution connection
+	category: "Flow Control",
+	name: "Reroute",
+	engine: ["MV", "MZ"],
+	event_type: ["common", "map", "troop"],
+	id: "custom_node_reroute",
+	exec_input: true,
 	exec_input_params: {
-		is_list: false, //boolean, default false, define if list buttons are added to let user add/remove inputs
-		exclusive: "exec", //string, default "exec", define what kind of connections the input accept
+		is_list: false,
+		exclusive: "exec",
 	},
-	exec_output: true, //boolean, default true, define if node have output execution connection
+	exec_output: true,
 	exec_output_params: {
 		is_list: false,
 		exclusive: "exec",
 	},
-	inputs: [], //array of string, list of inputs of the node
-	outputs: [], //array of string, list of outputs of the node
-	parse: (editor, command, node, behaviors, inputs, sequence) => {}, //function, define what the node do when parsed within an event
+	inputs: [],
+	outputs: [],
+	parse: (editor, command, node, behaviors, inputs, sequence) => {},
 	onimport: (editor, node) => {
 		
 		editor.onCurveDblClick = function(curve) {
