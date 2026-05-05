@@ -35,17 +35,11 @@ function moveConnection(event) {
 			// grabbed connection and target are the same
 			setConnectionConnected(window.connectionMouseDown, true);
 			target = window.connectionMouseDown;
-		} else if (isConnectionTargetValid(target, window.connectionMouseDown, curve)) {
-			// target is valid
-			// if (!curve.isTemp)
-				// setConnectionConnected(window.connectionMouseDown, false);
-			
+		} else if (isConnectionTargetValid(target, window.connectionMouseDown, curve)) {			
 			setConnectionConnected(target, true);
 			
 			if (getConnectionCurves(target).length === 0)
 				window.hoverConnection = target;
-
-			// target = event.target;
 		} else {
 			//target is not a valid connection
 			if (!curve.isTemp && curves.length === 1)
@@ -57,11 +51,9 @@ function moveConnection(event) {
 		if (connectionType === "inputConnection") {
 			const leftConnection = getCurveLeftConnection(curve);
 			drawCurve(leftConnection, target, curve);
-			// connectConnections(leftConnection, target);
 		} else {
 			const rightConnection = getCurveRightConnection(curve);
 			drawCurve(target, rightConnection, curve);
-			// connectConnections(target, rightConnection);
 		}
 	}
 	
@@ -209,12 +201,11 @@ function isConnectionConnected(connection) {
 		return false;
 	
 	return connection.connectedConnections && connection.connectedConnections.length > 0;
-	// return connection.connected; //connection.getAttribute('data-connected') === "true";
 };
 
 function setConnectionConnected(connection, connected) {
 	connection.connected = connected === true || connected === "true";
-	connection.setAttribute('data-connected', connected === true || connected === "true"); //setting attribute is needed for css
+	connection.setAttribute('data-connected', connection.connected); //setting attribute is needed for css
 	triggerModsFunction("onNodeConnection", [getConnectionNode(connection), connection, connected]);
 };
 
@@ -227,6 +218,8 @@ function connectConnections(connection1, connection2, draw = true, curve = null)
 	
 	connection1.connectedConnections.push(connection2);
 	connection2.connectedConnections.push(connection1);
+	setConnectionConnected(connection1, true);
+	setConnectionConnected(connection2, true);
 	
 	if (draw)
 		drawCurve(connection1, connection2, curve);
@@ -296,12 +289,7 @@ function getNodeConnectedConnectionsIds(node) {
 function getConnectionConnectedNodes(connection) {
 	if (!connection)
 		return null;
-	
-	// const connectionType = getConnectionType(connection);
-	// const curves = getConnectionCurves(connection);
-	// const connectedConnections = curves.map(curve => connectionType === "inputConnection" ? getCurveLeftConnection(curve) : getCurveRightConnection(curve));
-		
-	// return connectedConnections.map(connection => getConnectionNode(connection));
+
 	return getConnectionConnectedConnections(connection).map(connectedConnection => getConnectionNode(connectedConnection));
 };
 
@@ -309,11 +297,7 @@ function getConnectionConnectedConnections(connection) {
 	if (!connection)
 		return [];
 	
-	// const connectionType = getConnectionType(connection);
-	// const curves = getConnectionCurves(connection);
-	
-	// return curves.map(curve => connectionType === "inputConnection" ? getCurveLeftConnection(curve) : getCurveRightConnection(curve));
-		return connection.connectedConnections;
+	return connection.connectedConnections;
 };
 
 function getConnectionId(connection) {
@@ -351,34 +335,12 @@ function getNodeConnectionsMap(node) {
 	return connectionsMap;
 };
 
-function rebuildListFromConnectionsMap(node, connectionsMap) {
+function reconnectNodeFromConnectionsMap(node, connectionsMap, inputOnly = false, frag, append = true) {
 	if (!node || !connectionsMap)
 		return;
 	
-	const inputLength = getNodeConnections(node).inputs.length;
-	if (connectionsMap.inputs.length > inputLength) {
-		const list = node.querySelector('#input-container *[data-isList="true"]');
-		if (list) {
-			const button = list.parentElement.querySelector('#add-list-input-button');
-			for (let i = inputLength; i < connectionsMap.inputs.length; i++)
-				$.Drag.VisualEvent.addListInput(button);
-		}
-	}
-	
-	const outputLength = getNodeConnections(node).outputs.length;
-	if (connectionsMap.outputs.length > outputLength) {
-		const list = node.querySelector('#output-container *[data-isList="true"]');
-		if (list) {
-			const button = node.querySelector('#output-container *[data-isList="true"]').parentElement.querySelector('#add-list-input-button');
-			for (let i = outputLength; i < connectionsMap.outputs.length; i++)
-				$.Drag.VisualEvent.addListInput(button);
-		}
-	}
-};
-
-function reconnectNodeFromConnectionsMap(node, connectionsMap, inputOnly = false, frag = document.createDocumentFragment(), append = true) {
-	if (!node || !connectionsMap)
-		return;
+	if (!frag)
+		frag = document.createDocumentFragment();
 	
 	for (const [connectionIndex, target] of connectionsMap.inputs.entries()) {
 		const connection = getNodeConnectionsById(node, connectionIndex).input;
@@ -386,7 +348,6 @@ function reconnectNodeFromConnectionsMap(node, connectionsMap, inputOnly = false
 			continue;
 		
 		if (target) {
-			//legacy connections map didn't used arrays, convert them
 			if (!Array.isArray(target.nodeId))
 				target.nodeId = [target.nodeId];
 			
@@ -428,7 +389,6 @@ function reconnectNodeFromConnectionsMap(node, connectionsMap, inputOnly = false
 			continue;
 		
 		if (target) {
-			//legacy connections map didn't used arrays, convert them
 			if (!Array.isArray(target.nodeId))
 				target.nodeId = [target.nodeId];
 			
@@ -462,6 +422,31 @@ function reconnectNodeFromConnectionsMap(node, connectionsMap, inputOnly = false
 		getGraphSVG().appendChild(frag);
 	
 	return frag;
+};
+
+function rebuildListFromConnectionsMap(node, connectionsMap) {
+	if (!node || !connectionsMap)
+		return;
+	
+	const inputLength = getNodeConnections(node).inputs.length;
+	if (connectionsMap.inputs.length > inputLength) {
+		const list = node.querySelector('#input-container *[data-isList="true"]');
+		if (list) {
+			const button = list.parentElement.querySelector('#add-list-input-button');
+			for (let i = inputLength; i < connectionsMap.inputs.length; i++)
+				$.Drag.VisualEvent.addListInput(button);
+		}
+	}
+	
+	const outputLength = getNodeConnections(node).outputs.length;
+	if (connectionsMap.outputs.length > outputLength) {
+		const list = node.querySelector('#output-container *[data-isList="true"]');
+		if (list) {
+			const button = node.querySelector('#output-container *[data-isList="true"]').parentElement.querySelector('#add-list-input-button');
+			for (let i = outputLength; i < connectionsMap.outputs.length; i++)
+				$.Drag.VisualEvent.addListInput(button);
+		}
+	}
 };
 
 function isConnectionTargetValid(target, connection, curve) {
