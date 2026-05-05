@@ -396,8 +396,10 @@ function onUndoAddNode(action) {
 
 function onRedoAddNode(action) {
 	const nodes = action.target;
+	
 	for (const [i, node] of nodes.entries()) {
 		addNodeToGraphNode(node, false, false);
+		
 		if (action.connectionsMap && action.connectionsMap[i] && action.cache && action.cache[i]) {
 			action.cache[i].connectionsMap = action.connectionsMap[i];
 			setNodeCache(getNodeId(node), action.cache[i]);
@@ -405,6 +407,15 @@ function onRedoAddNode(action) {
 		} else 
 			cacheGraphNode(node);
 	}
+	
+	for (const node of nodes) {
+		const connectedNodes = getNodeConnectedNodes(node);
+		for (const connectedNode of connectedNodes.inputs)
+			updateCacheGraphNodeConnectionsMap(connectedNode);
+		for (const connectedNode of connectedNodes.outputs)
+			updateCacheGraphNodeConnectionsMap(connectedNode);
+	}
+	
 };
 
 addHistoryHandler("addNode", "Add Node", onUndoAddNode, onRedoAddNode);
@@ -424,15 +435,17 @@ function deleteNode(node, saveInHistory = false) {
 		removeCurve(outputCurve);
 	
 	setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
+	
 	uncacheGraphNode(node);
 	removeNodeReferences(node);
 	nodeResizeObserver.unobserve(node);
+	
 	node.data.isDeleted = true;
 	node.remove();
 };
 
 function deleteSelectedNodes(saveInHistory = false) {
-	const selectedNodes = getSelectedNodes();
+	const selectedNodes = getSelectedNodes().filter(node => !node.classList.contains('undeletable'));
 	
 	if (saveInHistory && selectedNodes.length > 0)
 		addToUndoHistory({type: "deleteNode", target: selectedNodes, cache: selectedNodes.map(node => getGraphNodeFromCache(node)), connectionsMap: selectedNodes.map(node => getNodeConnectionsMap(node))});
