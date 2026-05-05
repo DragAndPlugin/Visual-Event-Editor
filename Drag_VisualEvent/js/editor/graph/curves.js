@@ -1,39 +1,3 @@
-//-------------------------------------------------------------------------------------------------------
-// GRAPH CURVES
-
-// function drawCurve(from, to, curve, frag = null) { version for #graphNodes & #graphSVG using position absolute and top,left for movement
-	// if (!from || !to)
-		// return;
-	
-	// const [xGraph, yGraph] = getGraphPosition();
-	// const scale = getGraphEditorScale();
-	// const scaleMult = 100 / (scale * 100);
-	
-	// const graphSVGLeft = window.innerWidth * (1 - scale) / 2 + xGraph * scale;
-	// const graphSVGTop = window.innerHeight * (1 - scale) / 2 + yGraph * scale;
-	
-	// const fromBoundingRect = !Array.isArray(from) ? from.getBoundingClientRect() : null;
-	// const toBoundingRect = !Array.isArray(to) ? to.getBoundingClientRect() : null;
-	
-	// const basefromx = fromBoundingRect ? fromBoundingRect.left + (fromBoundingRect.width / 2) : from[0];
-	// const fromx = (basefromx - graphSVGLeft) * scaleMult;
-	// const basefromy = fromBoundingRect ? fromBoundingRect.top + (fromBoundingRect.height / 2) : from[1];
-	// const fromy = (basefromy - graphSVGTop) * scaleMult;
-
-	// const basetox = toBoundingRect ? toBoundingRect.left + (toBoundingRect.width / 2) : to[0];
-	// const tox = (basetox - graphSVGLeft) * scaleMult;
-	// const basetoy = toBoundingRect ? toBoundingRect.top + (toBoundingRect.height / 2) : to[1];
-	// const toy = (basetoy - graphSVGTop) * scaleMult;
-
-	// if (!curve)
-		// curve = createCurve(from, to, frag ? frag : null);
-	
-	// const curveData = `M ${fromx},${fromy} ${makeCubicBezierCurve(fromx + 20, fromy, tox, toy)}`;
-	// curve.setAttribute('data-coords', `${fromx},${fromy},${tox},${toy}`);
-	
-	// curve.setAttributeNS(null, "d", curveData);
-// };
-
 function drawCurve(from, to, curve, frag = null) { //version with graph camera and transform translate3d
 	if (!from || !to)
 		return;
@@ -60,7 +24,7 @@ function drawCurve(from, to, curve, frag = null) { //version with graph camera a
 	const screenToX = toRect ? toRect.left + toRect.width / 2 : toPoint[0];
 	const screenToY = toRect ? toRect.top + toRect.height / 2 : toPoint[1];
 
-	// convert screen → graph coordinates
+	// convert screen to graph coordinates
 	const fromx = (screenFromX - cameraX) / scale;
 	const fromy = (screenFromY - cameraY) / scale;
 
@@ -82,31 +46,6 @@ function getCurveShape(fromx, fromy, tox, toy) {
 
 function makeCubicBezierCurve(fromx, fromy, tox, toy) {
 	//https://codepen.io/explosion/pen/YGrpwd
-	// mid-point of line:
-	// const mpx = (tox + fromx) * 0.5;
-	// const mpy = (toy + fromy) * 0.5;
-	
-	// const q1x = (fromx + mpx) * 0.5;
-	// const q1y = (fromy + mpy) * 0.5;
-	
-	// const q3x = (mpx + tox) * 0.5;
-	// const q3y = (mpy + toy) * 0.5;
-	
-	// const dx = Math.abs(fromx - tox);
-	// const dy = Math.abs(fromy - toy);
-	
-	// const xOfsset = Math.max(0, 50 - (dx + dy) / 5); //Math.min(50, (dx + dy) / 10);
-	
-	// if (fromx > tox)
-		// [fromx, tox] = [tox, fromx];
-	// const xOffset = fromx > tox ? fromx - tox : tox - fromx < 80 ? 50 : 0;				
-	// return `C ${Math.max(q3x, fromx + (dx / 2)) + xOfsset},${q1y} ${Math.min(q1x, tox - (dx / 2)) - xOfsset},${q3y} ${tox},${toy}`;
-	
-	// const coef = dx + 20;
-	// return `C ${tox + coef},${fromy} ${fromx - coef},${toy} ${tox},${toy}`;
-	
-	// const xOffset = (fromx > tox ? Math.max(fromx - tox, 200) : tox - fromx < 120 ? 80 : 0) + Math.abs(fromy - toy) / 5;
-	// return `C ${Math.max(tox, fromx) + xOffset},${fromy} ${Math.min(tox, fromx) - xOffset},${toy} ${tox},${toy}`;
 	
 	const dx = tox - fromx;
 	const dy = toy - fromy;
@@ -269,7 +208,6 @@ function connectPendingCurve(node) {
 		
 		outputConnection = getNodeConnections(node).outputs[0];
 		inputConnection = getNodeConnections(rightNode).inputs[0];
-		// drawCurve(outputConnection, inputConnection);
 		connectConnections(outputConnection, inputConnection);
 		redrawNodeCurves(node);
 		
@@ -292,7 +230,7 @@ function disconnectCurve(curve) {
 	if (rightConnection && rightConnectionCurves.length === 1)
 		setConnectionConnected(rightConnection, false);
 	
-	if (leftConnection && rightConnection)
+	if (!!leftConnection && !!rightConnection)
 		disconnectConnections(leftConnection, rightConnection);
 };
 
@@ -308,17 +246,16 @@ function removeCurve(curve, cache = true, history = false) {
 			rightNodeId: curve.rightNodeId,
 			rightConnectionId: curve.rightConnectionId,
 		});
-	
 	disconnectCurve(curve);
 	curve.remove();
 	
 	if (cache) {
 		setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
 		
-		const leftNodeId = curve.leftNodeId; //parseInt(curve.getAttribute('data-leftNodeId'));
+		const leftNodeId = curve.leftNodeId;
 		if (leftNodeId !== null)
 			updateCacheGraphNodeConnectionsMap(getNodeById(leftNodeId));
-		const rightNodeId = curve.rightNodeId; //parseInt(curve.getAttribute('data-rightNodeId'));
+		const rightNodeId = curve.rightNodeId;
 		if (rightNodeId !== null)
 			updateCacheGraphNodeConnectionsMap(getNodeById(rightNodeId));
 	}
@@ -327,9 +264,13 @@ function removeCurve(curve, cache = true, history = false) {
 function onUndoDisconnect(action) {
 	const from = getNodeConnectionsById(getNodeById(action.leftNodeId), action.leftConnectionId).output;
 	const to = getNodeConnectionsById(getNodeById(action.rightNodeId), action.rightConnectionId).input;
-	connectCurve(from, to);
-	updateCacheGraphNodeConnectionsMap(getConnectionNode(from));
-	updateCacheGraphNodeConnectionsMap(getConnectionNode(to));
+	drawCurve(from, to);
+	connectConnections(from, to, false);
+	
+	const fromNode = getConnectionNode(from);
+	const toNode = getConnectionNode(to);
+	updateCacheGraphNodeConnectionsMap(fromNode);
+	updateCacheGraphNodeConnectionsMap(toNode);
 };
 
 function onRedoDisconnect(action) {
@@ -358,7 +299,6 @@ function moveCurves(event) {
 			const outputId = curve.leftConnectionId;
 			const output = document.querySelector(`#graphNode[data-nodeId="${fromId}"] .outputConnection[data-connectionId="${outputId}"]`);
 			
-			// drawCurve(output, input, curve);
 			connectConnections(output, input, true, curve);
 		}
 	}
@@ -370,7 +310,6 @@ function moveCurves(event) {
 			const inputId = curve.rightConnectionId;
 			const input = document.querySelector(`#graphNode[data-nodeId="${toId}"] .inputConnection[data-connectionId="${inputId}"]`);
 			
-			// drawCurve(output, input, curve);
 			connectConnections(output, input, true, curve);
 		}
 	}
@@ -405,23 +344,8 @@ function redrawCurve(curve) {
 	if (!leftNode || !rightNode)
 		return;
 	
-	// let from;
-	// let to;
-	
-	// if (isCullingGraphNodesEnabled()) {
-		// if (isNodeCulled(leftNode))
-			// from = getCulledNodeOutputAnchor(leftNode);
-		// else
-			// from = getNodeConnectionsById(leftNode, outputId).output;
-		
-		// if (isNodeCulled(rightNode))
-			// to = getCulledNodeInputAnchor(rightNode);
-		// else
-			// to = getNodeConnectionsById(rightNode, inputId).input;
-	// } else {
-		const from = getNodeConnectionsById(leftNode, outputId).output;
-		const to = getNodeConnectionsById(rightNode, inputId).input;
-	// }
+	const from = getNodeConnectionsById(leftNode, outputId).output;
+	const to = getNodeConnectionsById(rightNode, inputId).input;
 
 	if (!from || !to)
 		return;
@@ -436,27 +360,12 @@ function drawNodeCurves(node) {
 };
 
 function redrawNodeCurves(node) {
-	// if (!node._curvesDrawn)
-		// return;
-	
-	// const connectionsMap = getNodeConnectionsMap(node);
-	// reconnectNodeFromConnectionsMap(node, connectionsMap);
-	// return;
-	
 	const curves = getNodeCurves(node);
 	for (const curve of curves.inputs)
 		redrawCurve(curve);
-		// if (isCurve(curve))
-			
-		// else if (Array.isArray(curve))
-			// drawCurve(curve[0], curve[1]);
 		
 	for (const curve of curves.outputs)
 		redrawCurve(curve);
-		// if (isCurve(curve))
-			
-		// else if (Array.isArray(curve))
-			// drawCurve(curve[0], curve[1]);
 };
 
 function getNodeCurves(node) {
@@ -467,22 +376,12 @@ function getNodeCurves(node) {
 	const connectedConnections = getNodeConnectedConnections(node);
 	
 	for (const connection of connectedConnections.inputs) {
-		const connectionCurves = getConnectionCurves(connection);
-		// for (const [i, connectionCurve] of connectionCurves.entries()) {
-			// if (!connectionCurve)
-				// curves.inputs.push([getConnectionConnectedConnections(connection)[i], connection]);
-			// else
-				// curves.inputs.push(connectionCurve);
-		// }
-			
+		const connectionCurves = getConnectionCurves(connection);			
 		curves.inputs = curves.inputs.concat(connectionCurves);
 	}
 	
 	for (const connection of connectedConnections.outputs) {
-		let curve = getConnectionCurves(connection)[0];
-		// if (!curve)
-			// curve = [connection, getConnectionConnectedConnections(connection)[0]];
-		
+		let curve = getConnectionCurves(connection)[0];		
 		curves.outputs.push(curve);
 		
 		if (connection.parentElement.id === "main-exec-output")
@@ -579,9 +478,6 @@ function getCurveLeftConnection(curve) {
 	
 	const leftConnectionId = curve.leftConnectionId;
 	return getNodeConnectionsById(node, leftConnectionId).output;
-	
-	// const leftConnection = document.querySelector(`.outputConnection[data-nodeId="${leftNodeId}"][data-connectionId="${leftConnectionId}"]`);
-	// return leftConnection;
 };
 
 function getCurveRightConnection(curve) {
@@ -596,9 +492,6 @@ function getCurveRightConnection(curve) {
 	
 	const rightConnectionId = curve.rightConnectionId;
 	return getNodeConnectionsById(node, rightConnectionId).input;
-	
-	// const rightConnection = document.querySelector(`.inputConnection[data-nodeId="${rightNodeId}"][data-connectionId="${rightConnectionId}"]`);
-	// return rightConnection;
 };
 
 function getCurveFromPosition(curve) {
