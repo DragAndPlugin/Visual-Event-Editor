@@ -158,14 +158,6 @@ function makeNodeFromParams(params = {}, saveInHistory = false, cache = false, o
 		
 	}
 	
-	// params.outputs = params.outputs || [];
-	// for (const [i, output] of params.outputs.entries()) //not used for now
-		// nodeContent += `
-				// <span class="nodeOutput ${output.type || ''}" id="secondary-output">
-					// ${output.str || ''}
-					// <span data-connected="false" data-nodeId=${nodeId} data-connectionId="${outputConnectionId++}" class="outputConnection ${output.type || ''}"></span>
-				// </span>`;
-	
 	nodeContent += `
 			</div>
 			${params.footer ? params.footer : ''}
@@ -263,31 +255,6 @@ function addNodeToGraphNode(node, saveInHistory = false, cache = false, frag = n
 
 function registerNode(nodeData) {
 	window.nodes[nodeData.id] = nodeData;
-};
-
-function attributeNodeId(node, nodeId) {
-	if (!window.nodes.includes(node.data)) {
-		if (node.data && node.data.id) {
-			registerNode(node.data)
-		} else {
-			if (nodeId === null)
-				// nodeId = window.nodes.push(node) - 1;
-				nodeId = window.nodes.length;
-			// else 
-				// window.nodes[nodeId] = node;
-			// window.nodes[nodeId] = node;
-			
-			// node.setAttribute('data-nodeId', nodeId);
-			// node.nodeId = nodeId;
-			
-			for (const element of node.querySelectorAll('*[data-nodeId="0"]')) {
-				element.setAttribute('data-nodeId', nodeId);
-				element.nodeId = nodeId;
-			}
-		}
-	}
-	
-	return nodeId || 0;
 };
 
 function processPendingNodeInputs() {
