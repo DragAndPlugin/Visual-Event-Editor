@@ -197,7 +197,10 @@ function closeNodeListMenu() {
 	nodeList.style.display = "none";
 	window._nodeListDisplayed = false;
 	
-	removeCurve(window._pendingCurve, true, true);
+	if (window._pendingCurve)
+		removeCurve(window._pendingCurve, !window._pendingCurve.isTemp, !window._pendingCurve.isTemp);
+	
+	window._pendingCurve = null;
 };
 
 function addNodeFromNodeList(elem) {			
