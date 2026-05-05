@@ -4,6 +4,7 @@ module.exports = [{
 	engine: ["MV", "MZ"],
 	event_type: ["common", "map", "troop"],
 	id: "custom_node_sequence",
+	description: "Executes each output in sequence from top to bottom. Does not perform any action by itself - used to organize execution flow.",
 	exec_input: true,
 	exec_input_params: {
 		is_list: false,

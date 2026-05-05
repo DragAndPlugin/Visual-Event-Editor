@@ -28,6 +28,7 @@ module.exports = [{
 	engine: ["MV", "MZ"],
 	event_type: ["common", "map", "troop"],
 	id: "custom_node_comment_graph",
+	description: "A visual container used to group, color and label nodes. Does not affect execution.",
 	exec_input: false,
 	exec_output: false,
 	inputs: [],
