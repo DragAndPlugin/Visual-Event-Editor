@@ -433,10 +433,10 @@ function setupGraphEditor() {
 };
 
 function setupGraphNodesFromCache() {
-	const addedNodes = [];
 	const cacheNodes = getGraphNodesFromCache();
-	window._nodesCount = cacheNodes.length;
+	window._nodesCount = cacheNodes.filter(node => node).length;
 	
+	const addedNodes = [];
 	for (const cacheNode of cacheNodes) {
 		if (!cacheNode)
 			continue;
@@ -1158,6 +1158,9 @@ function addNodeFromDummy(params, cache = false, saveInHistory = false, onNodeRe
 };
 
 function assignNodeParametersValues(node, values) {
+	if (!node || !values || !values.length)
+		return;
+	
 	const commandCode = getNodeCommandCode(node);
 	if (commandCode !== 357) {
 		const inputs = getNodeInputs(node, false, false);
@@ -1203,23 +1206,30 @@ function assignNodeParametersValues(node, values) {
 };
 
 function assignNodeListsLength(node, listsLength) {
+	if (!node || !listsLength || !listsLength.length)
+		return;
+	
 	const commandCode = getNodeCommandCode(node);
 	if (commandCode !== 357) {
 		let listId = 0;
+		
 		const inputs = getNodeInputs(node, false, false);
 		for (const input of inputs) {
 			if (input.getAttribute('data-isList') === 'true' && listsLength[listId]) {
 				const wrapper = input.parentElement;							
 				const addListInputButton = findInputAssociatedAddListInputButton(input);
-				for (let i = 1; i < listsLength[listId]; i++)
+				for (let i = node.querySelectorAll(`*[data-listId="${input.getAttribute('data-listId')}"]`).length; i < listsLength[listId]; i++)
 					$.Drag.VisualEvent.addListInput(addListInputButton);
+				
 				listId++;
 			}
 		}
+		
 		for (const list of node.querySelectorAll('#list-wrapper')) {
 			const addListInputButton = list.querySelector('#add-list-input-button');
-			for (let i = 1; i < listsLength[listId]; i++)
+			for (let i = list.querySelectorAll('#add-list-input-button').length; i < listsLength[listId]; i++)
 				$.Drag.VisualEvent.addListInput(addListInputButton);
+			
 			listId++;
 		}
 	}
@@ -1313,7 +1323,7 @@ function save(shouldApply = true, type = window.data.targetType, mapId = window.
 				$.Drag.VisualEvent.requestBackup('data/', mapName, 'json', backupPath, backupFormat, saveMapEvents);
 			else
 				saveMapEvents(mapName);
-			
+
 			break;
 		case "Troop Event":
 			if (window.data.$dataTroops.length - 1 > getTroopEventCount())
@@ -1335,12 +1345,12 @@ function saveCommonEvents() {
 	console.log(`Common Event changes saved in data/CommonEvents.json.`);
 };
 
-function saveMapEvents(mapName) {
-	if (!mapName)
-		mapName = `Map${window.data.mapTargetId.toString().padStart(3, '0')}`;
+function saveMapEvents(name) {
+	if (!name)
+		name = $.Drag.VisualEvent.getMapFileName(window.data.mapTargetId);
 	
-	$.Drag.VisualEvent.writeJSON(`data/${mapName}.json`, window.data.loadedMap, showSaveNotification);
-	console.log(`${mapName} changes saved in data/${mapName}.json.`);
+	$.Drag.VisualEvent.writeJSON(`data/${name}.json`, window.data.loadedMap, showSaveNotification);
+	console.log(`${name} changes saved in data/${name}.json.`);
 };
 
 function saveTroopEvents() {
