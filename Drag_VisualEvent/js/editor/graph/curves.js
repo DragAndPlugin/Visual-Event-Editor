@@ -192,6 +192,8 @@ function connectPendingCurve(node) {
 			updateCacheGraphNodeConnectionsMap(node);
 			if (connectedNode)
 				updateCacheGraphNodeConnectionsMap(connectedNode);
+			
+			redrawNodeCurves(node);
 		}
 	} else { //insert between two nodes
 		const leftNode = getNodeById(leftNodeId);
@@ -398,7 +400,6 @@ function getConnectionCurves(connection) {
 		return null;
 	
 	const nodeId = connection.nodeId;
-	console.log(nodeId);
 	const connectionType = getConnectionType(connection);
 	const connectionId = connection.connectionId;
 	
