@@ -300,7 +300,7 @@ function onNodeInputsReady(node, onNodeReady) {
 		onNodeReady();
 
 	triggerAllOnReadyOnChange(node);
-	autofitAllTextArea(node)
+	autofitAllTextArea(node);
 	
 	if (!node.isDummy) {
 		updateNodeReadyCountGauge();
@@ -309,6 +309,12 @@ function onNodeInputsReady(node, onNodeReady) {
 		if (node._cacheNodeOnInputsReady) {
 			cacheGraphNode(node);
 			registerNodeReferences(node);
+		}
+		
+		if (!cacheNodeHasProperty(node, "parsedParameters")) {
+			uncullGraphNode(node);
+			cacheNodeProperty(node, "parsedParameters", parseNodeInputs(node));
+			refreshNodeCull(node);
 		}
 	}
 	

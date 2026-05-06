@@ -68,7 +68,7 @@ function isCullingGraphNodesEnabled() {
 };
 
 function isNodeCulled(node) {
-	return node.isCulled === true;
+	return node && node.isCulled === true;
 };
 
 function getCulledNodeOutputAnchor(node) {

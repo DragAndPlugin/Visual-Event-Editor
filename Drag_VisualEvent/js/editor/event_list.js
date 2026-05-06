@@ -115,7 +115,6 @@ function makeMapEventList(data = window.data.loadedMap) {
 	mapEventSelect.innerHTML = getMapEventSelect(data);
 	
 	const mapEventCount = getMapEventCount(data);
-	// const max = Math.min(100, mapEventCount);
 	const min = Math.max(Math.floor((window.data.targetId - 1) / 100) * 100, 0) + 1;
 	const max = Math.min(min + 99, mapEventCount);
 	const list = getRangedMapEventList(min, max, data);

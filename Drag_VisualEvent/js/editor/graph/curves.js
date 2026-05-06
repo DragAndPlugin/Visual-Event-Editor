@@ -398,6 +398,7 @@ function getConnectionCurves(connection) {
 		return null;
 	
 	const nodeId = connection.nodeId;
+	console.log(nodeId);
 	const connectionType = getConnectionType(connection);
 	const connectionId = connection.connectionId;
 	

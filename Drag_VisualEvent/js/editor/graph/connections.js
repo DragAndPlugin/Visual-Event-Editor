@@ -5,7 +5,8 @@ function moveConnection(event) {
 	let connectionType = getConnectionType(connectionMouseDown);
 	let curves = getConnectionCurves(window.connectionMouseDown);
 	let target;
-	
+	console.log(window.connectionMouseDown);
+	console.log(curves);
 	//no attached curves, create temp curve
 	if (curves.length === 0) { 
 		let curve;
@@ -476,9 +477,12 @@ function isConnectionTargetValid(target, connection, curve) {
 function refreshNodeConnections(node) {
 	//attribute unique connections ids to input and outputs and reattribute correct ids to curves
 	const inputConnections = Array.from(node.querySelectorAll('.exec.inputConnection'));
+	node.data.inputs = inputConnections;
 	for (const [index, input] of inputConnections.entries()) {
 		const currentConnectionIndex = parseInt(input.getAttribute('data-connectionId'));
 		input.setAttribute('data-connectionId', index);
+		input.connectionId = index;
+		input.nodeId = getNodeId(node);
 		
 		if (currentConnectionIndex >= index) {
 			const connectionCurve = getCurveById(getNodeId(node), currentConnectionIndex, 'right');
@@ -487,9 +491,12 @@ function refreshNodeConnections(node) {
 	}
 	
 	const outputConnections = Array.from(node.querySelectorAll('.exec.outputConnection'));
+	node.data.outputs = outputConnections;
 	for (const [index, output] of outputConnections.entries()) {
 		const currentConnectionIndex = parseInt(output.getAttribute('data-connectionId'));
 		output.setAttribute('data-connectionId', index);
+		output.connectionId = index;
+		output.nodeId = getNodeId(node);
 		
 		if (currentConnectionIndex >= index) {
 			const connectionCurve = getCurveById(getNodeId(node), currentConnectionIndex, 'left');
