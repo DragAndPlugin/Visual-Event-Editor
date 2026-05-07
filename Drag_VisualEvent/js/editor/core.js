@@ -11,7 +11,7 @@ function init() {
 	setAppropriateFontSize();
 	
 	document.body.setAttribute('data-RPGMAKER_NAME', $.Utils.RPGMAKER_NAME);
-	document.querySelector('#bottom-panel-rm-version').innerHTML = `RPG Maker ${$.Utils.RPGMAKER_NAME} v${$.Utils.RPGMAKER_VERSION},`;
+	document.querySelector('#bottom-panel-rm-version').innerHTML = `RPG Maker ${$.Utils.RPGMAKER_NAME} Corescript v${$.Utils.RPGMAKER_VERSION},`;
 	document.querySelector('#bottom-panel-environment-version').innerHTML = `Chromium v${process.versions["chromium"]}, NodeJS v${process.versions["node"]}, NWJS v${process.versions["nw"]}, PIXI v${$.PIXI.VERSION},`;
 	document.querySelector('#bottom-panel-unsaved-status').innerHTML = `0 events unsaved.`;
 	document.querySelector('#title-visual-event-version').innerHTML = ` v${$.Drag.VisualEvent.version}`;
@@ -322,7 +322,7 @@ function reloadGraphEditor(id, type, pageId = null, refreshTopPanel = true, refr
 		requestAnimationFrame(() => {
 			window._requestReloadGraphEditor = null;
 			window._registerInputChange = false;
-			
+			console.log("register input change disabled");
 			window.data.targetId = id;
 			window.data.targetType = type;
 			window.data.pageId = pageId;
@@ -1569,6 +1569,14 @@ function getMapEventsInRange(mapId, startId, endId) {
 	}
 	
 	return events;
+};
+
+function setMapEventLocation(mapId = window.data.mapTargetId, eventId = window.data.targetId, x = 0, y = 0) {
+	const eventCache = getEventCacheItem("data", "Map Event", mapId, eventId);
+	eventCache.x = x;
+	eventCache.y = y;
+	
+	setAsUnsaved("Map Event", eventId, mapId);
 };
 
 //-------------------------------------------------------------------------------------------------------

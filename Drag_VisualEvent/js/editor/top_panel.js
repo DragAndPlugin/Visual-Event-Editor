@@ -45,6 +45,7 @@ function setupTopPanel() {
 			locationInput.mapId = window.data.mapTargetId;
 			locationInput.value = [target.x, target.y] || [0, 0];
 			locationInput.data += ` data-eventId="${window.data.targetId}"`;
+			locationInput.onchange = `updateCurrentEventLocation(this);`;
 			
 			const pageCount = target.pages.length || 1;
 			let pages = "";
@@ -465,4 +466,12 @@ function changeEventPage(element, shouldApply = false) {
 	
 	reloadGraphEditor(eventId, eventType, pageId, false);
 	refreshEventPages();
+};
+
+function updateCurrentEventLocation(input) {
+	if (!input)
+		return;
+	
+	const [x, y] = $.Drag.VisualEvent.getInputValue(input);
+	setMapEventLocation(window.data.mapTargetId, window.data.targetId, x, y);
 };

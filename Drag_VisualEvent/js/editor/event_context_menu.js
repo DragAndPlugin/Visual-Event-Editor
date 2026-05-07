@@ -631,9 +631,7 @@ function updateEventLocation(button) {
 	const input = button.parentElement.querySelector('input');
 	const [x, y] = $.Drag.VisualEvent.getInputValue(input);
 	
-	const eventCache = getEventCacheItem("data", "Map Event", window.data.mapTargetId, eventId);
-	eventCache.x = x;
-	eventCache.y = y;
+	setMapEventLocation(window.data.mapTargetId, eventId, x, y);
 	
 	hideMapEventContextMenu();
 };

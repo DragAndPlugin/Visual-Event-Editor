@@ -125,15 +125,15 @@ function parseEventDataFromEditor(onlySelected = false, sequence = null) {
 			mapEventPages[pageId].directionFix = mapEventParameters[12];
 			mapEventPages[pageId].through = mapEventParameters[13];
 			
-			const [x, y] = $.Drag.VisualEvent.getInputValue(document.querySelector('#topPanel #map-event-location'));
+			// const [x, y] = $.Drag.VisualEvent.getInputValue(document.querySelector('#topPanel #map-event-location'));
 			
 			return {
 				id: eventId,
 				name: document.querySelector('#topPanel #map-event-name').value,
 				note: document.querySelector('#topPanel #map-event-notes').value,
 				pages: mapEventPages,
-				x: x,
-				y: y
+				x: mapEvent.x,
+				y: mapEvent.y
 			}
 		case "Troop Event":
 			const troopEvent = $.Drag.VisualEvent.deepCopyJSON(getEventCacheItem("data", "Troop Event", 0, eventId) || window.data.$dataTroops[eventId] ||$.Drag.VisualEvent.getDefaultTroopEvent());
