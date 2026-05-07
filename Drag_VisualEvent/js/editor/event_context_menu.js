@@ -688,12 +688,14 @@ function deleteMapEvent() {
 	if (!eventId)
 		return;
 	
-	// deleteEventCache("Map Event", window.data.mapTargetId, eventId);
-	// clearEventNodesCache("Map Event", window.data.mapTargetId, eventId);
-	saveItemInEventCache("deleted", true, "Map Event", window.data.mapTargetId, eventId);
-	setAsUnsaved("Map Event", eventId, window.data.mapTargetId);
+	deleteEventCache("Map Event", window.data.mapTargetId, eventId);
+	clearEventNodesCache("Map Event", window.data.mapTargetId, eventId);
+	window.data.loadedMap.events[eventId] = null;
+	// saveItemInEventCache("deleted", true, "Map Event", window.data.mapTargetId, eventId);
+	// setAsUnsaved("Map Event", eventId, window.data.mapTargetId);
+	save(false, "Map Event", window.data.mapTargetId, eventId)
+	removeFromMapEventList(eventId);
 	
-	// removeFromMapEventList(eventId);
 	refreshMapEventList();
 	hideMapEventContextMenu();
 	
