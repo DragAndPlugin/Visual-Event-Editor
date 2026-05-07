@@ -328,7 +328,7 @@ function addEventPageAfter(element) {
 
 function addEventPage(element) {
 	const index = document.querySelectorAll('#event-page').length;
-	return addPage(index);
+	changeEventPage(addPage(index));
 };
 
 function addPage(index = 0, data = $.Drag.VisualEvent.getDefaultEventPage(window.data.targetType)) {	
