@@ -219,7 +219,7 @@ function showEventPageContextMenu(event) {
 	
 	window._eventPageContextMenuDisplayed = true;
 	
-	const pageId = parseInt(eventPage.getAttribute('data-pageId')); //$.Drag.VisualEvent.getChildIndex(eventPage);
+	const pageId = parseInt(eventPage.getAttribute('data-pageId'));
 	eventPageContextMenu.querySelector('p').innerHTML = `Event Page ${pageId + 1} Actions`;
 	eventPageContextMenu.setAttribute('data-pageId', pageId);
 	
@@ -447,9 +447,6 @@ function changeEventPage(element, shouldApply = false) {
 	if (!element)
 		element = document.querySelector('#event-page');
 	
-	// if (element.classList.contains("selected-page"))
-		// return;
-	
 	const topPanel = document.querySelector('#topPanel');
 	for (const selected of topPanel.querySelectorAll('.selected-page'))
 		selected.classList.remove('selected-page');
@@ -460,8 +457,6 @@ function changeEventPage(element, shouldApply = false) {
 	const pageId = parseInt(element.getAttribute('data-pageId'));
 	
 	saveItemInEventCache("lastPage", pageId, eventType, window.data.mapTargetId, eventId);
-	
-	// if (eventId && eventType && shouldApply)
 	saveEventInCache();
 	
 	reloadGraphEditor(eventId, eventType, pageId, false);
