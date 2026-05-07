@@ -5,7 +5,6 @@ function openAdvancedSearch(input) {
 	hideTroopEventContextMenu();
 };
 
-
 // common event
 function showCommonEventContextMenu(e) {
 	const contextmenu = document.querySelector('#common-event-contextmenu');
@@ -402,7 +401,6 @@ function pasteTroopEvent() {
 		setAsUnsaved("Troop Event", eventId, 0, i);
 	
 	saveEventDataInCache(copiedEvent, "Troop Event", 0, eventId);
-	// saveItemInEventCache("data", copiedEvent, "Troop Event", 0, eventId);
 	clearEventNodesCache("Troop Event", 0, eventId);
 	
 	if (eventId === window.data.targetId && window.data.targetType === "Troop Event")
@@ -432,7 +430,6 @@ function clearTroopEvent(eventId = null) {
 	removeEventPagesFromCache("Troop Event", 0, eventId, 1);
 	clearEventNodesCache("Troop Event", 0, eventId);
 	saveEventDataInCache(defaultTroopEvent, "Troop Event", 0, eventId);
-	// saveItemInEventCache("data", defaultTroopEvent, "Troop Event", 0, eventId);
 	
 	updateTroopEventListName(eventId, "");
 	hideTroopEventContextMenu();
@@ -552,7 +549,6 @@ function deleteMapEventCache() {
 		clearEventNodesCache("Map Event", window.data.mapTargetId, eventId);
 		saveEventDataInCache(mapEvent, "Map Event", window.data.mapTargetId, eventId);
 		deleteEventCache("Map Event", window.data.mapTargetId, eventId);
-		// window.data.loadedMap.events[eventId] = mapEvent;
 		setAsSaved("Map Event", eventId, window.data.mapTargetId);
 		
 		if (eventId === window.data.targetId && window.data.targetType === "Map Event") {
@@ -691,8 +687,7 @@ function deleteMapEvent() {
 	deleteEventCache("Map Event", window.data.mapTargetId, eventId);
 	clearEventNodesCache("Map Event", window.data.mapTargetId, eventId);
 	window.data.loadedMap.events[eventId] = null;
-	// saveItemInEventCache("deleted", true, "Map Event", window.data.mapTargetId, eventId);
-	// setAsUnsaved("Map Event", eventId, window.data.mapTargetId);
+	
 	save(false, "Map Event", window.data.mapTargetId, eventId)
 	removeFromMapEventList(eventId);
 	
