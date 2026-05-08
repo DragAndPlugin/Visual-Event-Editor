@@ -136,7 +136,7 @@ module.exports = function(RPGMAKER_NAME) {
 		selectMZInfoTypeLocationDesignation: {type: "select", options: ["Direct designation", "Designation with a variable", "Designation by a character"], name: "Location Designation", data: "data-dataType='number'", default: 0},
 		selectMVInfoTypeLocationDesignation: {type: "select", options: ["Direct designation", "Designation with a variable"], name: "Location Designation", data: "data-dataType='number'", default: 0},
 		selectWeather: {type: "select", options: ["None", "Rain", "Storm", "Snow"], values: ["none", "rain", "storm", "snow"], name: "Weather", default: "none"},
-		selectSelfSwitch: {type: "select", options: ["A", "B", "C", "D"], values: ["A", "B", "C", "D"], name: "Self Switch", default: "A"},
+		selectSelfSwitch: {type: "select", options: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], values: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"], name: "Self Switch", default: "A"},
 		selectTroopEnemy: {type: "select", options: ["Entire Troop", "#1 ?", "#2 ?", "#3 ?", "#4 ?", "#5 ?", "#6 ?", "#7 ?", "#8 ?"], name: "Enemy", startValue: -1, data: "data-dataType='number'", default: 0},
 		selectTroopEnemy2: {type: "select", options: ["#1 ?", "#2 ?", "#3 ?", "#4 ?", "#5 ?", "#6 ?", "#7 ?", "#8 ?"], name: "Enemy", data: "data-dataType='number'", default: 0},
 		selectTarget: {type: "select", options: ["Last Target", "Random", "Index 1", "Index 2", "Index 3", "Index 4", "Index 5", "Index 6", "Index 7", "Index 8"], name: "Enemy", startValue: -2, data: "data-dataType='number'", default: -2},
