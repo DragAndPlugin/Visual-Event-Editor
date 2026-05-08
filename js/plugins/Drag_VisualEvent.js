@@ -450,7 +450,8 @@ Drag.VisualEvent.version = "0.1.047";
 		}
 		
 		const jsdocRegex = /@[^@\n]+|~struct~\w+:/g;
-		const structRegex = /~struct~\w+:/g;
+		// const structRegex = /~struct~\w+:/g;
+		const structRegex = /~struct~\w+:/;
 		const matches = [...text.matchAll(jsdocRegex)];
 		
 		const pluginData = {};
@@ -461,7 +462,8 @@ Drag.VisualEvent.version = "0.1.047";
 		if (options.parseParams || options.parseCommands)
 			pluginData.structs = {};
 		
-		pluginData.notetags = {}
+		pluginData.notetags = {};
+		pluginData.meta = {};
 		
 		for (const [i, match] of matches.entries()) {
 			if (match.parsed)
@@ -469,14 +471,15 @@ Drag.VisualEvent.version = "0.1.047";
 			
 			const [tag, val] = Drag.VisualEvent.parseJSDocTag(match[0]);
 			
-			const isStruct = tag.match(structRegex);
+			// const isStruct = tag.match(structRegex);
+			const isStruct = tag.startsWith("~struct~");
 			if (tag === "command" || tag === "param" || isStruct) {
 				const data = {name: !isStruct ? val : Drag.VisualEvent.getStructName(tag)};
 				
 				for (let j = i + 1; j < matches.length; j++) {
 					const [subTag, subVal] = Drag.VisualEvent.parseJSDocTag(matches[j][0]);
 					
-					if (subTag === "command" || (subTag === "param" && !isStruct) || subTag.match(structRegex)) 
+					if (subTag === "command" || (subTag === "param" && !isStruct) || structRegex.test(subTag)) //subTag.match(structRegex)
 						break;
 					else {
 						if (tag === "command" && options.parseCommands) {
@@ -486,7 +489,7 @@ Drag.VisualEvent.version = "0.1.047";
 							} else {
 								if (!data.args)
 									data[subTag] = subVal;
-								else
+								else if (data.args && data.args.length)
 									Drag.VisualEvent.parseJSDocTagAndVal(subTag, subVal, data.args[data.args.length - 1]);
 							}
 						} else if (tag === "param" && options.parseParams) {
@@ -495,7 +498,7 @@ Drag.VisualEvent.version = "0.1.047";
 							if (subTag === "param") {
 								data.params = data.params || [];
 								data.params.push({name: subVal});
-							} else
+							} else if (data.params && data.params.length)
 								Drag.VisualEvent.parseJSDocTagAndVal(subTag, subVal, data.params[data.params.length - 1]);
 						}
 						
@@ -524,7 +527,8 @@ Drag.VisualEvent.version = "0.1.047";
 				
 				pluginData.notetags[data.name] = data;
 			} else
-				pluginData[tag] = val;
+				pluginData.meta[tag] = val;
+				// pluginData[tag] = val;
 		}
 		
 		Drag.VisualEvent.pluginJSDocData[name] = pluginData;
@@ -532,9 +536,14 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	Drag.VisualEvent.parseJSDocTag = function(text) {
-		const tag = text.replace(/ .*/, '').replace("@", '').trim();
-		const val = text.substring(tag.length + 1).trim();
+		// const tag = text.replace(/ .*/, '').replace("@", '').trim();
+		// const val = text.substring(tag.length + 1).trim();
 		
+		// return [tag, val];
+		
+		const parts = text.trim().split(/\s+/);
+		const tag = parts.shift().replace("@", "");
+		const val = parts.join(" ");
 		return [tag, val];
 	};
 	
@@ -554,8 +563,10 @@ Drag.VisualEvent.version = "0.1.047";
 		} else if (obj["options"] && tag === "option") {
 			obj["options"].push(val);
 			obj["values"].push(val);
-		} else if (obj["values"] && tag === "value") 
-			obj["values"][obj["values"].length - 1] = val;
+		} else if (obj["values"] && tag === "value") {
+			if (obj["values"] && obj["values"].length)
+				obj["values"][obj["values"].length - 1] = val;
+		}
 		
 		if (tag === "type" && val.match(structTypeRegex)) {
 			obj["structName"] = Drag.VisualEvent.getStructName(val);
