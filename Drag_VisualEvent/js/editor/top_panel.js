@@ -60,7 +60,7 @@ function setupTopPanel() {
 					</div>
 					<div id="manage-notetag-container" onclick="openNotetagManager(this.lastElementChild);" onchange="updateEventNote(this);">
 						<label for="map-event-notes">Manage note(tag)s :</label>
-						${$.Drag.VisualEvent.getInputField({type: "string", id: "map-event-notes", class: "onReadyOnChange", value: note, onchange: "$.Drag.VisualEvent.autoFitInput(this);"})}
+						${$.Drag.VisualEvent.getInputField({type: "string", id: "map-event-notes", class: "onReadyOnChange", value: note, data: "data-context='Map Event'", onchange: "$.Drag.VisualEvent.autoFitInput(this);"})}
 					</div>
 					<div>
 						<label for="map-event-location">Set Location :</label>
