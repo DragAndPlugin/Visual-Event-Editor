@@ -461,6 +461,8 @@ Drag.VisualEvent.version = "0.1.047";
 		if (options.parseParams || options.parseCommands)
 			pluginData.structs = {};
 		
+		pluginData.notetags = {}
+		
 		for (const [i, match] of matches.entries()) {
 			if (match.parsed)
 				continue;
@@ -488,7 +490,7 @@ Drag.VisualEvent.version = "0.1.047";
 									Drag.VisualEvent.parseJSDocTagAndVal(subTag, subVal, data.args[data.args.length - 1]);
 							}
 						} else if (tag === "param" && options.parseParams) {
-							VisualEvent.parseJSDocTagAndVal(subTag, subVal, data);
+							Drag.VisualEvent.parseJSDocTagAndVal(subTag, subVal, data);
 						} else if (isStruct && (options.parseCommands || options.parseParams)) {
 							if (subTag === "param") {
 								data.params = data.params || [];
@@ -508,6 +510,19 @@ Drag.VisualEvent.version = "0.1.047";
 				else if (isStruct && (options.parseCommands || options.parseParams))
 					pluginData.structs[data.name] = data;
 				
+			} else if (tag === "notetag") {
+				const data = {name: val};
+				
+				for (let j = i + 1; j < matches.length; j++) {
+					const [subTag, subVal] = Drag.VisualEvent.parseJSDocTag(matches[j][0]);
+					if (subTag !== "context")
+						break;
+					
+					data[subTag] = subVal;
+					matches[j].parsed = true;
+				}
+				
+				pluginData.notetags[data.name] = data;
 			} else
 				pluginData[tag] = val;
 		}
@@ -2772,7 +2787,7 @@ Drag.VisualEvent.version = "0.1.047";
 			<div class="relative flex" style="align-items: center">
 				<input
 					type="text" class="${params.class ? params.class : ''}" id="${params.id ? params.id : ''}" value="${id}" placeholder="${params.placeholder || ''}"
-					${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} data-value="${id}" data-addOptions="${JSON.stringify(params.addOptions)}"
+					${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} data-value="${id}" data-addOptions='${JSON.stringify(params.addOptions)}'
 					onchange="$.Drag.VisualEvent.onInputComboChange(this); ${params.isInteractiveController ? 'handleInteractiveInput(this, this.parentElement.parentElement);' : ''}" 
 					oninput="this.onchange();" onfocus="$.Drag.VisualEvent.populateDatabaseSelectOptions(this); $.Drag.VisualEvent.onInputComboFocus(this);"
 					onblur="$.Drag.VisualEvent.onInputComboBlur(this);" ${params.onchange ? `data-onchange="${params.onchange}"` : ''}
