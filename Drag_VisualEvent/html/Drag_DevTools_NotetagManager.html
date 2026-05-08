@@ -104,10 +104,6 @@
 				<button onclick="quit();">Cancel</button>
 			</div>
 		</div>
-		<!--<div onclick="$.Drag.VisualEvent.toggleLightMode(document)" id="lightMode">
-			<span>&#9790;</span>
-			<span>&#9728;</span>-->
-		</div>
 		<script type="text/javascript">			
 			// to do 
 			// rememner notes and notetags position to replace them correctly in order on save 
@@ -116,6 +112,7 @@
 				loadDataMainWindow();
 				$.Drag.VisualEvent.setLightMode(document);
 				
+				makeNotetagsDatalist();
 				setup();
 			};
 			
@@ -123,17 +120,31 @@
 				$ = window.opener;
 			};
 			
+			function makeNotetagsDatalist() {
+				let html = `<datalist id="notetags">`;
+				for (let plugin in $.Drag.VisualEvent.pluginJSDocData) {
+					const pluginData = $.Drag.VisualEvent.pluginJSDocData[plugin];
+					if (!pluginData.notetags)
+						continue;
+						
+					for (let notetag in pluginData.notetags)
+						if (!data.context || !pluginData.notetags[notetag].context || pluginData.notetags[notetag].context.includes(data.context))
+							html += `<option value="${notetag}"></option>`;
+				}
+				html += `</datalist>`;
+				
+				document.querySelector('#content').insertAdjacentHTML('beforeend', html);
+			};
+			
 			function setup() {
 				const reg = /<([^<>:]+)(:?)([^>]*)>/g;
 				
 				const notesInput = document.querySelector('#notes-container > input');
-				// notesInput.value = data.eventData.note.replace(reg, "");
 				notesInput.value = data.input.value.replace(reg, "");
 				
 				const notetagsContainer = document.querySelector('#notetags-container');
 				let html = "";
 				for (;;) {
-					// const match = reg.exec(data.eventData.note);
 					const match = reg.exec(data.input.value);
 					if (match)
 						html += getNotetagElem(match[1], match[3])
@@ -152,7 +163,7 @@
 				return `
 					<div id="notetag-container">
 						<div id="notetag-name-container">
-							<input placeholder="Name" type="text" value="${$.Drag.VisualEvent.escapeQuotes(name)}"/>
+							<input placeholder="Name" type="text" list="notetags" value="${$.Drag.VisualEvent.escapeQuotes(name)}"/>
 						</div>
 						<div id="notetag-value-container">
 							<input type="text" value="${$.Drag.VisualEvent.escapeQuotes(value)}" placeholder="Value" />
