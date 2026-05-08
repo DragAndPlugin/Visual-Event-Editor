@@ -919,10 +919,11 @@ Drag.VisualEvent.version = "0.1.047";
 			return;
 		
 		const rect = input.getBoundingClientRect();
+		const context = input.hasAttribute('data-context') ? input.getAttribute('data-context') : null;
 		Drag.VisualEvent.openWindow(
 			'Drag_DevTools_NotetagManager.html', 'Notetag Manager', 
 			window.screen.width * 0.225, window.screen.height * 0.6, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
-			{input: input}
+			{input: input, context: context}
 		);
 	};
 	
