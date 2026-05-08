@@ -55,7 +55,7 @@ module.exports = function(Drag, RPGMAKER_NAME) {
 				Drag.VisualEvent.inputs.variable, Drag.VisualEvent.inputs.selectComparison, {
 					type: "interactive", name: "", behavior: [0, 1], containerStyle: "align-items: center; margin-top: 1em;",
 					controller: Drag.VisualEvent.inputs.selectConstantVariable, 
-					dependances: [Drag.VisualEvent.inputs.string, Drag.VisualEvent.inputs.variable]
+					dependances: [Drag.VisualEvent.inputs.int, Drag.VisualEvent.inputs.variable]
 				},
 				Drag.VisualEvent.inputs.selectSelfSwitch, Drag.VisualEvent.inputs.selectOnOff,
 				Drag.VisualEvent.inputs.selectComparison2, Drag.VisualEvent.inputs.min, Drag.VisualEvent.inputs.sec,
@@ -88,7 +88,7 @@ module.exports = function(Drag, RPGMAKER_NAME) {
 				Drag.VisualEvent.inputs.variable, Drag.VisualEvent.inputs.selectComparison, {
 					type: "interactive", name: "", behavior: [0, 1], containerStyle: "align-items: center;",
 					controller: Drag.VisualEvent.inputs.selectConstantVariable, 
-					dependances: [Drag.VisualEvent.inputs.string, Drag.VisualEvent.inputs.variable]
+					dependances: [Drag.VisualEvent.inputs.int, Drag.VisualEvent.inputs.variable]
 				},
 				Drag.VisualEvent.inputs.selectSelfSwitch, Drag.VisualEvent.inputs.selectOnOff,
 				Drag.VisualEvent.inputs.selectComparison2, Drag.VisualEvent.inputs.min, Drag.VisualEvent.inputs.sec,
