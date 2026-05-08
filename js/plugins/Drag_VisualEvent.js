@@ -839,7 +839,6 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.openSwitchVariableMenu = function(input) {
 		const rect = input.getBoundingClientRect();
 		const type = input.getAttribute('data-inputType') || input.getAttribute('data-type');
-		console.log(rect, input.ownerDocument.defaultView.screenTop, input.ownerDocument.defaultView.screenLeft)
 		Drag.VisualEvent.openWindow(
 			'Drag_DevTools_SwitchVariableMenu.html', 'Switch & Variable Menu', 
 			window.screen.width * 0.4, window.screen.height * 0.75, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
