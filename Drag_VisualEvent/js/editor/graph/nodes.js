@@ -446,6 +446,7 @@ function deleteNode(node, saveInHistory = false) {
 	removeNodeReferences(node);
 	nodeResizeObserver.unobserve(node);
 	
+	window.nodes[getNodeId(node)] = null;
 	node.data.isDeleted = true;
 	node.remove();
 };
