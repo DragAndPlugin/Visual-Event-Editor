@@ -30,7 +30,7 @@ function init() {
 	setupNodeList();
 	
 	const setupGraphEditorInterval = setInterval(() => {
-		if (($.Utils.RPGMAKER_NAME !== "MZ" || window._mzPluginCommandsLoaded) && window._dataLoaded >= $.Drag.VisualEvent.dataFiles.length) {						
+		if (window._pluginsImported && window._dataLoaded >= $.Drag.VisualEvent.dataFiles.length) {						
 			if (!window._cacheLoadRequested)
 				loadCache();
 			
