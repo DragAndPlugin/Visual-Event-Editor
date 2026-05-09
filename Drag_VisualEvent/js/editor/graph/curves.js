@@ -438,6 +438,14 @@ function setCurveConnectionId(curve, id, dir) {
 	}
 };
 
+function getCurvesBetweenNodes(node1, node2) {
+	if (!node1 || !node2)
+		return [];
+	
+	return Array.from(document.querySelectorAll(`#graphSVG #curve[data-leftNodeId="${getNodeId(node1)}"][data-rightNodeId="${getNodeId(node2)}"]`))
+		.concat(Array.from(document.querySelectorAll(`#graphSVG #curve[data-rightNodeId="${getNodeId(node2)}"][data-leftNodeId="${getNodeId(node1)}"]`)));
+};
+
 function getCurveLeftNodeId(curve) {
 	if (!curve)
 		return null;
