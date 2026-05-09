@@ -37,7 +37,7 @@ function setupNodeList() {
 	if (RMName === "MZ") {
 		const pluginList = $.Drag.VisualEvent.getPluginList($.document);
 		if (pluginList.length === 0)
-			window._mzPluginCommandsLoaded = true;
+			window._pluginsImported = true;
 		
 		for (const plugin of pluginList) {
 			console.log(`Importing commands from ${plugin}...`);
@@ -64,7 +64,7 @@ function setupNodeList() {
 				
 				pluginReady++;
 				if (pluginReady >= pluginList.length)
-					window._mzPluginCommandsLoaded = true;
+					window._pluginsImported = true;
 			};
 			
 			try {
@@ -81,13 +81,13 @@ function setupNodeList() {
 				
 				pluginReady++;
 				if (pluginReady >= pluginList.length)
-					window._mzPluginCommandsLoaded = true;
+					window._pluginsImported = true;
 			}
 		}
 	} else {
 		const pluginList = $.Drag.VisualEvent.getPluginList($.document);
 		if (pluginList.length === 0)
-			window._mzPluginCommandsLoaded = true;
+			window._pluginsImported = true;
 		
 		for (const plugin of pluginList) {
 			console.log(`Parsing ${plugin}...`);
@@ -101,17 +101,20 @@ function setupNodeList() {
 						
 						pluginReady++;
 						if (pluginReady >= pluginList.length)
-							window._mzPluginCommandsLoaded = true;
+							window._pluginsImported = true;
 					}), false, true);
 				} else {
 					console.log(`${plugin} cache validated !`); 
+					pluginReady++;
+						if (pluginReady >= pluginList.length)
+							window._pluginsImported = true;
 				}
 			} catch(error) {
 				console.error(`Couldn't import commands from ${plugin}. Error : ${error}`);
 				
 				pluginReady++;
 				if (pluginReady >= pluginList.length)
-					window._mzPluginCommandsLoaded = true;
+					window._pluginsImported = true;
 			}
 		}
 	}
