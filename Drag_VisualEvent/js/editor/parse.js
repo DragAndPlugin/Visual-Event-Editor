@@ -89,7 +89,7 @@ function parseEventDataFromEditor(onlySelected = false, sequence = null) {
 				name: document.querySelector('#topPanel #common-event-name').value,
 				switchId: parseInt(document.querySelector('#topPanel #common-event-switch').value),
 				trigger: parseInt(document.querySelector('#topPanel #common-event-trigger').value),
-				list: parseNodesBehavior(eventNode, 0, sequence, onlySelected)
+				list: parseNodesBehavior(eventNode, 0, sequence, onlySelected, true)
 			};
 		case "Map Event":
 			const mapEvent = $.Drag.VisualEvent.deepCopyJSON(getEventCacheItem("data", "Map Event", window.data.mapTargetId, eventId) || window.data.loadedMap.events[eventId] || $.Drag.VisualEvent.getDefaultMapEvent());
@@ -101,7 +101,7 @@ function parseEventDataFromEditor(onlySelected = false, sequence = null) {
 				mapEventPages[pageId] = $.Drag.VisualEvent.getDefaultEventPage(window.data.targetType);
 			
 			const mapEventParameters = parseNodeInputs(eventNode, getNodeInputs(eventNode, false));
-			mapEventPages[pageId].list = parseNodesBehavior(eventNode, 0, sequence, onlySelected);
+			mapEventPages[pageId].list = parseNodesBehavior(eventNode, 0, sequence, onlySelected, true);
 			
 			const tilesets = window.data.$dataTilesets[window.data.loadedMap.tilesetId];
 			const tilesetNames = tilesets ? tilesets.tilesetNames : [];
@@ -145,7 +145,7 @@ function parseEventDataFromEditor(onlySelected = false, sequence = null) {
 				troopEventPages[pageId] = $.Drag.VisualEvent.getDefaultEventPage(window.data.targetType);
 			
 			troopEventPages[pageId].span = parseNodeInputs(eventNode)[1];
-			troopEventPages[pageId].list = parseNodesBehavior(eventNode, 0, sequence, onlySelected);
+			troopEventPages[pageId].list = parseNodesBehavior(eventNode, 0, sequence, onlySelected, true);
 			
 			return {
 				id: eventId,
@@ -185,6 +185,22 @@ function parseNodesBehavior(startingNode = getFirstNode(), indent = 0, sequence 
 			continue;
 		
 		const isCustom = node.data.isCustom;
+		const nodeId = getNodeId(node);
+		
+		if (window._generateHighlightMarkersOnParse) //used for highlight nodes & curves, trick to avoid monkey patching game_interpreter and potential compatibility issues
+			nodesBehavior.push(
+				{
+					code: 355,
+					indent: indent,
+					parameters: [
+						`const editor = Drag.VisualEvent.getEditor();
+						if (editor) {
+							editor._playtestHighlightQueue = editor._playtestHighlightQueue || [];
+							editor._playtestHighlightQueue.push(${nodeId});
+						}`
+					]
+				}
+			);
 		
 		const nodeInputs = getNodeInputs(node);
 		const command = {

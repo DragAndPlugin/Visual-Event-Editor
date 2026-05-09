@@ -1,26 +1,14 @@
 function playtestNodes() {
-	// const eventNode = getFirstNode()
-	const startingNodes = [getFirstNode()].concat(getAllNodesWithoutInputConnectionConnected());
-	// let [sequence, flatSequence] = getExecutionSequence(eventNode, true);
-	// const [sequence, flatSequence] = getExecutionSequence(eventNode, false);
-	// const selectedNodes = getSelectedNodes();
+	const startingNodes = getAllNodesWithoutInputConnectionConnected();
 	let playtestSequence = [];
-	// for (const node of selectedNodes) {
-		// if (flatSequence.find(seq => seq.node === node))
-			// continue;
-		
-		// const [nodeSequence, nodeFlatSequence] = getExecutionSequence(node, true);
-		// flatSequence = flatSequence.concat(nodeFlatSequence);
-		// sequence = sequence.concat(nodeSequence);
-	// }
 	
 	for (const startingNode of startingNodes)
 		playtestSequence = playtestSequence.concat(getExecutionSequence(startingNode, true)[0]);
 	
-	
-	// const eventData = parseEventDataFromEditor(true, sequence);
+	window._generateHighlightMarkersOnParse = true;
 	const eventData = parseEventDataFromEditor(true, playtestSequence);
-	// console.log(eventData);
+	window._generateHighlightMarkersOnParse = false;
+	
 	playtest(eventData);
 	closeNodeContextMenu();
 };
@@ -29,8 +17,11 @@ function playtest(eventData = null) {
 	if (!window.data.targetType || !window.data.targetId)
 		return;
 	
-	if (!eventData)
-		eventData = parseEventDataFromEditor();
+	if (!eventData) {
+		window._generateHighlightMarkersOnParse = true;
+		eventData = parseEventDataFromEditor(false, null);
+		window._generateHighlightMarkersOnParse = false;
+	}
 	
 	if (window._playtestGraphAnimationsInterval)
 		clearInterval(window._playtestGraphAnimationsInterval);
@@ -84,6 +75,22 @@ function playtest(eventData = null) {
 	focusPlayTestWindow();
 };
 
+function getCurrentInterpreterCommand(interpreter) {
+	let index = interpreter._index;
+
+	if (interpreter._waitMode || interpreter._waitCount > 0)
+		index--;
+
+	let command = interpreter._list[index];
+
+	while (command && ($.Drag.VisualEvent.flatAssociatedCommandsCode.includes(command.code) || !command.code) && index > 0) {
+		index--;
+		command = interpreter._list[index];
+	}
+
+	return command;
+};
+
 function startGraphHightlight(interpreter) {
 	stopGraphHighlight();
 	
@@ -102,23 +109,6 @@ function startGraphHightlight(interpreter) {
 		return;
 	}
 	
-	const filteredList = list.filter((command, index) => { command._index = index; return !(!command.code || command._generated || $.Drag.VisualEvent.flatAssociatedCommandsCode.includes(command.code)); });
-	
-	const flatSequence = getExecutionSequence()[1];
-	const firstNode = flatSequence.shift().node;
-	addHighlight(getNodeCurves(firstNode).outputs[0]);
-	
-	//build flat sequence with generated labels, filtered list & flat sequence should always have the same length
-	const flatSequenceNodes = [];
-	for (const [i, command] of filteredList.entries()) {
-		// if (command.code === 118 && command._generated === true)
-			// flatSequenceNodes.push(null);
-		if (flatSequence[i] && flatSequence[i].node)
-			flatSequenceNodes.push(flatSequence[i].node);
-		// if (command.code === 119 && command._generated === true)
-			// flatSequenceNodes.push(null);
-	}
-	
 	window._playtestGraphAnimationsInterval = setInterval(() => {
 		//check if event is still running (avoid harmless errors due to this interval sometimes running once just after event stop running)
 		if (!interpreter._list || interpreter._list.length < interpreter._index) {
@@ -126,60 +116,29 @@ function startGraphHightlight(interpreter) {
 				stopGraphHighlight();
 			else
 				startGraphHightlight(interpreter);
+			
 			return;
 		}
 		
-		//calculate correct index reported to nodes
-		let index = interpreter._index;	
-		if (interpreter._waitMode || interpreter._waitCount > 0)
-			index--;					
-		let command = interpreter._list[index];
+		if (!window._playtestHighlightQueue || !window._playtestHighlightQueue.length)
+			return;
 		
-		while (($.Drag.VisualEvent.flatAssociatedCommandsCode.includes(command.code) || !command.code) && index > 0) {
-			index--;
-			command = list[index];
-		}
+		const nodeId = window._playtestHighlightQueue.shift();
+		if (!nodeId) 
+			return;
+	
+		const prevNode = getNodeById(window._playtestNodeId || 0);
+		const node = getNodeById(nodeId);
 
-		index = filteredList.indexOf(command);
-		if (index === window._playtestIndex)
-			return;
-		
 		removeNodeHighlight();
-		if (flatSequenceNodes[index])
-			addHighlight(flatSequenceNodes[index]);
-		
-		//show/hide highlights
-		if (index > window._playtestIndex) {
-			for (let i = window._playtestIndex; i < index; i++) {
-				const node = flatSequenceNodes[i];
-				if (!node)
-					continue;
-				
-				const curves = getNodeCurves(node);
-				for (const outputCurve of curves.outputs) {
-					const outputNode = getConnectionNode(getCurveRightConnection(outputCurve));
-					const nodeIndex = flatSequenceNodes.indexOf(outputNode);
-					
-					if (nodeIndex <= index && $.Drag.VisualEvent.areCommandsInSameBranch(list, filteredList[index]._index, filteredList[nodeIndex]._index))
-						addHighlight(outputCurve);
-				}
-			}
-		} else if (index !== -1) {
-			for (let i = index; i <= window._playtestIndex; i++) {
-				const node = flatSequenceNodes[i];
-				if (!node)
-					continue;
-				
-				const curves = getNodeCurves(node);
-				for (const outputCurve of curves.outputs) {
-					const outputNode = getConnectionNode(getCurveRightConnection(outputCurve));
-					// if (flatSequenceNodes.indexOf(outputNode) <= index)
-					removeHighlight(outputCurve);
-				}
-			}
-		}
-		
-		window._playtestIndex = index;
+		addHighlight(node);
+
+		const curves = getCurvesBetweenNodes(prevNode, node);
+		for (const curve of curves)
+			if (curve)
+				addHighlight(curve);
+
+		window._playtestNodeId = nodeId;
 	}, 1);
 };
 
@@ -220,10 +179,8 @@ function showCancelPlaytest() {
 	cancelPlaytestButton.classList.remove('hidden');		
 	
 	window._cancelPlaytestInterval = setInterval(() => {
-		if (window._playtestType === "Troop Event" && $.$gameTroop._inBattle) {
+		if (window._playtestType === "Troop Event" && $.$gameTroop._inBattle)
 			window._playtestBattleStarted = true;
-			// startGraphHightlight($.$gameTroop._interpreter);
-		}
 		
 		if (window._playtestType === "Troop Event" && window._playtestBattleStarted && !$.$gameTroop._inBattle)
 			hideCancelPlaytest();
