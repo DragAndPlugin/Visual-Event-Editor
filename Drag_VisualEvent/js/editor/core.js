@@ -1644,11 +1644,9 @@ function onInputChange(input) {
 		if (!isUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0))
 			setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
 		
-			console.log(node, input);
 			updateCacheGraphNodeParameters(node);
 			registerNodeReferences(node);
 			cacheNodeProperty(node, "parsedParameters", parseNodeInputs(node));
-			console.log(node, parseNodeInputs(node));
 	} else if ($.Drag.VisualEvent.getAncestorById(input, 'event-data-container'))
 		if (!isUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, null))
 			setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, null);
