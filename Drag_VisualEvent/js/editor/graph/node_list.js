@@ -80,12 +80,41 @@ function setupNodeList() {
 				console.error(`Couldn't import commands from ${plugin}. Error : ${error}`);
 				
 				pluginReady++;
-					if (pluginReady >= pluginList.length)
-						window._mzPluginCommandsLoaded = true;
+				if (pluginReady >= pluginList.length)
+					window._mzPluginCommandsLoaded = true;
 			}
 		}
-	} else
-		window._mzPluginCommandsLoaded = true;
+	} else {
+		const pluginList = $.Drag.VisualEvent.getPluginList($.document);
+		if (pluginList.length === 0)
+			window._mzPluginCommandsLoaded = true;
+		
+		for (const plugin of pluginList) {
+			console.log(`Parsing ${plugin}...`);
+			
+			try {
+				if (!$.Drag.VisualEvent.validatePluginCache(plugin)) {
+					console.log(`${plugin} cache invalidated, fetch and parse...`); 
+					window._invalidatedPluginCache = true;
+					$.Drag.VisualEvent.fetchPluginCommands(plugin, (() => {
+						console.log(`Successfully parsed ${plugin} !`); 
+						
+						pluginReady++;
+						if (pluginReady >= pluginList.length)
+							window._mzPluginCommandsLoaded = true;
+					}), false, true);
+				} else {
+					console.log(`${plugin} cache validated !`); 
+				}
+			} catch(error) {
+				console.error(`Couldn't import commands from ${plugin}. Error : ${error}`);
+				
+				pluginReady++;
+				if (pluginReady >= pluginList.length)
+					window._mzPluginCommandsLoaded = true;
+			}
+		}
+	}
 	
 	//import custom Nodes
 	console.log(`Importing custom nodes...`);
