@@ -407,8 +407,8 @@ Drag.VisualEvent.version = "0.1.047";
 		return Array.from(document.querySelectorAll('script')).filter(script => script.src.includes('js/plugins/')).map(script => decodeURIComponent(script.src.split('/js/plugins/').pop().replace('.js', '')));
 	};
 	
-	Drag.VisualEvent.fetchPluginCommands = function(name, callback, parseParams = true, parseCommands = true) {
-		Drag.VisualEvent.fetchAndParsePluginText(name, {parseParams: parseParams, parseCommands: parseCommands}, callback);
+	Drag.VisualEvent.fetchPluginCommands = function(name, callback, parseParams = true, parseCommands = true, parseNotetags = true) {
+		Drag.VisualEvent.fetchAndParsePluginText(name, {parseParams: parseParams, parseCommands: parseCommands, parseNotetags: parseNotetags}, callback);
 	};
 	
 	Drag.VisualEvent.fetchAndParsePluginText = function(name, options, callback) {		
@@ -416,12 +416,16 @@ Drag.VisualEvent.version = "0.1.047";
 		fetch(`js/plugins/${name}.js`).then(res => {
 			return res.text();
 		}).then(text => {
-			const parsed = Drag.VisualEvent.parsePluginJSDoc(text, name, options);
-			const stat = Drag.VisualEvent.getPluginStat(name);
-			
-			parsed.size = stat.size;
-			parsed.mtimeMs = stat.mtimeMs;
-			callback(parsed);
+			try {
+				const parsed = Drag.VisualEvent.parsePluginJSDoc(text, name, options);
+				const stat = Drag.VisualEvent.getPluginStat(name);
+				parsed.size = stat.size;
+				parsed.mtimeMs = stat.mtimeMs;
+				callback(parsed);
+			} catch (error) {
+				console.log(`Couldn't parse plugin ${name} JSDoc. Error: ${error}`);
+				callback({});
+			}
 		});
 	};
 	
@@ -443,104 +447,115 @@ Drag.VisualEvent.version = "0.1.047";
 		return true;
 	};
 	
-	Drag.VisualEvent.parsePluginJSDoc = function(text, name, options = {parseParams: true, parseCommands: true}) {
-		if (Utils.RPGMAKER_NAME !== "MZ") {
-			Drag.VisualEvent.pluginJSDocData[name] = {};
-			return {};
-		}
-		
+	Drag.VisualEvent.parsePluginJSDoc = function(text, name, options = {parseParams: true, parseCommands: true, parseNotetags: true}) {
+		if (Utils.RPGMAKER_NAME !== "MZ")
+			options.parseCommands = false;
+
 		const jsdocRegex = /@[^@\n]+|~struct~\w+:/g;
-		// const structRegex = /~struct~\w+:/g;
 		const structRegex = /~struct~\w+:/;
-		const matches = [...text.matchAll(jsdocRegex)];
-		
-		const pluginData = {};
+		const matches = Drag.VisualEvent.getRegexMatches(text, jsdocRegex);
+		const parsed = [];
+
+		const pluginData = {meta: {}};
 		if (options.parseParams)
 			pluginData.params = {};
 		if (options.parseCommands)
 			pluginData.commands = {};
 		if (options.parseParams || options.parseCommands)
 			pluginData.structs = {};
-		
-		pluginData.notetags = {};
-		pluginData.meta = {};
-		
-		for (const [i, match] of matches.entries()) {
-			if (match.parsed)
+		if (options.parseNotetags)
+			pluginData.notetags = {};
+
+		for (let i = 0; i < matches.length; i++) {
+			if (parsed[i])
 				continue;
-			
-			const [tag, val] = Drag.VisualEvent.parseJSDocTag(match[0]);
-			
-			// const isStruct = tag.match(structRegex);
+
+			const [tag, val] = Drag.VisualEvent.parseJSDocTag(matches[i].text);
 			const isStruct = tag.startsWith("~struct~");
+
 			if (tag === "command" || tag === "param" || isStruct) {
-				const data = {name: !isStruct ? val : Drag.VisualEvent.getStructName(tag)};
-				
+				const data = { name: !isStruct ? val : Drag.VisualEvent.getStructName(tag) };
+
 				for (let j = i + 1; j < matches.length; j++) {
-					const [subTag, subVal] = Drag.VisualEvent.parseJSDocTag(matches[j][0]);
-					
-					if (subTag === "command" || (subTag === "param" && !isStruct) || structRegex.test(subTag)) //subTag.match(structRegex)
+					const [subTag, subVal] = Drag.VisualEvent.parseJSDocTag(matches[j].text);
+
+					if (subTag === "command" || (subTag === "param" && !isStruct) || structRegex.test(subTag))
 						break;
-					else {
-						if (tag === "command" && options.parseCommands) {
-							if (subTag === "arg") {
-								data.args = data.args || [];
-								data.args.push({name: subVal});
-							} else {
-								if (!data.args)
-									data[subTag] = subVal;
-								else if (data.args && data.args.length)
-									Drag.VisualEvent.parseJSDocTagAndVal(subTag, subVal, data.args[data.args.length - 1]);
-							}
-						} else if (tag === "param" && options.parseParams) {
-							Drag.VisualEvent.parseJSDocTagAndVal(subTag, subVal, data);
-						} else if (isStruct && (options.parseCommands || options.parseParams)) {
-							if (subTag === "param") {
-								data.params = data.params || [];
-								data.params.push({name: subVal});
-							} else if (data.params && data.params.length)
-								Drag.VisualEvent.parseJSDocTagAndVal(subTag, subVal, data.params[data.params.length - 1]);
+
+					if (tag === "command" && options.parseCommands) {
+						if (subTag === "arg") {
+							data.args = data.args || [];
+							data.args.push({ name: subVal });
+						} else {
+							if (!data.args)
+								data[subTag] = subVal;
+							else if (data.args.length)
+								Drag.VisualEvent.parseJSDocTagAndVal(subTag, subVal, data.args[data.args.length - 1]);
 						}
-						
-						matches[j].parsed = true;
+					} else if (tag === "param" && options.parseParams) {
+						Drag.VisualEvent.parseJSDocTagAndVal(subTag, subVal, data);
+					} else if (isStruct && (options.parseCommands || options.parseParams)) {
+						if (subTag === "param") {
+							data.params = data.params || [];
+							data.params.push({ name: subVal });
+						} else if (data.params && data.params.length) {
+							Drag.VisualEvent.parseJSDocTagAndVal(subTag, subVal, data.params[data.params.length - 1]);
+						}
 					}
+
+					parsed[j] = true;
 				}
-				
+
 				if (tag === "command" && options.parseCommands)
 					pluginData.commands[val] = data;
 				else if (tag === "param" && options.parseParams && !isStruct)
 					pluginData.params[val] = data;
 				else if (isStruct && (options.parseCommands || options.parseParams))
 					pluginData.structs[data.name] = data;
-				
+
 			} else if (tag === "notetag") {
-				const data = {name: val};
-				
+				const data = { name: val };
+
 				for (let j = i + 1; j < matches.length; j++) {
-					const [subTag, subVal] = Drag.VisualEvent.parseJSDocTag(matches[j][0]);
+					const [subTag, subVal] = Drag.VisualEvent.parseJSDocTag(matches[j].text);
+
 					if (subTag !== "context")
 						break;
-					
+
 					data[subTag] = subVal;
-					matches[j].parsed = true;
+					parsed[j] = true;
 				}
 				
-				pluginData.notetags[data.name] = data;
-			} else
+				if (options.parseNotetags)
+					pluginData.notetags[data.name] = data;
+			} else {
 				pluginData.meta[tag] = val;
-				// pluginData[tag] = val;
+			}
 		}
-		
+
 		Drag.VisualEvent.pluginJSDocData[name] = pluginData;
 		return pluginData;
 	};
 	
+	Drag.VisualEvent.getRegexMatches = function(text, regex) {
+		const matches = [];
+		let match;
+		regex.lastIndex = 0;
+		
+		while ((match = regex.exec(text)) !== null) {
+			matches.push({
+				text: match[0],
+				index: match.index
+			});
+
+			if (match[0] === "")
+				regex.lastIndex++;
+		}
+
+		return matches;
+	};
+	
 	Drag.VisualEvent.parseJSDocTag = function(text) {
-		// const tag = text.replace(/ .*/, '').replace("@", '').trim();
-		// const val = text.substring(tag.length + 1).trim();
-		
-		// return [tag, val];
-		
 		const parts = text.trim().split(/\s+/);
 		const tag = parts.shift().replace("@", "");
 		const val = parts.join(" ");
@@ -839,6 +854,7 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.openSwitchVariableMenu = function(input) {
 		const rect = input.getBoundingClientRect();
 		const type = input.getAttribute('data-inputType') || input.getAttribute('data-type');
+		console.log(rect, input.ownerDocument.defaultView.screenTop, input.ownerDocument.defaultView.screenLeft)
 		Drag.VisualEvent.openWindow(
 			'Drag_DevTools_SwitchVariableMenu.html', 'Switch & Variable Menu', 
 			window.screen.width * 0.4, window.screen.height * 0.75, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
