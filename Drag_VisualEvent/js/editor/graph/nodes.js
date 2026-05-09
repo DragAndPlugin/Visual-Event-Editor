@@ -269,7 +269,7 @@ function processPendingNodeInputs() {
 
     if (window._pendingNodeInputs.length)
         window._processPendingNodeInputsRequest = requestAnimationFrame(processPendingNodeInputs);
-	else if (!window._nodesCount || window._nodesCount === window.nodes.length)
+	else //if (!window._nodesCount || window._nodesCount === window.nodes.length)
 		onAllNodeReady();
 };
 
@@ -375,7 +375,7 @@ function onAllNodeReady() {
 	
 	window._graphReady = true;
 	window._registerInputChange = true;
-
+	console.log("register input change enabled");
 	if (window._startPerformance) {
 		console.log(`Editor ready (${performance.now() - window._startPerformance}ms).`);
 		delete window._startPerformance;
@@ -847,7 +847,7 @@ function getAllNodesWithoutInputConnection() {
 };
 
 function getAllNodesWithoutInputConnectionConnected() {
-	return window.nodes.filter(nodeData => nodeData && nodeData.node && (!nodeData.node.inputs.length || !isConnectionConnected(nodeData.node.inputs[0])));
+	return window.nodes.filter(nodeData => nodeData && nodeData.node && (!nodeData.inputs.length || !isConnectionConnected(nodeData.inputs[0]))).map(nodeData => nodeData.node);
 };
 
 function getNodeIsCustom(node) {
