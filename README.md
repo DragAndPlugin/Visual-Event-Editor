@@ -17,31 +17,30 @@ Compatible with RPG Maker MV and RPG Maker MZ.
 
 ##  Overview
 
-**Visual Event Editor** is a powerful node-based visual scripting tool for **RPG Maker MV and MZ**. It transforms traditional event commands into an intuitive graph interface, making event creation faster, clearer, and more maintainable.
+**Visual Event Editor** is a node-based visual scripting tool for **RPG Maker MV and MZ**. It transforms the native list of event commands into an intuitive graph interface, making event creation faster, clearer, and easier to maintain.
 
-Designed for both beginners and advanced users, it brings modern visual scripting concepts to the RPG Maker ecosystem.
+Designed for both beginners and advanced users, it brings modern visual scripting concepts to the RPG Maker ecosystem, while maintaining compatibility with the native editor and plugins.
 
 ---
 
 ## Features
 
 -  **Node-Based Event Creation**
--  **Compatible with RPG Maker MV & MZ**
--  **In-Graph Search** (`Ctrl + F`) **and Advanced Search (find references accross all events and maps)**
--  **Reroute Nodes** for cleaner connections
+-  **Compatible with RPG Maker MV, MZ and plugins**
+-  **In-Graph Search** (`Ctrl + F`) **and Advanced Search** (find references accross all events and maps)
+-  **Reroute Nodes** for cleaner curves layout
 -  **Comment & Group Boxes** with customizable color, text and size
--  **Comprehensive Undo/Redo System**
--  **Command Descriptions with Tooltips**
--  **Copy & Paste with Preserved Connections**
--  **Automatic Node Layout**
--  **Live Playtesting** of events or specific selections
--  **Execution Highlighting**
--  **Extensible Custom Node System**
--  **Notetag Manager**
--  **Improved Move Route Preview**
--  **Automatic Backup Option**
--  **Automatic Save Option**
+-  **Automatic Node Layout** for a clean graph organization with the press of a button
+-  **Live Playtesting** of events or specific commands selections
+-  **Execution Highlighting** for easier debug.
+-  **Automatic Node Conversion of MZ Plugins Commands** 
+-  **Custom Node Framework** (WIP)
+-  **Notetag Manager** for clear and easy notes and notetags manipulation
+-  **Move Route Preview for MV** (+ fixes and improvements for MZ)
+-  **Automatic Backups** on event save (optionnal)
+-  **Automatic Save** with customizable interval (optionnal)
 -  **Various QOL** over the native editor
+-  **Extended Self-Switches** from A-D to A-Z
 
 ---
 
@@ -71,7 +70,7 @@ Designed for both beginners and advanced users, it brings modern visual scriptin
 | Selection Box | Hold **Left Click** on the graph and drag |
 | Focus on Node | **Double Click** a node |
 | Create Reroute Node | **Double Click** a curve |
-| Open Search | `Ctrl + F` |
+| Search | `Ctrl + F` |
 | Undo | `Ctrl + Z` |
 | Redo | `Ctrl + Y` |
 | Copy | `Ctrl + C` |
@@ -88,7 +87,7 @@ The editor supports extensibility through custom nodes.
 
 You can create and distribute your own custom nodes without modifying the core editor. Custom nodes are automatically detected and integrated into the editor.
 
-More documentation will be provided in future updates.
+More documentation will be provided in future updates as the framework is stil a work in progress.
 
 ---
 
@@ -116,6 +115,6 @@ Visual Event Editor by DragAndPlugin
 
 - Plugin Manager
 - Database Manager
-- Support for some of my tools (debugger & database sharer)
-- Add-ons and custom nodes
+- Support for some of my other tools (debugger & database sharer)
+- Editor add-ons and custom nodes framework improvements
 - Continued performance improvements and bug fixes
