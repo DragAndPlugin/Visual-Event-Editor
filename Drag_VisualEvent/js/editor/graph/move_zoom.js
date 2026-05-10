@@ -1,27 +1,4 @@
 window._graphEditorMovedDist = 0;
-// function moveGraphEditor(event) { // old version for graphnode and graphsvg using absolute position and top left movement
-	// const graphEditor = document.querySelector('#graphEditor');
-	// const scale = getGraphEditorScale();
-	
-	// const mousex = parseInt(graphEditor.getAttribute('data-mousex')) || 0;
-	// const mousey = parseInt(graphEditor.getAttribute('data-mousey')) || 0;
-	// const [xGraphEditor, yGraphEditor] = getGraphPosition();
-
-	// const scaleMult = 1 / scale;
-	// const hMovement = (event.x - mousex) * scaleMult;
-	// const vMovement = (event.y - mousey) * scaleMult;
-	
-	// setGraphPosition(xGraphEditor + hMovement, yGraphEditor + vMovement, false);
-	
-	// graphEditor.setAttribute('data-mousex', event.x);
-	// graphEditor.setAttribute('data-mousey', event.y);
-	
-	// window._graphEditorMoved = true;
-	
-	// window._graphEditorMovedDist += Math.abs(event.x - mousex) + Math.abs(event.y - mousey);
-	// if (window._graphEditorMovedDist >= window._graphEditorCullMoveTreshold)
-		// refreshAllNodesCull();
-// };
 
 function moveGraphEditor(event) { //movement for graph camera using translate position & movement
 	const graphEditor = document.querySelector('#graphEditor');
@@ -51,19 +28,6 @@ function moveGraphEditor(event) { //movement for graph camera using translate po
 function getGraphPosition() {
 	return [(window._xGraph || 0), (window._yGraph || 0)];
 };
-
-// function getGraphCoordinatesFromAbsolute(absx, absy) { // old version for graphnode and graphsvg using absolute position and top left movement
-	// const graphEditorRect = document.querySelector('#graphEditor').getBoundingClientRect();
-	// const [xGraphEditor, yGraphEditor] = getGraphPosition();
-	
-	// const scale = getGraphEditorScale();
-	// const scaleMult = 1 / scale;
-
-	// const x = absx * scaleMult + graphEditorRect.width * (1 - scaleMult) / 2 - xGraphEditor;
-	// const y = absy * scaleMult + graphEditorRect.height * (1 - scaleMult) / 2 - yGraphEditor;
-	
-	// return [x, y];
-// };
 
 function getGraphCoordinatesFromAbsolute(absX, absY) {
     const scale = getGraphEditorScale();
@@ -116,19 +80,7 @@ function setGraphPosition(x, y, resetDataMouse = true) {
 	const yScaled = y * scale;
 	
 	//set bg
-	graphEditor.style.backgroundPosition = `${xScaled}px ${yScaled}px`;
-	
-	//set svgs // old version for graphnode and graphsvg using absolute position and top left movement
-	// const graphSVG = document.querySelector('#graphSVG');
-	// graphSVG.style.left = `${xScaled}px`;
-	// graphSVG.style.top = `${yScaled}px`;
-	// graphSVG.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
-	
-	//set nodes
-	// const graphNodes = getNodesGraph();
-	// graphNodes.style.left = `${xScaled}px`;
-	// graphNodes.style.top = `${yScaled}px`;
-	// graphNodes.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
+	graphEditor.style.backgroundPosition = `${x}px ${y}px`;
 	
 	//movement for graph camera using translate position & movement
 	const graphCamera = document.querySelector('#graph-camera');
@@ -145,43 +97,6 @@ function disableGraphZoom() {
 function enableGraphZoom() {
 	window._zoomGraphEditorEnabled = true;
 };
-
-// function zoomGraphEditor(event) { // old version for graphnode and graphsvg using absolute position and top left movement
-	// if (window._nodeListDisplayed || window._zoomGraphEditorEnabled === false)
-		// return;
-	
-	// if (isInput(document.activeElement) && (document.activeElement.type === "number" || document.activeElement.type === "text"))
-		// return;
-	
-	// const minScale = 0.1;
-	// const maxScale = 3;
-	
-	// const delta = Math.sign(event.deltaY) * -0.1;			
-	// const scaleGraphEditor = getGraphEditorScale();
-	
-	// const zoomFactor = 1.1;
-	// let scale = event.deltaY < 0 ? scaleGraphEditor * zoomFactor : scaleGraphEditor / zoomFactor;
-	// scale = Math.min(Math.max(scale, minScale), maxScale);
-	
-	// if (scaleGraphEditor < scale) {
-		// const cursorPosition = getCursorPosition();
-		// const graphPosition = getGraphPosition();
-		// const graphCenter = getGraphCenter();
-		// const strength = scale > 1 ? 0.1 : $.Drag.VisualEvent.lerp(1, 0.1, scale);
-		// const x = graphPosition[0] + ((graphCenter[0] - cursorPosition[0]) * strength);
-		// const y = graphPosition[1] + ((graphCenter[1] - cursorPosition[1]) * strength);
-		// setGraphPosition(x, y);
-	// }
-	
-	// setGraphEditorScale(scale, true, false, true, true);
-	
-	// reset cursor position if moving graph, which fix bug where graph would jump very far away
-    // if (window.isMouseDownOnGraph) {
-        // const graphEditor = document.querySelector('#graphEditor');
-        // graphEditor.setAttribute('data-mousex', event.x);
-        // graphEditor.setAttribute('data-mousey', event.y);
-    // }
-// };
 
 function zoomGraphEditor(event) { //movement for graph camera using translate position & movement
 	if (window._nodeListDisplayed || window._zoomGraphEditorEnabled === false)
@@ -269,9 +184,6 @@ function setGraphEditorScale(scale, showScale = true, redrawCurves = true, refre
 	const graphEditor = document.querySelector('#graphEditor');
 	graphEditor.style.backgroundSize = `calc(var(--bgSizeGraphEditor) * ${scale}) calc(var(--bgSizeGraphEditor) * ${scale})`;
 	document.documentElement.style.setProperty('--graph-scale', scale);
-	// old version for graphnode and graphsvg using absolute position and top left movement
-	// getNodesGraph().style.transform = `scale(${scale})`;
-	// document.querySelector('#graphSVG').style.transform = `scale(${scale})`;
 	
 	//for graph camera using transform translate position & scale
 	const graphCamera = document.querySelector('#graph-camera');
@@ -283,9 +195,6 @@ function setGraphEditorScale(scale, showScale = true, redrawCurves = true, refre
 	setGraphPosition(xGraphEditor, yGraphEditor, false);
 	
 	window.graphBounds = getGraphBounds();
-	
-	// if (redrawCurves)
-		// redrawAllCurves();
 	
 	if (saveInCache)
 		cacheGraphScale(scale);
@@ -313,22 +222,6 @@ function setGraphEditorScale(scale, showScale = true, redrawCurves = true, refre
 		eShowScale.style.opacity = 0;
 	}, 100);
 };
-
-// function getGraphEditorBounds() {
-	// const graphEditor = document.querySelector('#graphEditor').getBoundingClientRect();
-	// const graphNodes = getNodesGraph().getBoundingClientRect();
-	// const scale = getGraphEditorScale();
-
-	// return {
-		// left: graphEditor.left,
-		// right: graphEditor.right,
-		// top: graphEditor.top,
-		// bottom: graphEditor.bottom,
-		// graphLeft: graphNodes.left,
-		// graphTop: graphNodes.top,
-		// scale: scale,
-	// };
-// };
 
 function getGraphBounds(margin = 0) {
 	const graphEditor = document.querySelector('#graphEditor');
