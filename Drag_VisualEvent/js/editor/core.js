@@ -7,6 +7,8 @@ function init() {
 	
 	document.title = "Drag_DevTools_VisualEventEditor";
 	loadDataMainWindow();
+	
+	initLogs();
 	$.Drag.VisualEvent.setLightMode(document);
 	setAppropriateFontSize();
 	
@@ -322,7 +324,6 @@ function reloadGraphEditor(id, type, pageId = null, refreshTopPanel = true, refr
 		requestAnimationFrame(() => {
 			window._requestReloadGraphEditor = null;
 			window._registerInputChange = false;
-			console.log("register input change disabled");
 			window.data.targetId = id;
 			window.data.targetType = type;
 			window.data.pageId = pageId;
