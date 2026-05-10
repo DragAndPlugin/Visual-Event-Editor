@@ -41,3 +41,7 @@ package.json
 
 # ignore editor cache
 Drag_VisualEvent/cache/cache.json
+Drag_VisualEvent/cache/plugins.json
+
+# ignore editor logs
+Drag_VisualEvent/logs
