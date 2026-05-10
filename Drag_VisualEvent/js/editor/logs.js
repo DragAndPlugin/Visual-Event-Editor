@@ -50,7 +50,7 @@ function initLogs() {
 		window._logs.sessionLogPath = path.join(logsDir, `VisualEventEditor-log-${getLogsFileName()}`);
 		window._logs.initialized = true;
 
-		writeLogsToFile("info", [`\n=============================================\n\nLogs successfully initialized.\nVisual Event Editor v${$.Drag.VisualEvent.version}\nRPG Maker ${$.Utils.RPGMAKER_NAME} Corescript v${$.Utils.RPGMAKER_VERSION}\nChromium v${process.versions["chromium"]}\nNodeJS v${process.versions["node"]}\nNWJS v${process.versions["nw"]}\nPIXI v${$.PIXI.VERSION}\n\n`], false);
+		writeLogsToFile("info", [`\n===== SESSION INFO =====\n\nLogs successfully initialized.\nVisual Event Editor v${$.Drag.VisualEvent.version}\nRPG Maker ${$.Utils.RPGMAKER_NAME} Corescript v${$.Utils.RPGMAKER_VERSION}\nChromium v${process.versions["chromium"]}\nNodeJS v${process.versions["node"]}\nNWJS v${process.versions["nw"]}\nPIXI v${$.PIXI.VERSION}\n\n===== LOGS =====\n\n`], false);
 		deleteOldLogs();
 	} catch (error) {
 		window._logs.alias.error("Failed to initialize Visual Event Editor logs:", error);
@@ -134,9 +134,7 @@ function safeJsonReplacer() {
 };
 
 function formatLogsArgs(args) {
-	const text = Array.from(args)
-		.map(arg => formatLogsArg(arg))
-		.join(" ");
+	const text = Array.from(args).map(arg => formatLogsArg(arg)).join(" ");
 
 	if (text.length > window._logs.maxArgLength)
 		return text.slice(0, window._logs.maxArgLength) + "\n[Log truncated]";
