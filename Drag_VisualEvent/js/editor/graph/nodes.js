@@ -375,7 +375,6 @@ function onAllNodeReady() {
 	
 	window._graphReady = true;
 	window._registerInputChange = true;
-	console.log("register input change enabled");
 	if (window._startPerformance) {
 		console.log(`Editor ready (${performance.now() - window._startPerformance}ms).`);
 		delete window._startPerformance;
