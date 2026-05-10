@@ -28,19 +28,9 @@ function getLogsDirectory() {
 	return path.join(projectRoot, "Drag_VisualEvent", "logs");
 };
 
-function getLogsTimestampFileName() {
+function getLogsFileName() {
 	const date = new Date();
-	const pad = n => String(n).padStart(2, "0");
-
-	return [
-		date.getFullYear(),
-		pad(date.getMonth() + 1),
-		pad(date.getDate())
-	].join("-") + "_" + [
-		pad(date.getHours()),
-		pad(date.getMinutes()),
-		pad(date.getSeconds())
-	].join("-") + ".log";
+	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}_${String(date.getHours()).padStart(2, "0")}-${String(date.getMinutes()).padStart(2, "0")}-${String(date.getSeconds()).padStart(2, "0")}.log`;
 };
 
 function initLogs() {
@@ -57,10 +47,10 @@ function initLogs() {
 		const logsDir = getLogsDirectory();
 		$.Drag.VisualEvent.ensureDirectoryExistence(path.join(logsDir, "logs.txt"));
 
-		window._logs.sessionLogPath = path.join(logsDir, `VisualEventEditor-log-${getLogsTimestampFileName()}`);
+		window._logs.sessionLogPath = path.join(logsDir, `VisualEventEditor-log-${getLogsFileName()}`);
 		window._logs.initialized = true;
 
-		writeLogsToFile("info", ["Logs successfully initialized."]);
+		writeLogsToFile("info", [`\n=============================================\n\nLogs successfully initialized.\nVisual Event Editor v${$.Drag.VisualEvent.version}\nRPG Maker ${$.Utils.RPGMAKER_NAME} Corescript v${$.Utils.RPGMAKER_VERSION}\nChromium v${process.versions["chromium"]}\nNodeJS v${process.versions["node"]}\nNWJS v${process.versions["nw"]}\nPIXI v${$.PIXI.VERSION}\n\n`], false);
 		deleteOldLogs();
 	} catch (error) {
 		window._logs.alias.error("Failed to initialize Visual Event Editor logs:", error);
@@ -88,7 +78,7 @@ function deleteOldLogs() {
 		for (const file of files.slice(window._logs.maxLogFiles))
 			fs.unlinkSync(file.path);
 	} catch (error) {
-		window._logs.alias.warn("Failed to cleanup old log files:", error);
+		window._logs.alias.warn("Failed to delete old log files:", error);
 	}
 };
 
@@ -118,7 +108,7 @@ function formatLogsArg(arg) {
 		}
 
 		return String(arg);
-	} catch (_) {
+	} catch (error) {
 		return "[Unformattable log argument]";
 	}
 };
@@ -157,8 +147,6 @@ function formatLogsArgs(args) {
 function getLogsContext() {
 	try {
 		return {
-			version: $.Drag.VisualEvent.version,
-			engine: $.Utils.RPGMAKER_NAME,
 			targetType: window.data.targetType || null,
 			targetId: window.data.targetId || null,
 			pageId: window.data.pageId || null,
@@ -166,12 +154,12 @@ function getLogsContext() {
 			nodeCount: Array.isArray(window.nodes) ? window.nodes.length : null,
 			curveCount: typeof getAllCurves === "function" ? Array.from(getAllCurves()).length : null
 		};
-	} catch (_) {
+	} catch (error) {
 		return {};
 	}
 };
 
-function writeLogsToFile(level, args) {
+function writeLogsToFile(level, args, addContext = true) {
 	if (window._logs.isWriting)
 		return;
 
@@ -187,14 +175,10 @@ function writeLogsToFile(level, args) {
 		if (logsShouldIgnore(level, message))
 			return;
 
-		const entry = {
-			time: new Date().toISOString(),
-			level,
-			message,
-			context: getLogsContext()
-		};
-
-		fs.appendFileSync(window._logs.sessionLogPath, JSON.stringify(entry, null, 2) + "\n\n");
+		const entry = `[${new Date().toISOString()}][${level}]: ${message}${addContext ? "\n" : "\n\n"}`;
+		fs.appendFileSync(window._logs.sessionLogPath, entry);
+		if (addContext)
+			fs.appendFileSync(window._logs.sessionLogPath, JSON.stringify(getLogsContext()) + "\n\n");
 	} catch (error) {
 		window._logs.alias.error("Failed to write logs :", error);
 	} finally {
@@ -258,17 +242,9 @@ console.error = function() {
 };
 
 window.addEventListener("error", function(event) {
-	handleLogs("error", [
-		event.type,
-		event.message,
-		event.filename ? `${event.filename}:${event.lineno}:${event.colno}` : "",
-		event.error || ""
-	]);
+	handleLogs("error", [event.type, event.message, event.filename ? `${event.filename}:${event.lineno}:${event.colno}` : "", event.error || ""]);
 });
 
 window.addEventListener("unhandledrejection", function(event) {
-	handleLogs("error", [
-		"unhandledrejection",
-		event.reason || ""
-	]);
+	handleLogs("error", ["unhandledrejection", event.reason || ""]);
 });
