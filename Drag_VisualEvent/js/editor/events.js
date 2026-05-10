@@ -13,26 +13,18 @@ const nodeResizeObserver = new ResizeObserver((entries) => {
 		if (node._preventResize)
 			return node._preventResize = false;
 		
-		// const nodeRect = node.getBoundingClientRect();
-		const wNode = node.width || 0; //node.getAttribute('data-width');
-		const hNode = node.height || 0; //node.getAttribute('data-height');
+		const wNode = node.width || 0;
+		const hNode = node.height || 0;
 		
 		if (wNode !== node.offsetWidth || hNode !== node.offsetHeight)
-			onNodeResize(node); //, nodeRect)
+			onNodeResize(node);
 	}
 });
 
 function onNodeResize(node, nodeRect) {
 	if (!node)
 		return;
-	
-	// if (!nodeRect)
-		// nodeRect = node.getBoundingClientRect();
-	
-	// node.setAttribute('data-width', nodeRect.width);
-	// node.setAttribute('data-height', nodeRect.height);
-	// node.width = nodeRect.width;
-	// node.height = nodeRect.height;
+
 	node.width = node.offsetWidth;
 	node.height = node.offsetHeight;
 	redrawNodeCurves(node);
@@ -54,7 +46,6 @@ function setupGraphEditorListeners() {
 				closeNodeContextMenu();
 		}
 			
-		// if (!(isFormInput(event.target) || isConnection(event.target) || isButton(event.target)) && (event.target.getAttribute('id') === 'graphEditor' || event.path.includes(graphEditor))) {
 		if (event.target.getAttribute('id') === 'graphEditor' || event.target.getAttribute('id') === 'curve') {
 			window.isMouseDownOnGraph = true;
 		
@@ -99,10 +90,8 @@ function setupGraphEditorListeners() {
 		//onmouseupnode
 		if (event.which === 1 && window.nodeMouseDown) {
 			//reset movenode mouse position
-			// window.nodeMouseDown.removeAttribute('data-mousex');
-			// window.nodeMouseDown.removeAttribute('data-mousey');
-			window.nodeMouseDown.mouseX = 0; //removeAttribute('data-mousex');
-			window.nodeMouseDown.mouseY = 0; //removeAttribute('data-mousey');
+			window.nodeMouseDown.mouseX = 0;
+			window.nodeMouseDown.mouseY = 0;
 			
 			moveSelectedNodes();
 		}
@@ -158,8 +147,6 @@ function onMouseDownGraphEditorNode(node, event) {
 		} else if (event.target.getAttribute('id') === 'node-header') {
 			window.isMouseDownOnNode = true;
 			window.nodeMouseDown = node;
-			// node.setAttribute('data-mousex', event.x);
-			// node.setAttribute('data-mousey', event.y);
 			node.mouseX = event.x;
 			node.mouseY = event.y;
 		}
@@ -370,9 +357,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
 nw.Window.get().on('close', function () {
 	const win = nw.Window.get();
-	win.hide(); // Pretend to be closed already
+	win.hide();
 	$.Drag.VisualEvent.onCloseEditor();
-	// win.close(true); // then close it forcefully
 });
 
 window.addEventListener("load", (event) => {
