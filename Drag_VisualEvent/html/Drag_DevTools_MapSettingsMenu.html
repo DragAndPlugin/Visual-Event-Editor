@@ -409,7 +409,7 @@
 						<div id="inputs-wrapper">
 							<div id="manage-notetag-container" onclick="openNotetagManager(this.lastElementChild);" onchange="updateEventNote(this);">
 								<label for="map-event-notes">Manage note(tag)s :</label>
-								${$.Drag.VisualEvent.getInputField({type: "string", id: "map-notes", class: "onReadyOnChange notetag-input", value: window.data.map.note, onchange: "$.Drag.VisualEvent.autoFitInput(this);"})}
+								${$.Drag.VisualEvent.getInputField({type: "string", id: "map-notes", class: "onReadyOnChange notetag-input", data: "data-context='Map'", value: window.data.map.note, onchange: "$.Drag.VisualEvent.autoFitInput(this);"})}
 							</div>
 						</div>
 					</div>
