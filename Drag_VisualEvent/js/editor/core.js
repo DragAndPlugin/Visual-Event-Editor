@@ -1425,7 +1425,6 @@ function apply(type = window.data.targetType, mapId = window.data.mapTargetId, t
 			// else 
 				// console.log("identical");
 			
-			// window.data.loadedMap.events[targetId] = $.Drag.VisualEvent.deepCopyJSON(eventData);
 			window.data._cacheMaps[mapId].events[targetId] = $.Drag.VisualEvent.deepCopyJSON(eventData);
 			if ($.$dataMap && $.$gameMap && $.$gameMap._mapId === mapId) {
 				$.$dataMap.events[targetId] = $.Drag.VisualEvent.deepCopyJSON(eventData);
@@ -1642,15 +1641,25 @@ function onInputChange(input) {
 		if (node._preventInputChange)
 			return;
 		
-		if (!isUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0))
-			setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
+		// const eventType = input.hasAttribute('data-eventType') ? input.getAttribute('data-eventType') : window.data.targetType;
+		// const eventId = input.hasAttribute('data-eventId') ? parseInt(input.getAttribute('data-eventId')) : window.data.targetId;
+		// const mapId = input.hasAttribute('data-mapId') ? parseInt(input.getAttribute('data-mapId')) : window.data.mapTargetId;
+		// const pageId = input.hasAttribute('data-pageId') ? parseInt(input.getAttribute('data-pageId')) : window.data.pageId;
+		
+		const eventType = node.data.context.eventType;
+		const eventId = node.data.context.eventId;
+		const mapId = node.data.context.mapId;
+		const pageId = node.data.context.pageId;
+		
+		if (!isUnsaved(eventType, eventId, mapId, pageId || 0))
+			setAsUnsaved(eventType, eventId, mapId, pageId || 0);
 		
 			updateCacheGraphNodeParameters(node);
 			registerNodeReferences(node);
 			cacheNodeProperty(node, "parsedParameters", parseNodeInputs(node));
 	} else if ($.Drag.VisualEvent.getAncestorById(input, 'event-data-container'))
-		if (!isUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, null))
-			setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, null);
+		if (!isUnsaved(eventType, eventId, mapId, null))
+			setAsUnsaved(eventType, eventId, mapId, null);
 };
 
 function isFormInput (element) {

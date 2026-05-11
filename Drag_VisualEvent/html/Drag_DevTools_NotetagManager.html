@@ -121,6 +121,9 @@
 			};
 			
 			function makeNotetagsDatalist() {
+				if (data.context)
+					data.context = data.context.trim().toLowerCase();
+					
 				let html = `<datalist id="notetags">`;
 				for (let plugin in $.Drag.VisualEvent.pluginJSDocData) {
 					const pluginData = $.Drag.VisualEvent.pluginJSDocData[plugin];
@@ -128,7 +131,7 @@
 						continue;
 						
 					for (let notetag in pluginData.notetags)
-						if (!data.context || !pluginData.notetags[notetag].context || pluginData.notetags[notetag].context.includes(data.context))
+						if (!data.context || !pluginData.notetags[notetag].context || pluginData.notetags[notetag].context.split(',').map(context => context.trim().toLowerCase()).includes(data.context))
 							html += `<option value="${notetag}"></option>`;
 				}
 				html += `</datalist>`;
@@ -221,10 +224,8 @@
 
 			function ok() {
 				const val = gatherNotetags();
-				// data.eventData.note = val;
 				data.input.value = val;
-				// data.input.setAttribute('value', val);
-				// data.input.dispatchEvent(new Event('change', {bubbles: true}));
+				
 				$.Drag.VisualEvent.autoFitInput(data.input);
 				$.Drag.VisualEvent.onInputChange(data.input);
 				quit();

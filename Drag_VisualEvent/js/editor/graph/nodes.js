@@ -7,6 +7,7 @@ function makeNodeFromParams(params = {}, saveInHistory = false, cache = false, o
 	
 	const nodeData = {
 		id: nodeId,
+		context: getEventContext(),
 		commandCode: commandCode,
 		isCustom: isCustom,
 		node: node,
@@ -187,6 +188,9 @@ function addNodeToGraphNode(node, saveInHistory = false, cache = false, frag = n
 	if (!node.data)
 		node.data = {};
 	
+	if (!node.data.context)
+		node.data.context = getEventContext();
+	
 	//id
 	if (node.data.id === null || node.data.id === undefined)
 		node.data.id = window.nodes.length;
@@ -255,6 +259,15 @@ function addNodeToGraphNode(node, saveInHistory = false, cache = false, frag = n
 
 function registerNode(nodeData) {
 	window.nodes[nodeData.id] = nodeData;
+};
+
+function getEventContext() {
+	return {
+		eventType: window.data.targetType, 
+		eventId: window.data.targetId,
+		mapId: window.data.mapTargetId,
+		pageId: window.data.pageId
+	};
 };
 
 function processPendingNodeInputs() {

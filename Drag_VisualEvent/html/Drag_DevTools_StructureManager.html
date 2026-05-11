@@ -115,10 +115,6 @@
 				<button onclick="quit();">Cancel</button>
 			</div>
 		</div>
-		<!--<div onclick="toggleLightMode()" id="lightMode">
-			<span>&#9790;</span>
-			<span>&#9728;</span>-->
-		</div>
 		<script type="text/javascript">
 			function main() {
 				document.title = "Drag_DevTools_StructureManager";
@@ -130,11 +126,10 @@
 			
 			function loadDataMainWindow() {
 				$ = window.opener;
-			};
+			};		
 			
 			function showStructInputsFields(structValue, structName, nodeTarget) {
 				const pluginName = data.pluginName;
-				
 				let inputs = $.Drag.VisualEvent.pluginJSDocData[pluginName].structs[structName].params.map(item => {return {...item}}); //two level deep copy
 				let content = "";
 				
@@ -239,11 +234,8 @@
 				const structContent = document.createElement('div');
 				structContent.setAttribute('id', 'structContent');
 				structContainer.appendChild(structContent);
-				console.log(input.getAttribute('data-structValue'));
-				// console.log($.Drag.VisualEvent.unescapeQuotes(input.getAttribute('data-structValue'), true));
-				// const structValue = JSON.parse($.Drag.VisualEvent.unescapeQuotes(input.getAttribute('data-structValue'), true));
+				
 				const structValue = JSON.parse(input.getAttribute('data-structValue'));
-				// const structValue = eval('(' + input.getAttribute('data-structValue') + ')')
 				const structName = input.getAttribute('data-structName');
 				showStructInputsFields(structValue, structName, structContent);
 			};
@@ -261,7 +253,8 @@
 								val[inputName] = val[inputName] || [];
 								val[inputName].push($.Drag.VisualEvent.getPluginCommandInputValue(input));
 							} else 
-								val[inputName] = $.Drag.VisualEvent.getPluginCommandInputValue(input);
+								val[inputName] = $.Drag.VisualEvent.getPluginCommandInputValue(input
+								
 							input.setAttribute('data-valueGathered', "true");
 						}
 					} else {
@@ -288,7 +281,6 @@
 
 			function ok() {
 				const val = gatherStructureValues();
-				// data.input.setAttribute('data-structValue', $.Drag.VisualEvent.escapeQuotes(JSON.stringify(val)));
 				data.input.setAttribute('data-structValue', JSON.stringify(val));
 				data.input.dispatchEvent(new Event('change', {bubbles: true}));
 				quit();
@@ -299,7 +291,6 @@
 			};
 
 			main();
-
 		</script>
 	</body>
 </html>

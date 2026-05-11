@@ -407,7 +407,7 @@
 					<div>
 						<h3>Note(tag)s</h3>
 						<div id="inputs-wrapper">
-							<div id="manage-notetag-container" onclick="openNotetagManager(this.lastElementChild);" onchange="updateEventNote(this);">
+							<div id="manage-notetag-container" onclick="openNotetagManager(this.lastElementChild);">
 								<label for="map-event-notes">Manage note(tag)s :</label>
 								${$.Drag.VisualEvent.getInputField({type: "string", id: "map-notes", class: "onReadyOnChange notetag-input", data: "data-context='Map'", value: window.data.map.note, onchange: "$.Drag.VisualEvent.autoFitInput(this);"})}
 							</div>
@@ -638,14 +638,17 @@
 			
 			function save() {
 				gatherSettings();
+				
 				$.Drag.VisualEvent.writeJSON(`data/MapInfos.json`, window.data.mapInfos);
 				$.Drag.VisualEvent.writeJSON(`data/${window.data.mapFileName}.json`, window.data.map);
+				
 				const editor = $.Drag.VisualEvent.getEditor();
 				if (editor) {
 					editor.data.$dataMapInfos = $.Drag.VisualEvent.deepCopyJSON(window.data.mapInfos);
 					if (editor.data.mapTargetId === window.data.mapId)
 						editor.data.loadedMap = $.Drag.VisualEvent.deepCopyJSON(window.data.map);
 				}
+				
 				quit();
 			};
 

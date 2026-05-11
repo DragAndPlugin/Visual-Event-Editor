@@ -314,12 +314,6 @@ function updateEventName(name = "", type = window.data.targetType, id = window.d
 		eventElement.innerHTML = `${String(id).padStart(4, '0')} ${name || "<span class='red'>No name</span>"}`;
 };
 
-function updateEventNote(input) {
-	input.querySelector('#map-event-notes').value = window.data.loadedMap.events[window.data.targetId].note;
-	setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, null);
-	saveItemInEventCache("note", window.data.loadedMap.events[window.data.targetId].note, window.data.targetType, window.data.mapTargetId, window.data.targetId);
-};
-
 function updateCommonEventListName(eventId = 0, name = null) {
 	if (!eventId)
 		return;

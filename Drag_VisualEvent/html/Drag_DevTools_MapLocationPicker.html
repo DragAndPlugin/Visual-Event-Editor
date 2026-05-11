@@ -342,10 +342,6 @@
 				<button onclick="quit();">Cancel</button>
 			</div>
 		</div>
-		<!--<div onclick="toggleLightMode()" id="lightMode">
-			<span>&#9790;</span>
-			<span>&#9728;</span>
-		</div>-->
 		<script type="text/javascript">
 			function main() {
 				document.title = "Drag_DevTools_MapLocationPicker";
@@ -391,9 +387,6 @@
 			};
 
 			function showMapList() {
-				// if (!data.allowMapChange === false)
-					// return;
-				
 				const container = document.querySelector('#map-list');
 				const maps = data.allowMapChange ? $.Drag.VisualEvent.getMapList() : data.mapId ? [`Map${String(data.mapId).padStart(3, "0")}.json`] : [$.Drag.VisualEvent.getMapList()[0]];
 				let count = 0;
@@ -547,7 +540,7 @@
 				const targetHeight = element.naturalHeight;
 				const width = 100 / (element.naturalWidth / ($.$dataSystem.tileSize || 48));
 				const height = 100 / (element.naturalHeight / ($.$dataSystem.tileSize || 48));
-				data.selectedIndex = 0; //data.value[1] !== undefined ? parseInt(data.value[1]) : 0;
+				data.selectedIndex = 0;
 
 				let tWidth = 0;
 				let tHeight = 0;

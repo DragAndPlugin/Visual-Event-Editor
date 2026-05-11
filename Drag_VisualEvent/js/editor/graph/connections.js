@@ -5,8 +5,7 @@ function moveConnection(event) {
 	let connectionType = getConnectionType(connectionMouseDown);
 	let curves = getConnectionCurves(window.connectionMouseDown);
 	let target;
-	console.log(window.connectionMouseDown);
-	console.log(curves);
+	
 	//no attached curves, create temp curve
 	if (curves.length === 0) { 
 		let curve;

@@ -295,10 +295,6 @@
 				</div>
 			</div>
 		</div>
-		<!--<div onclick="$.Drag.VisualEvent.toggleLightMode(document)" id="lightMode">
-			<span>&#9790;</span>
-			<span>&#9728;</span>-->
-		</div>
 		<script type="text/javascript">			
 			function main() {
 				document.title = "Drag_DevTools_TroopMembersManager";
@@ -334,7 +330,6 @@
 					
 					item.setAttribute('data-id', id);
 					item.setAttribute('data-name', enemy.name);
-					// item.addEventListener('click', selectEnemy);
 					
 					list.appendChild(item);
 				}
@@ -601,7 +596,6 @@
 						setMemberTroopPosition(sprite, x, y);
 					}
 				} else {
-					// const scale = wv / tw;
 					const dw = (tw - wv) / (spriteEnemies.length - 1);
 					let x = 0;
 					for (const [i, sprite] of spriteEnemies.entries()) {
@@ -661,7 +655,7 @@
 				const val = gatherTroopMembers();
 				
 				$.Drag.VisualEvent.updateEventMembers(data.troop.id, val);
-				data.input.dispatchEvent(new Event('change', {bubbles: true}));				
+				// data.input.dispatchEvent(new Event('change', {bubbles: true}));				
 				quit();
 			};
 
@@ -682,8 +676,6 @@
 					const viewport = document.querySelector('#viewport');
 					viewport.style.width = `${$.Graphics.width * wp}px`;
 					viewport.style.height = `${$.Graphics.height * hp}px`;
-					// console.log(wp, hp, `translate(-50%, 0%) scaleX(${wp}) scaleY(${hp});`);
-					// viewport.style.transform = `translate(-50%, 0%) scaleX(${wp}) scaleY(${hp})`;
 					
 					const membersView = document.querySelector('#members-view');
 					for (const enemySprite of document.querySelectorAll("#enemy-sprite")) {

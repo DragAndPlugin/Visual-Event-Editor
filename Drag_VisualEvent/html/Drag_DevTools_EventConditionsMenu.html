@@ -106,10 +106,6 @@
 				<button onclick="quit();">Cancel</button>
 			</div>
 		</div>
-		<!--<div onclick="$.Drag.VisualEvent.toggleLightMode(document)" id="lightMode">
-			<span>&#9790;</span>
-			<span>&#9728;</span>
-		</div>-->
 		<script type="text/javascript">			
 			function main() {
 				document.title = "Drag_DevTools_EventConditions";
@@ -128,15 +124,11 @@
 				data._pageCount = data.eventData.pages.length;
 				
 				for (let pageId = 0; pageId < data._pageCount; pageId++) {
-					// if (data.editor.hasEventPageConditionsInCache(data.editor.data.targetType, data.editor.data.mapTargetId, data.editor.data.targetId, pageId))
-						// data._conditions.push({...data.editor.getEventPageConditionsFromCache(data.editor.data.targetType, data.editor.data.mapTargetId, data.editor.data.targetId, pageId)});
 					if (data.eventData.pages[pageId])
 						data._conditions.push({...data.eventData.pages[pageId].conditions});
 					else 
 						data._conditions.push({});
 				}
-				
-				// data._conditions = data.eventData.pages.map(page => {return {...page.conditions}});
 				
 				showPagesList();
 				showPageConditions();
@@ -144,7 +136,6 @@
 			
 			function showPagesList() {
 				let html = "";
-				// for (const [i, page] of data.eventData.pages.entries())
 				for (let pageId = 0; pageId < data._pageCount; pageId++)
 					html += `<span ${data.pageId === pageId ? 'class="selected-page"' : ''} data-pageId="${pageId}" onclick="selectPage(this);">Page ${pageId + 1}</span>`;
 				const pageContainer = document.querySelector('#pages-container');
@@ -300,11 +291,6 @@
 				showPageConditions();
 			};
 			
-			function savePageConditions() {
-				const val = gatherConditions();
-				data._conditions[data.pageId] = val;
-			};
-			
 			function gatherConditions() {
 				switch (data.eventType) {
 					case "Map Event":
@@ -354,13 +340,16 @@
 					turnValid: Boolean(conditionsContainer.querySelector('#turn-condition-container #turn-valid-condition').checked),
 				};
 			};
+			
+			function savePageConditions() {
+				const val = gatherConditions();
+				data._conditions[data.pageId] = val;
+			};
 
 			function ok() {
 				savePageConditions();
-				data.editor.saveEventPagesConditionsInCache(data._conditions, data.input);
-				// for (const [pageId, page] of data.eventData.pages.entries()) 
-					// page.conditions = data._conditions[pageId];
-				data.input.dispatchEvent(new Event('change', {bubbles: true}));
+				data.editor.saveEventPagesConditionsInCache(data._conditions, data.input, data.eventType, data.eventData.id, data.mapId);
+				
 				quit();
 			};
 

@@ -16,8 +16,8 @@ function registerNodeReferences(node) {
 		inputsTypes.push(inputType);
 		inputsValues.push(inputValue[0]);
 	}
-
-	const references = getEventCacheItem('references', window.data.targetType, window.data.mapTargetId, window.data.targetId, window.data.pageId) || [];
+	
+	const references = getEventCacheItem('references', node.data.context.eventType, node.data.context.mapId, node.data.context.eventId, node.data.context.pageId) || [];
 	references[nodeId] = { 
 		nodeId: nodeId,
 		commandCode: getNodeCommandCode(node),
@@ -26,7 +26,7 @@ function registerNodeReferences(node) {
 		values: inputsValues
 	};
 	
-	saveItemInEventCache('references', references, window.data.targetType, window.data.mapTargetId, window.data.targetId, window.data.pageId);				
+	saveItemInEventCache('references', references, node.data.context.eventType, node.data.context.mapId, node.data.context.eventId, node.data.context.pageId);				
 };
 
 function removeNodeReferences(node) {

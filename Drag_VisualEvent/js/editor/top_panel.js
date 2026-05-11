@@ -60,7 +60,8 @@ function setupTopPanel() {
 					</div>
 					<div id="manage-notetag-container" onclick="openNotetagManager(this.lastElementChild);" onchange="updateEventNote(this);">
 						<label for="map-event-notes">Manage note(tag)s :</label>
-						${$.Drag.VisualEvent.getInputField({type: "string", id: "map-event-notes", class: "onReadyOnChange", value: note, data: "data-context='Map Event'", onchange: "$.Drag.VisualEvent.autoFitInput(this);"})}
+						${$.Drag.VisualEvent.getInputField({type: "string", id: "map-event-notes", class: "onReadyOnChange", value: note, 
+							data: `data-context='Map Event' data-eventType='${window.data.targetType}' data-eventId='${window.data.targetId}' data-mapId='${window.data.mapTargetId}'`, onchange: "$.Drag.VisualEvent.autoFitInput(this);"})}
 					</div>
 					<div>
 						<label for="map-event-location">Set Location :</label>
@@ -132,11 +133,26 @@ function updateEventMembers(troopId, members) {
 	if (!members || !troopId)
 		return;
 	
-	document.querySelector('#troop-event-members').value = members.map(member => window.data.$dataEnemies[member.enemyId].name).join(', ');
+	if (troopId === window.data.targetId && window.data.targetType === "Troop Event")
+		document.querySelector('#troop-event-members').value = members.map(member => window.data.$dataEnemies[member.enemyId].name).join(', ');
+	
 	setAsUnsaved("Troop Event", troopId, 0, null);
 	
 	const eventData = getEventCacheItem("data", "Troop Event", 0, troopId);
 	eventData.members = members;
+};
+
+function updateEventNote(input) {
+	const value = $.Drag.VisualEvent.getInputValue(input);
+	const eventType = input.getAttribute('data-eventType');
+	const eventId = parseInt(input.getAttribute('data-eventId'));
+	const mapId = parseInt(input.getAttribute('data-mapId'));
+
+	if (!eventType || !eventId || !mapId)
+		return;
+	
+	saveItemInEventCache("note", value, eventType, mapId, eventId);
+	setAsUnsaved(eventType, eventId, mapId, null);
 };
 
 function autonameEvent() {

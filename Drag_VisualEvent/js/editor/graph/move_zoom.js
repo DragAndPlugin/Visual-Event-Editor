@@ -1,6 +1,6 @@
 window._graphEditorMovedDist = 0;
 
-function moveGraphEditor(event) { //movement for graph camera using translate position & movement
+function moveGraphEditor(event) {
 	const graphEditor = document.querySelector('#graphEditor');
 
 	const mousex = parseInt(graphEditor.getAttribute('data-mousex')) || 0;
@@ -82,7 +82,6 @@ function setGraphPosition(x, y, resetDataMouse = true) {
 	//set bg
 	graphEditor.style.backgroundPosition = `${x}px ${y}px`;
 	
-	//movement for graph camera using translate position & movement
 	const graphCamera = document.querySelector('#graph-camera');
 	graphCamera.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
 	
@@ -98,7 +97,7 @@ function enableGraphZoom() {
 	window._zoomGraphEditorEnabled = true;
 };
 
-function zoomGraphEditor(event) { //movement for graph camera using translate position & movement
+function zoomGraphEditor(event) {
 	if (window._nodeListDisplayed || window._zoomGraphEditorEnabled === false)
 		return;
 
@@ -141,7 +140,7 @@ function zoomGraphEditor(event) { //movement for graph camera using translate po
 
 		const distance = Math.sqrt(dirX * dirX + dirY * dirY);
 		const maxDistance = Math.sqrt((editorRect.width / 2) ** 2 + (editorRect.height / 2) ** 2);
-		const strength = 0.1 * (distance / maxDistance); // tweak 0.3 for max effect
+		const strength = 0.1 * (distance / maxDistance);
 
 		newCameraX -= dirX * strength;
 		newCameraY -= dirY * strength;
@@ -161,7 +160,7 @@ function zoomGraphEditor(event) { //movement for graph camera using translate po
         graphEditor.setAttribute('data-mousex', event.x);
         graphEditor.setAttribute('data-mousey', event.y);
     }
-}
+};
 
 function getGraphCenter() {
 	const graphEditorRect = document.querySelector('#graphEditor').getBoundingClientRect();
@@ -185,11 +184,9 @@ function setGraphEditorScale(scale, showScale = true, redrawCurves = true, refre
 	graphEditor.style.backgroundSize = `calc(var(--bgSizeGraphEditor) * ${scale}) calc(var(--bgSizeGraphEditor) * ${scale})`;
 	document.documentElement.style.setProperty('--graph-scale', scale);
 	
-	//for graph camera using transform translate position & scale
 	const graphCamera = document.querySelector('#graph-camera');
 	const [x, y] = getGraphPosition();
 	graphCamera.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
-
 	
 	const [xGraphEditor, yGraphEditor] = getGraphPosition();
 	setGraphPosition(xGraphEditor, yGraphEditor, false);

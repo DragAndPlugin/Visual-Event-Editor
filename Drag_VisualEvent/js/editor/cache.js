@@ -16,17 +16,6 @@ function saveCache(callback) {
 	$.Drag.VisualEvent.saveEditorCache(window._cache, callback);
 };
 
-// function bakeTempCache(type = null, mapId = null, targetId = null, pageId = null) {
-	// if (type)
-		// if (mapId || targetId || pageId) {
-			// const filter = getEventKey(type, mapId, targetId, pageId); // just save eventcache ?
-			// window._cache.graph[type] = $.Drag.VisualEvent.mergeObjects(window._cache.graph[type], $.Drag.VisualEvent.filterObjectByKey(window._tempCache.graph[type], filter));
-		// } else
-			// window._cache.graph[type] = $.Drag.VisualEvent.mergeObjects(window._cache.graph[type], window._tempCache.graph[type]);
-	// else
-		// window._cache = $.Drag.VisualEvent.mergeObjects(window._cache, window._tempCache);
-// };
-
 function loadCache() {
 	window._cacheLoadRequested = true;
 	$.Drag.VisualEvent.loadEditorCache();
@@ -44,7 +33,7 @@ function onCacheLoaded(data) {
 };
 
 function onCacheLoadError() {
-	console.warn(`Couldn't load editor cache.`);
+	console.log(`Couldn't load editor cache.`);
 	setupCache();
 	window._cacheLoaded = true;
 };
@@ -344,15 +333,15 @@ function getPageNameFromCache(type = window.data.targetType, mapTargetId = windo
 };
 
 //page conditions
-function saveEventPagesConditionsInCache(conditions, input) {
-	const eventData = getEventCacheItem("data", window.data.targetType, window.data.mapTargetId, window.data.targetId);
+function saveEventPagesConditionsInCache(conditions, input, eventType = window.data.targetType, eventId = window.data.targetId, mapId = window.data.mapTargetId) {
+	const eventData = getEventCacheItem("data", eventType, mapId, eventId);
 	for (const [pageId, condition] of conditions.entries()) {
 		if (!$.Drag.VisualEvent.isIdentical(eventData.pages[pageId].conditions, condition)) {
 			eventData.pages[pageId].conditions = condition;
-			setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, pageId, true);
+			setAsUnsaved(eventType, eventId, mapId, pageId, true);
 			
-			if (pageId === (window.data.pageId || 0))
-				$.Drag.VisualEvent.updateEventConditionsList(input, window.data.targetType, condition);
+			if (input && getEventKey(eventType, mapId, eventId, window.data.pageId) === getEventKey(window.data.targetType, window.data.mapTargetId, window.data.targetId, window.data.pageId))
+				$.Drag.VisualEvent.updateEventConditionsList(input, eventType, condition);
 		}
 	}
 };
@@ -418,7 +407,7 @@ function cacheGraphNode(node, eventCache, connectionsMap) {
 	const [x, y] = getNodePosition(node);
 	const nodeId = getNodeId(node);
 	const isCustom = getNodeIsCustom(node);
-	const commandCode = getNodeCommandCode(node); //isCustom ? node.getAttribute('data-commandCode') : getNodeCommandCode(node);
+	const commandCode = getNodeCommandCode(node);
 	const commandName = node.getAttribute('data-pluginCommandName') || null;
 	const commandText = node.getAttribute('data-pluginCommandText') || null;
 	const commandCategory = node.getAttribute('data-pluginName') || null;
@@ -445,17 +434,6 @@ function cacheGraphNode(node, eventCache, connectionsMap) {
 		commandCode: commandCode, commandName: commandName, commandText: commandText, commandCategory: commandCategory, 
 		parameters: parameters, connectionsMap: connectionsMap, listsLength: listsLength
 	});
-	
-	// if (!eventCache)
-		// eventCache = getEventCache(window.data.targetType, getEventKey());
-
-	// eventCache.nodes[nodeId] = {
-		// x: x, y: y, nodeId: nodeId, 
-		// commandCode: commandCode, commandName: commandName, commandText: commandText, commandCategory: commandCategory, 
-		// parameters: parameters, connectionsMap: connectionsMap, listsLength: listsLength
-	// };
-	
-	
 };
 
 function cacheNodeProperty(node, name = null, value) {
@@ -538,35 +516,23 @@ function getGraphNodeFromCache(node) {
 		return {};
 	
 	const nodeId = getNodeId(node);
-	return getGraphNodesFromCache()[nodeId] || {};
+	return getGraphNodesFromCache(node.data.context.eventType, node.data.context.mapId, node.data.context.eventId, node.data.context.pageId)[nodeId] || {};
 };
 
 function hasGraphNodeInCache(node) {
+	if (!node)
+		return false;
+	
 	const nodeId = getNodeId(node);
-	return hasGraphNodesInCache() && getGraphNodesFromCache()[nodeId];
+	return hasGraphNodesInCache(node.data.context.eventType, node.data.context.mapId, node.data.context.eventId, node.data.context.pageId) && getGraphNodesFromCache(node.data.context.eventType, node.data.context.mapId, node.data.context.eventId, node.data.context.pageId)[nodeId];
 };
 
 function restoreEventNodesFromCache(targetType, mapTargetId, targetId, pageId) {
 	if (!targetType || !targetId)
 		return;
 	
-	// const eventKey = getEventKey(targetType, mapTargetId, targetId, pageId);
-	// if (!window._cache.graph[targetType][eventKey] || !window._cache.graph[targetType][eventKey].nodes)
-		// return;
-	
 	const nodes = $.Drag.VisualEvent.deepCopyJSON(getEventCacheItem("_nodes", targetType, mapTargetId, targetId, pageId));
-	// if (nodes.length > 0)
-		saveItemInEventCache("nodes", nodes, targetType, mapTargetId, targetId, pageId);
-	
-	// for (node of window._cache.graph[targetType][eventKey].nodes) {
-		// if (!node.init)
-			// continue;
-		
-		// node.x = node.init.x;
-		// node.y = node.init.y;
-		// node.parameters = $.Drag.VisualEvent.deepCopyJSON(node.init.parameters);
-		// node.connectionsMap = $.Drag.VisualEvent.deepCopyJSON(node.init.connectionsMap);
-	// }
+	saveItemInEventCache("nodes", nodes, targetType, mapTargetId, targetId, pageId);
 };
 
 function updateCacheGraphNodePosition(node) {
@@ -645,7 +611,6 @@ function setAsUnsaved(targetType = window.data.targetType, targetId = window.dat
 	if (!targetType || !targetId)
 		return;
 	
-	// const eventKey = getEventKey(targetType, mapTargetId, targetId, pageId);
 	const eventKey = getPartialEventKey(targetType, mapTargetId, targetId, pageId);
 	const eventCache = getEventCache(targetType, eventKey);
 	eventCache.unsaved = true;
@@ -731,7 +696,6 @@ function hideUnsavedIcon(targetType, targetId, mapTargetId, pageId = 0) {
 };
 
 // maps cache
-
 function hasMapInCache(mapId) {
 	return window.data._cacheMaps && window.data._cacheMaps[mapId];
 };
