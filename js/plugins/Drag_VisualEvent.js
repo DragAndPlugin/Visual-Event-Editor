@@ -196,6 +196,10 @@ Drag.VisualEvent.version = "0.1.047";
 		}
 	};
 	
+	Drag.VisualEvent.getDefaultMapInfo = function(id) {
+		return {"id": id, "expanded": true, "name": "", "order": id, "parentId": 1, "scrollX": 0, "scrollY": 0, "quick": false};
+	};
+	
 	// insert item at index in this array
 	Drag.VisualEvent.insert = function(arr, index, item) {
 		if (!Array.isArray(arr))
@@ -556,9 +560,9 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	Drag.VisualEvent.parseJSDocTag = function(text) {
-		const parts = text.trim().split(/\s+/);
-		const tag = parts.shift().replace("@", "");
-		const val = parts.join(" ");
+		const splitText = text.trim().split(/\s+/);
+		const tag = splitText.shift().replace("@", "");
+		const val = splitText.join(" ");
 		return [tag, val];
 	};
 	
@@ -990,7 +994,7 @@ Drag.VisualEvent.version = "0.1.047";
 		Drag.VisualEvent.openWindow(
 			'Drag_DevTools_EventConditionsMenu.html', 'Event Conditions', 
 			window.screen.width * 0.4, window.screen.height * 0.5, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
-			{input: input, eventType: eventType, eventData: eventData, pageId: pageId, editor: editor}
+			{input: input, eventType: eventType, eventData: eventData, pageId: pageId, mapId: mapId, editor: editor}
 		);
 	};
 	
@@ -2089,40 +2093,50 @@ Drag.VisualEvent.version = "0.1.047";
 		return parent;
 	};
 	
-	Drag.VisualEvent.getFolderList = function(sPath) {
-		if (!Drag.VisualEvent.modules.fs || !Drag.VisualEvent.modules.path)
-			return;	
-		
-		const folders = sPath.map(dirPath => {
-			const filesAndFolders = Drag.VisualEvent.modules.fs.readdirSync(dirPath);
-			const folders = filesAndFolders.filter((item) => {
-				const itemPath = Drag.VisualEvent.modules.path.join(dirPath, item);
-				const stats = Drag.VisualEvent.modules.fs.statSync(itemPath);
-				return stats.isDirectory();
+	Drag.VisualEvent.getFolderList = function(path) {
+		try {
+			if (!Drag.VisualEvent.modules.fs || !Drag.VisualEvent.modules.path)
+				return;	
+			
+			const folders = path.map(dirPath => {
+				const filesAndFolders = Drag.VisualEvent.modules.fs.readdirSync(dirPath);
+				const folders = filesAndFolders.filter((item) => {
+					const itemPath = Drag.VisualEvent.modules.path.join(dirPath, item);
+					const stats = Drag.VisualEvent.modules.fs.statSync(itemPath);
+					return stats.isDirectory();
+				});
+				
+				return folders;
 			});
 			
 			return folders;
-		});
-		
-		return folders;
+		} catch (error) {
+			console.warn("Couldn't get folder list: ", path, error);
+			return [];
+		}
 	};
 	
 	Drag.VisualEvent.getFileList = function(path = '', types = '*') {
-		if (!Drag.VisualEvent.modules.fs || !Drag.VisualEvent.modules.path)
-			return;
-		
-		if (!Drag.VisualEvent.modules.fs.existsSync(path))
+		try {
+			if (!Drag.VisualEvent.modules.fs || !Drag.VisualEvent.modules.path)
+				return;
+			
+			if (!Drag.VisualEvent.modules.fs.existsSync(path))
+				return [];
+			
+			const filesAndFolders = Drag.VisualEvent.modules.fs.readdirSync(path);
+			const files = filesAndFolders.filter((item) => {
+				const itemPath = Drag.VisualEvent.modules.path.join(path, item);
+				const extName = Drag.VisualEvent.modules.path.extname(itemPath);
+				const stats = Drag.VisualEvent.modules.fs.statSync(itemPath);
+				return stats.isFile() && (types.includes(extName) || types === '*');
+			});
+			
+			return files;
+		} catch (error) {
+			console.warn("Couldn't get file list: ", path, error);
 			return [];
-		
-		const filesAndFolders = Drag.VisualEvent.modules.fs.readdirSync(path);
-		const files = filesAndFolders.filter((item) => {
-			const itemPath = Drag.VisualEvent.modules.path.join(path, item);
-			const extName = Drag.VisualEvent.modules.path.extname(itemPath);
-			const stats = Drag.VisualEvent.modules.fs.statSync(itemPath);
-			return stats.isFile() && (types.includes(extName) || types === '*');
-		});
-		
-		return files;
+		}
 	};
 	
 	Drag.VisualEvent.getMapList = function() {
