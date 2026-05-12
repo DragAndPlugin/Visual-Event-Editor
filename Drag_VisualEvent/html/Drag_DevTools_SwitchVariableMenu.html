@@ -211,6 +211,7 @@
 		</div>
 		<script type="text/javascript">
 			function main() {
+				window.data = window.data || {}
 				document.title = `Drag_DevTools_${data.type === "switch" ? "Switches" : "Variables"}Menu`;
 				loadDataMainWindow();
 				$.Drag.VisualEvent.setLightMode(document);
@@ -260,17 +261,20 @@
 			};
 			
 			function startUpdating() {
-				setInterval(update, 10);
+				if (window._updateInterval)
+					return;
+
+				window._updateInterval = setInterval(update, 250);
 			};
 			
 			function update() {
 				const renamePanelChilds = Array.from(document.querySelectorAll('#rename-panel > div'));
-				for (child of renamePanelChilds) {
+				for (const child of renamePanelChilds) {
 					const id = parseInt(child.getAttribute('data-id'));
 					const label = child.querySelector('label');
 					const currentValue = getItemValue(id);
 					const newHtml = `${String(id).padStart(4, '0')} (${currentValue}):`;
-					if (label.innerHTML !== newHtml);
+					if (label.innerHTML !== newHtml)
 						label.innerHTML = newHtml;
 				}
 			};
@@ -282,14 +286,17 @@
 				
 				if (maximum < items.length)
 					items.length = maximum + 1;
-				else
+				else {
 					if (data.type === "switch")
 						window.data.system.switches = items.concat(Array(maximum - items.length + 1).fill(""));
 					else
 						window.data.system.variables = items.concat(Array(maximum - items.length + 1).fill(""));
+				}
 				
 				makeList();
-				showItemRenameInputs();
+				const item = document.querySelector('#item-list > div:not(.hidden)');
+				if (item)
+					item.click();
 			};
 			
 			function showItemRenameInputs(event) {
@@ -322,10 +329,17 @@
 			};
 			
 			function getItemValue(id) {
-				if (data.type === "switch")
+				if (data.type === "switch") {
+					if (!$.$gameSwitches || $.$gameSwitches.length - 1 < id)
+						return "<span class='red'>?</span>";
+		
 					return $.$gameSwitches.value(id) ? "<span class='green'>ON</span>" : "<span class='red'>OFF</span>";
-				else
+				} else {
+					if (!$.$gameVariables || $.$gameVariables.length - 1 < id)
+						return "?";
+					
 					return $.$gameVariables.value(id);
+				}
 			};
 			
 			function updateItemName(input) {
@@ -338,10 +352,10 @@
 			};
 			
 			function searchItems(input) {
-				const filter = input.value;
+				const filter = input.value.toLowerCase().trim();
 				const idFilter = !isNaN(parseInt(input.value)) ? parseInt(input.value) : -1;
 				const items = data.type === "switch" ? window.data.system.switches : window.data.system.variables;
-				const filtered = items.map((item, index) => item.includes(filter) || index === idFilter ? index : 0).filter(item => item);
+				const filtered = items.map((item, index) => String(item || "").toLowerCase().trim().includes(filter) || index === idFilter ? index : 0).filter(item => item);
 				
 				for (const listItem of document.querySelectorAll('#item-list > *')) {
 					const min = parseInt(listItem.getAttribute('data-min'));
@@ -355,6 +369,10 @@
 			};
 
 			function ok() {
+				if (window._saving)
+					return;
+				
+				window._saving = true;
 				$.Drag.VisualEvent.requestBackup('data/', 'System', 'json', "", "", save);
 			};
 			
@@ -364,6 +382,8 @@
 				if (editor) {
 					editor.data.$dataSystem.switches = $.Drag.VisualEvent.deepCopyJSON(window.data.system.switches);
 					editor.data.$dataSystem.variables = $.Drag.VisualEvent.deepCopyJSON(window.data.system.variables);
+					$.$dataSystem.switches = $.Drag.VisualEvent.deepCopyJSON(window.data.system.switches);
+					$.$dataSystem.variables = $.Drag.VisualEvent.deepCopyJSON(window.data.system.variables);
 					
 					for (const input of editor.document.querySelectorAll('[data-inputType="switch"]'))
 						$.Drag.VisualEvent.refreshDatabaseInputOptions(input);
@@ -374,6 +394,8 @@
 			};
 
 			function quit() {
+				if (window._updateInterval)
+					clearInterval(window._updateInterval);
 				window.close();
 			};
 
