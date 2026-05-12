@@ -213,6 +213,7 @@
 				loadDataMainWindow();
 				$.Drag.VisualEvent.setLightMode(document);
 				
+				window.data = window.data || {};
 				window.data.mapFileName = $.Drag.VisualEvent.getMapFileName(data.mapId);
 				$.Drag.VisualEvent.loadDataFile(window.data.mapFileName, onMapDataLoaded);
 				$.Drag.VisualEvent.loadDataFile("MapInfos", onMapInfosLoaded);
@@ -224,13 +225,18 @@
 			
 			function onMapDataLoaded(data) {
 				window.data.map = data;
-				
+				window.data.map.bgm = window.data.map.bgm || {name: "", volume: 90, pitch: 100, pan: 0};
+				window.data.map.bgs = window.data.map.bgs || {name: "", volume: 90, pitch: 100, pan: 0};
+				window.data.map.encounterList = window.data.map.encounterList || [];
+
 				if (window.data.mapInfos)
 					makeContent();
 			};
 			
 			function onMapInfosLoaded(data) {
 				window.data.mapInfos = data;
+				if (!window.data.mapInfos[data.mapId])
+					window.data.mapInfos[data.mapId] = $.Drag.VisualEvent.getDefaultMapInfo(data.mapId);
 				
 				if (window.data.map)
 					makeContent();
@@ -541,10 +547,11 @@
 			
 			function toggleEncounterOptions(select) {
 				const container = select.parentElement.parentElement.parentElement;
-				container.querySelector('.troop-encounter-weight').disabled = select.value === "None";
+				const troopId = parseInt(select.getAttribute('data-value')) || 0;
+				container.querySelector('.troop-encounter-weight').disabled = troopId === 0;
 				
 				const rangeSelect = container.querySelector('.troop-encounter-range');
-				rangeSelect.disabled = select.value === "None";
+				rangeSelect.disabled = troopId === 0;
 				toggleEncounterRegionIds(rangeSelect);
 				
 				const troopsEncounter = Array.from(document.querySelectorAll('.troop-encounter'));
@@ -559,7 +566,10 @@
 			};
 			
 			function toggleEncounterRegionIds(select) {
-				for (const input of Array.from(select.parentElement.parentElement.parentElement.querySelectorAll('input')))
+				const container = select.closest('#inputs-wrapper').parentElement;
+				const regionContainer = container.querySelector('.troop-encounter-regionIds-container');
+
+				for (const input of regionContainer.querySelectorAll('input'))
 					input.disabled = select.value === "0";
 			};
 			
@@ -568,8 +578,8 @@
 				window.data.map.displayName = document.querySelector('.display-name-input').value || "";
 				
 				window.data.map.tilesetId = parseInt(document.querySelector('.tileset-input').value) || 1;
-				window.data.map.width = parseInt(document.querySelector('.width-input').value) || 0;
-				window.data.map.height = parseInt(document.querySelector('.height-input').value) || 0;
+				window.data.map.width = parseInt(document.querySelector('.width-input').value) || 1;
+				window.data.map.height = parseInt(document.querySelector('.height-input').value) || 1;
 				
 				window.data.map.scrollType = parseInt(document.querySelector('.scroll-type-input').value) || 0;
 				window.data.map.encounterStep = parseInt(document.querySelector('.encounter-step-input').value) || 0;
@@ -592,8 +602,9 @@
 				};
 				
 				window.data.map.specifyBattleback = document.querySelector('.specify-battlebacks-input').checked;
-				window.data.map.battleback1Name = document.querySelector('.battlebacks-input').value.split(",")[0] || "";
-				window.data.map.battleback2Name = document.querySelector('.battlebacks-input').value.split(",")[1] || "";
+				const battlebacks = document.querySelector('.battlebacks-input').value.split(",");
+				window.data.map.battleback1Name = battlebacks[0] || "";
+				window.data.map.battleback2Name = battlebacks[1] || "";
 				
 				window.data.map.parallaxName = document.querySelector('.parallax-input').value || "";
 				window.data.map.parallaxLoopX = document.querySelector('.loopx-input').checked;
@@ -620,6 +631,13 @@
 			};
 
 			function ok() {
+				if (window._saving)
+					return;
+				
+				window._saving = true;
+				window._mapInfosBackUp = false;
+				window._mapBackUp = false;
+				
 				$.Drag.VisualEvent.requestBackup('data/', 'MapInfos', 'json', "", "", onMapInfosBackUp);
 				$.Drag.VisualEvent.requestBackup('data/', window.data.mapFileName, 'json', "", "", onMapBackUp);
 			};
