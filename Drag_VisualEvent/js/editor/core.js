@@ -1641,11 +1641,6 @@ function onInputChange(input) {
 		if (node._preventInputChange)
 			return;
 		
-		// const eventType = input.hasAttribute('data-eventType') ? input.getAttribute('data-eventType') : window.data.targetType;
-		// const eventId = input.hasAttribute('data-eventId') ? parseInt(input.getAttribute('data-eventId')) : window.data.targetId;
-		// const mapId = input.hasAttribute('data-mapId') ? parseInt(input.getAttribute('data-mapId')) : window.data.mapTargetId;
-		// const pageId = input.hasAttribute('data-pageId') ? parseInt(input.getAttribute('data-pageId')) : window.data.pageId;
-		
 		const eventType = node.data.context.eventType;
 		const eventId = node.data.context.eventId;
 		const mapId = node.data.context.mapId;
@@ -1658,8 +1653,8 @@ function onInputChange(input) {
 			registerNodeReferences(node);
 			cacheNodeProperty(node, "parsedParameters", parseNodeInputs(node));
 	} else if ($.Drag.VisualEvent.getAncestorById(input, 'event-data-container'))
-		if (!isUnsaved(eventType, eventId, mapId, null))
-			setAsUnsaved(eventType, eventId, mapId, null);
+		if (!isUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, null))
+			setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, null);
 };
 
 function isFormInput (element) {
