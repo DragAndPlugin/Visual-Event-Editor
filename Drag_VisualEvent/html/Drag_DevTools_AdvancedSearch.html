@@ -390,40 +390,48 @@
 			
 			function setup() {
 				const commentEventIdFromContainer = document.querySelector('#common-event-id-from-container');
-				const commonEventInputParameters = $.Drag.VisualEvent.getInputParameters('commonEvent');
-				commonEventInputParameters.id = 'common-event-id-from';
-				commentEventIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField(commonEventInputParameters);
+				const commonEventFromInputParameters = $.Drag.VisualEvent.getInputParameters('commonEvent');
+				commonEventFromInputParameters.id = 'common-event-id-from';
+				commentEventIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField(commonEventFromInputParameters);
+				
+				const commonEventToParameters = $.Drag.VisualEvent.getInputParameters('commonEvent');
 				const commentEventIdToContainer = document.querySelector('#common-event-id-to-container');
-				commonEventInputParameters.id = 'common-event-id-to';
-				commentEventIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField(commonEventInputParameters);
+				commonEventToParameters.id = 'common-event-id-to';
+				commentEventIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField(commonEventToParameters);
 				
 				
 				const mapIdFromContainer = document.querySelector('#map-id-from-container');
 				mapIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'map-id-from', min: 1, default: 1});
+				
 				const mapIdToContainer = document.querySelector('#map-id-to-container');
 				mapIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'map-id-to', min: 1, default: 1});
 				
 				const mapEventIdFromContainer = document.querySelector('#map-event-id-from-container');
 				mapEventIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'map-event-id-from', min: 1, default: 1});
+				
 				const mapEventIdToContainer = document.querySelector('#map-event-id-to-container');
 				mapEventIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'map-event-id-to', min: 1, default: 1});
 				
 				const mapEventPageIdFromContainer = document.querySelector('#map-event-page-id-from-container');
 				mapEventPageIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'map-event-page-id-from', min: 0, default: 0});
+				
 				const mapEventPageIdToContainer = document.querySelector('#map-event-page-id-to-container');
 				mapEventPageIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'map-event-page-id-to', min: 0, default: 0});
 				
 				
 				const troopEventIdFromContainer = document.querySelector('#troop-event-id-from-container');
-				const troopEventInputParameters = $.Drag.VisualEvent.getInputParameters('troop');
-				troopEventInputParameters.id = 'troop-event-id-from';
-				troopEventIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField(troopEventInputParameters);
+				const troopEventFromInputParameters = $.Drag.VisualEvent.getInputParameters('troop');
+				troopEventFromInputParameters.id = 'troop-event-id-from';
+				troopEventIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField(troopEventFromInputParameters);
+				
+				const troopEventToInputParameters = $.Drag.VisualEvent.getInputParameters('troop');
 				const troopEventIdToContainer = document.querySelector('#troop-event-id-to-container');
-				troopEventInputParameters.id = 'troop-event-id-to';
-				troopEventIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField(troopEventInputParameters);
+				troopEventToInputParameters.id = 'troop-event-id-to';
+				troopEventIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField(troopEventToInputParameters);
 				
 				const troopEventPageIdFromContainer = document.querySelector('#troop-event-page-id-from-container');
 				troopEventPageIdFromContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'troop-event-page-id-from', min: 0, default: 0});
+				
 				const troopEventPageIdToContainer = document.querySelector('#troop-event-page-id-to-container');
 				troopEventPageIdToContainer.innerHTML = $.Drag.VisualEvent.getInputField({type: "integer", id: 'troop-event-page-id-to', min: 0, default: 0});
 				
@@ -529,7 +537,9 @@
 			
 			function addSearchForItem(button) {
 				const clone = $.Drag.VisualEvent.onAddListInput(button);
-				const select = clone.querySelector('.select select').onchange();
+				const select = clone.querySelector('.select select');
+				if (select && select.onchange)
+					select.onchange();
 			};
 			
 			function removeSearchForItem(button) {
@@ -538,6 +548,13 @@
 			
 			function handleInteractiveInput(input) {
 				$.Drag.VisualEvent.handleInteractiveInput(input);
+			};
+			
+			function getRange(fromSelector, toSelector) {
+				const from = parseInt(document.querySelector(fromSelector).value) || 0;
+				const to = parseInt(document.querySelector(toSelector).value) || 0;
+				
+				return from <= to ? [from, to] : [to, from];
 			};
 		
 			function search() {
@@ -553,7 +570,7 @@
 					if (document.querySelector('#all-common-event-checkbox').checked) 
 						searchIn['Common Event'].ids = '*';
 					else
-						searchIn['Common Event'].ids = [parseInt(document.querySelector('#common-event-id-from').value), parseInt(document.querySelector('#common-event-id-to').value)];
+						searchIn['Common Event'].ids = getRange('#common-event-id-from', '#common-event-id-to');
 				}
 				
 				if (document.querySelector('#map-event-checkbox').checked) {
@@ -562,17 +579,17 @@
 					if (document.querySelector('#all-map-checkbox').checked) 
 						searchIn['Map Event'].mapIds = '*';
 					else
-						searchIn['Map Event'].mapIds = [parseInt(document.querySelector('#map-id-from').value), parseInt(document.querySelector('#map-id-to').value)];
+						searchIn['Map Event'].mapIds = getRange('#map-id-from', '#map-id-to');
 					
 					if (document.querySelector('#all-map-event-checkbox').checked) 
 						searchIn['Map Event'].ids = '*';
 					else
-						searchIn['Map Event'].ids = [parseInt(document.querySelector('#map-event-id-from').value), parseInt(document.querySelector('#map-event-id-to').value)];
+						searchIn['Map Event'].ids = getRange('#map-event-id-from', '#map-event-id-to');
 					
 					if (document.querySelector('#map-event-page-checkbox').checked) 
 						searchIn['Map Event'].pageIds = '*';
 					else
-						searchIn['Map Event'].pageIds = [parseInt(document.querySelector('#map-event-page-id-from').value), parseInt(document.querySelector('#map-event-page-id-to').value)];
+						searchIn['Map Event'].pageIds = getRange('#map-event-page-id-from', '#map-event-page-id-to');
 				}
 				
 				if (document.querySelector('#troop-event-checkbox').checked) {
@@ -581,12 +598,12 @@
 					if (document.querySelector('#all-troop-event-checkbox').checked) 
 						searchIn['Troop Event'].ids = '*';
 					else
-						searchIn['Troop Event'].ids = [parseInt(document.querySelector('#troop-event-id-from').value), parseInt(document.querySelector('#troop-event-id-to').value)];
+						searchIn['Troop Event'].ids = getRange('#troop-event-id-from', '#troop-event-id-to');
 					
 					if (document.querySelector('#troop-event-page-checkbox').checked) 
 						searchIn['Troop Event'].pageIds = '*';
 					else
-						searchIn['Troop Event'].pageIds = [parseInt(document.querySelector('#troop-event-page-id-from').value), parseInt(document.querySelector('#troop-event-page-id-to').value)];
+						searchIn['Troop Event'].pageIds = getRange('#troop-event-page-id-from', '#troop-event-page-id-to');
 				}
 				
 				
@@ -646,8 +663,8 @@
 											data-eventType="${eventType.includes('Map') ? 'Map Event' : eventType}" ${result.mapId !== undefined ? `data-mapId="${result.mapId}"` : ''} 
 											data-eventId="${event.id}" ${result.pageId !== undefined ? `data-pageId="${result.pageId}"` : ''} data-nodeId="${ref.nodeId}">
 												<div>${jumpToSvg}<span>${String(event.id).padStart(4, '0')}: ${event.name} ${result.pageId !== undefined ? `(Page: ${result.pageId})` : ''}<span></div>
-												<div>${ref.commandName}</div>
-												<div>${details}</div>
+												<div>${$.Drag.VisualEvent.escapeHTML(ref.commandName)}</div>
+												<div>${$.Drag.VisualEvent.escapeHTML(details)}</div>
 											</div>
 										`;
 									}
@@ -661,9 +678,9 @@
 											<div id="ref-detail" onclick="jumpTo(this);" 
 											data-eventType="${eventType.includes('Map') ? 'Map Event' : eventType}" ${result.mapId !== undefined ? `data-mapId="${result.mapId}"` : ''} 
 											data-eventId="${event.id}" ${result.pageId !== undefined ? `data-pageId="${result.pageId}"` : ''}>
-												<div>${jumpToSvg}<span>${String(event.id).padStart(4, '0')}: ${event.name} ${result.pageId !== undefined ? `(Page: ${result.pageId})` : ''}<span></div>
-												<div>${name}</div>
-												<div>${details}</div>
+												<div>${jumpToSvg}<span>${String(event.id).padStart(4, '0')}: ${$.Drag.VisualEvent.escapeHTML(event.name)} ${result.pageId !== undefined ? `(Page: ${result.pageId})` : ''}<span></div>
+												<div>${$.Drag.VisualEvent.escapeHTML(name)}</div>
+												<div>${$.Drag.VisualEvent.escapeHTML(details)}</div>
 											</div>
 										`;
 									}
@@ -672,7 +689,7 @@
 						searchResultContainer.querySelector('#refs-detail-container').innerHTML = html;
 					}
 				} catch (error) {
-					searchResultContainer.querySelector('#refs-count').innerHTML = `<span style="color: red;">An error has occured.</span>`;
+					searchResultContainer.querySelector('#refs-count').innerHTML = `<span style="color: red;">An error has occurred.</span>`;
 					searchResultContainer.querySelector('#refs-detail-container').innerHTML = ``;
 					console.error(error);
 				}
@@ -680,19 +697,19 @@
 			
 			function jumpTo(element) {
 				const eventType = element.getAttribute('data-eventType');
-				const mapId = parseInt(element.getAttribute('data-mapId')) || null;
+				const mapId = parseInt(element.getAttribute('data-mapId')) || 0;
 				const eventId = parseInt(element.getAttribute('data-eventId'));
-				const pageId = parseInt(element.getAttribute('data-pageId')) || null;
+				let pageId = parseInt(element.getAttribute('data-pageId')) || 0;
 				const nodeId = parseInt(element.getAttribute('data-nodeId'));
 				
 				const editor = $.Drag.VisualEvent.getEditor();
 				if (editor && eventType && eventId) {
 					if (editor.isEventSelected(eventType, mapId, eventId, pageId)) {
-						if (nodeId !== undefined)
+						if (!isNaN(nodeId))
 							editor.focusNode(nodeId)
 					} else {
 						editor.loadEvent(eventId, eventType, pageId, mapId);
-						if (nodeId !== undefined)
+						if (!isNaN(nodeId))
 							editor.onNodesReadyEx = (() => editor.focusNode(nodeId));
 					}
 					$.Drag.VisualEvent.focusEditor();
