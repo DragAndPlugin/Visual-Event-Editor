@@ -241,6 +241,7 @@
 			function ok() {
 				const val = gatherNotetags();
 				data.input.value = val;
+				data.input.dispatchEvent(new Event('change', {bubbles: true}));
 				
 				$.Drag.VisualEvent.autoFitInput(data.input);
 				$.Drag.VisualEvent.onInputChange(data.input);
