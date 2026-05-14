@@ -102,6 +102,20 @@ Drag.VisualEvent.version = "0.1.047";
 	//----------------------------------------------------------------------
 	// utils
 	
+	Drag.VisualEvent.getGameResolution = function() {
+		return {
+			width: Graphics && Graphics.width ? Graphics.width : 816,
+			height: Graphics && Graphics.height ? Graphics.height : 624
+		};
+	};
+	
+	Drag.VisualEvent.getUIResolution = function() {
+		return {
+			width: Graphics && Graphics.boxWidth ? Graphics.boxWidth : Drag.VisualEvent.getGameResolution().width,
+			height: Graphics && Graphics.boxHeight ? Graphics.boxHeight : Drag.VisualEvent.getGameResolution().height
+		};
+	};
+	
 	Drag.VisualEvent.flattenArray = function(arr) {
 		if (!Array.isArray(arr))
 			return [arr];
