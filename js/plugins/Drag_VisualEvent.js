@@ -131,6 +131,10 @@ Drag.VisualEvent.version = "0.1.047";
 		return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 	};
 	
+	Drag.VisualEvent.escapeHTML = function(string) {
+		return String(string).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+	}
+	
 	Drag.VisualEvent.replaceAll = function(str, find, replace) {
 		return str.replace(new RegExp(Drag.VisualEvent.escapeRegExp(find), 'g'), replace);
 	};
