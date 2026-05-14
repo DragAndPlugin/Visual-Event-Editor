@@ -132,7 +132,7 @@
 						
 					for (let notetag in pluginData.notetags)
 						if (!data.context || !pluginData.notetags[notetag].context || pluginData.notetags[notetag].context.split(',').map(context => context.trim().toLowerCase()).includes(data.context))
-							html += `<option value="${notetag}"></option>`;
+							html += `<option value="${$.Drag.VisualEvent.escapeHTML(notetag)}"></option>`;
 				}
 				html += `</datalist>`;
 				
@@ -166,15 +166,27 @@
 				return `
 					<div id="notetag-container">
 						<div id="notetag-name-container">
-							<input placeholder="Name" type="text" list="notetags" value="${$.Drag.VisualEvent.escapeQuotes(name)}"/>
+							<input placeholder="Name" type="text" list="notetags" value="${$.Drag.VisualEvent.escapeHTML(name)}" 
+								onchange="this.value = sanitizeNotetagName(this.value);" onkeyup="this.onchange();" oninput="this.onchange();" onpaste="this.onchange();"
+							/>
 						</div>
 						<div id="notetag-value-container">
-							<input type="text" value="${$.Drag.VisualEvent.escapeQuotes(value)}" placeholder="Value" />
+							<input type="text" value="${$.Drag.VisualEvent.escapeHTML(value)}" placeholder="Value" 
+								onchange="this.value = sanitizeNotetagValue(this.value);" onkeyup="this.onchange();" oninput="this.onchange();" onpaste="this.onchange();"
+							/>
 						</div>
 						${getAddNotetagButton()}
 						${getRemoveNotetagButton()}
 					</div>
 				`;
+			};
+			
+			function sanitizeNotetagName(name = "") {
+				return name.replace(/[<>:]/g, "");
+			};
+			
+			function sanitizeNotetagValue(value = "") {
+				return value.replace(/[<>]/g, "");
 			};
 			
 			function getAddNotetagButton() {
@@ -210,12 +222,16 @@
 			
 			function gatherNotetags() {
 				const noteInput = document.querySelector('#notes-container > input');
-				const note = $.Drag.VisualEvent.unescapeQuotes(noteInput.value);
+				const note = noteInput ? noteInput.value : "";
 				
 				let notetags = "";
 				for (const notetagContainer of document.querySelectorAll('#notetag-container')) {
-					const notetagName = $.Drag.VisualEvent.unescapeQuotes(notetagContainer.querySelector('#notetag-name-container > input').value);
-					const notetagValue = $.Drag.VisualEvent.unescapeQuotes(notetagContainer.querySelector('#notetag-value-container > input').value); //remove \n ?
+					const notetagName = sanitizeNotetagName(notetagContainer.querySelector('#notetag-name-container > input').value || "");
+					const notetagValue = sanitizeNotetagValue(notetagContainer.querySelector('#notetag-value-container > input').value || ""); //remove \n ?
+
+					if (!notetagName.trim())
+						continue;
+					
 					notetags += `<${notetagName}${notetagValue ? ':' : ''}${notetagValue}>`;
 				};
 				
@@ -236,7 +252,6 @@
 			};
 
 			main();
-
 		</script>
 	</body>
 </html>
