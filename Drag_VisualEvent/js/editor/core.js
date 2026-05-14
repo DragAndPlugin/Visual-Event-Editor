@@ -1652,9 +1652,13 @@ function onInputChange(input) {
 			updateCacheGraphNodeParameters(node);
 			registerNodeReferences(node);
 			cacheNodeProperty(node, "parsedParameters", parseNodeInputs(node));
-	} else if ($.Drag.VisualEvent.getAncestorById(input, 'event-data-container'))
-		if (!isUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, null))
-			setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, null);
+	} else if ($.Drag.VisualEvent.getAncestorById(input, 'event-data-container')) {
+		const eventType = input.getAttribute('data-eventType') || window.data.targetType;
+		const eventId = parseInt(input.getAttribute('data-eventId')) || window.data.targetId;
+		const mapId = parseInt(input.getAttribute('data-mapId')) || window.data.mapTargetId;
+		if (!isUnsaved(eventType, eventId, mapId, null))
+			setAsUnsaved(eventType, eventId, mapId, null);
+	}
 };
 
 function isFormInput (element) {
