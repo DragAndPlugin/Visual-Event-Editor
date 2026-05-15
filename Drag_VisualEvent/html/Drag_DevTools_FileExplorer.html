@@ -109,6 +109,36 @@
 			</div>
 		</div>
 		<script type="text/javascript">
+		
+			window.SEARCH_SVG = `
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="25px" height="25px" style="width: 1.5em; height: 1.5em;">
+					<circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/>
+					<line x1="16.5" y1="16.5" x2="22" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+				</svg>
+			`;
+			
+			window.FOLDER_SVG = `
+				<svg width="25" height="25" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="fill: gold; width: 1.5em; height: 1.5em;">
+					<path d="M10 4L4 4C2.9 4 2 4.9 2 6L2 18C2 19.1 2.9 20 4 20L20 20C21.1 20 22 19.1 22 18L22 8C22 6.9 21.1 6 20 6L12 6L10 4Z"/>
+				</svg>
+			`;
+			
+			window.NONE_SVG = `
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
+					style="stroke: dimgray; width: 1.5em; height: 1.5em;"
+				>
+					<rect x="4" y="4" width="16" height="16" rx="2" ry="2" fill="none"></rect>
+					<line x1="4" y1="4" x2="20" y2="20"></line>
+				</svg>
+			`;
+			
+			window.FILE_SVG = `
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--color)" width="25" height="25" style="width: 1.5em; height: 1.5em;">
+					<path d="M6 2C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2H6ZM13 9V3.5L18.5 9H13Z"></path>
+				</svg>
+			`;
+			
+			
 			function main() {
 				document.title = "Drag_DevTools_FileExplorer";
 				loadDataMainWindow();
@@ -128,8 +158,8 @@
 				
 				if (!Array.isArray(data.src))
 					data.src = data.src.split("/");
-				else 
-					data.src = data.src.map(src => src.split("/"));
+				else
+					data.src = data.src.map(src => Array.isArray(src) ? src : src.split("/"));
 					
 				if (!data.exitFolder)
 					data.restrictedFolder = getFolder();
@@ -138,7 +168,7 @@
 					data.allowSearch = true;
 				
 				if (hasSubSelection())
-					data.value = data.value.split(",");
+					data.value = (data.value || "").split(",");
 				else
 					data.value = [data.value];
 				
@@ -160,16 +190,15 @@
 				document.querySelector('#file-folder-container').style.gridTemplateColumns = data.fileCount > 1 ? `repeat(${data.fileCount}, 0.5fr)` : "1fr"; //try remove
 			};
 			
-			function showDirectoryContent(hasSelect = true, hasPreview = true) {
+			function showDirectoryContent(hasSelect = true) {
 				const allowFolders = data.allowSubFolder;
 				const files = getFileList();
 				const folders = allowFolders ? getFolderList() : [];
 				
 				const container = document.querySelector('#file-folder-container');
 				let content = '';
-				for (let i = 0; i < data.fileCount; i++) {
+				for (let i = 0; i < data.fileCount; i++)
 					content += `<div id="folder-content" data-id="${i}"></div>`;
-				}
 				container.innerHTML = content;
 				
 				for (const [i, folderContent] of Array.from(container.querySelectorAll('#folder-content')).entries()) {
@@ -179,65 +208,50 @@
 					if (data.allowSearch) {
 						content += `
 							<div class="search">
-								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="25px" height="25px" style="width: 1.5em; height: 1.5em;">
-									<circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/>
-									<line x1="16.5" y1="16.5" x2="22" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-								</svg>
+								${window.SEARCH_SVG}
 								<input type="text" placeholder="Search..." onchange="searchFileFolder(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
 							</div>`;
 						count++;
 					}
 						
-					if ((!data.restrictedFolder || getFolder() !== data.restrictedFolder) && getSrc()[i] !== "./") {
+					if ((!data.restrictedFolder || getFolder(i) !== getRestrictedFolder(i)) && getSrc()[i] !== "./") {
 						content += `
 							<div class="folder" data-src=".." onclick="selectFolder(this)" style="${count % 2 === 0 ? '' : 'background-color: #ffffff17;'}">
-								<svg width="25" height="25" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="fill: gold; width: 1.5em; height: 1.5em;">
-									<path d="M10 4L4 4C2.9 4 2 4.9 2 6L2 18C2 19.1 2.9 20 4 20L20 20C21.1 20 22 19.1 22 18L22 8C22 6.9 21.1 6 20 6L12 6L10 4Z"/>
-								</svg>
+								${window.FOLDER_SVG}
 								<span>..</span>
 							</div>`;
 						count++;
 					}
-							
+					
 					if (folders[i])
 						for (const folder of folders[i]) {
 							content += `
 								<div class="folder" style="${count % 2 === 0 ? '' : 'background-color: #ffffff17;'}" data-src="${folder}" onclick="selectFolder(this)">
-									<svg width="25" height="25" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="fill: gold; width: 1.5em; height: 1.5em;">
-										<path d="M10 4L4 4C2.9 4 2 4.9 2 6L2 18C2 19.1 2.9 20 4 20L20 20C21.1 20 22 19.1 22 18L22 8C22 6.9 21.1 6 20 6L12 6L10 4Z"/>
-									</svg>
+									${window.FOLDER_SVG}
 									<span>${folder}</span>
 								</div>`;
 							count++;
 						}
 						
-						
-					const fileTypes = getAllowedFilesTypes();
-					const selectedValues = fileTypes !== "*" ? fileTypes.map(item => data.fileValue[i] + item) : data.fileValue[i];
-					let selectedIndex = files[i].findIndex(item => fileTypes !== "*" ? selectedValues.includes(item) : item.split(".")[0] === selectedValues);
-					
-					if (data.allowNone) { //${(files.length === 0 || selectedIndex === -1) && hasSelect ? 'selected' : ''}"
+					if (data.allowNone) {
 						content += `
 							<div class="file" style="${count % 2 === 0 ? '' : 'background-color: #ffffff17;'}" data-src="" onclick="selectFile(this)">
-								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
-									style="stroke: dimgray; width: 1.5em; height: 1.5em;"
-								>
-									<rect x="4" y="4" width="16" height="16" rx="2" ry="2" fill="none"></rect>
-									<line x1="4" y1="4" x2="20" y2="20"></line>
-								</svg>
+								${window.NONE_SVG}
 								<span>None</span>
 							</div>
 						`;
 						count++;
 					}
+						
+					const fileTypes = getAllowedFilesTypes();
+					const selectedValues = fileTypes !== "*" ? fileTypes.map(item => data.fileValue[i] + item) : data.fileValue[i];
+					let selectedIndex = files[i].findIndex(item => fileTypes !== "*" ? selectedValues.includes(item) : item.split(".")[0] === selectedValues);
 					
 					for (const [j, file] of files[i].entries()) {
 						data.selectedFile[i] = j === selectedIndex ? file : data.selectedFile[i];
 						content += `
 							<div class="file ${j === selectedIndex && hasSelect ? 'selected' : ''}" style="${count % 2 === 0 ? '' : 'background-color: #ffffff17;'}" data-src="${file}" onclick="selectFile(this)">
-								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--color)" width="25" height="25" style="width: 1.5em; height: 1.5em;">
-									<path d="M6 2C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2H6ZM13 9V3.5L18.5 9H13Z"></path>
-								</svg>
+								${window.FILE_SVG}
 								<span>${file}</span>
 							</div>
 						`;
@@ -251,9 +265,7 @@
 								<div class="file ${data.tilesetNames[0] === data.fileValue[0] && tilesetIndex === 0 && hasSelect ? 'selected' : ''}" style="${count % 2 === 0 ? '' : 'background-color: #ffffff17;'}" 
 									onclick="selectTileset(this)" data-src="${data.tilesetNames[0]}" data-tileset="0" data-tilesetLetter="B"
 								>
-									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--color)" width="25" height="25" style="width: 1.5em; height: 1.5em;">
-										<path d="M6 2C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2H6ZM13 9V3.5L18.5 9H13Z"></path>
-									</svg>
+									${window.FILE_SVG}
 									<span>Tileset B (${data.tilesetNames[0]})</span>
 								</div>
 							`;
@@ -262,9 +274,7 @@
 								<div class="file ${data.tilesetNames[1] === data.fileValue[0] && tilesetIndex === 1 && hasSelect ? 'selected' : ''}" style="${(count + 1) % 2 === 0 ? '' : 'background-color: #ffffff17;'}" 
 									onclick="selectTileset(this)" data-src="${data.tilesetNames[1]}" data-tileset="1" data-tilesetLetter="C"
 								>
-									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--color)" width="25" height="25" style="width: 1.5em; height: 1.5em;">
-										<path d="M6 2C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2H6ZM13 9V3.5L18.5 9H13Z"></path>
-									</svg>
+									${window.FILE_SVG}
 									<span>Tileset C (${data.tilesetNames[1]})</span>
 								</div>
 							`;
@@ -273,9 +283,7 @@
 								<div class="file ${data.tilesetNames[2] === data.fileValue[0] && tilesetIndex === 2 && hasSelect ? 'selected' : ''}" style="${(count + 2) % 2 === 0 ? '' : 'background-color: #ffffff17;'}" 
 									onclick="selectTileset(this)" data-src="${data.tilesetNames[2]}" data-tileset="2" data-tilesetLetter="D"
 								>
-									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--color)" width="25" height="25" style="width: 1.5em; height: 1.5em;">
-										<path d="M6 2C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2H6ZM13 9V3.5L18.5 9H13Z"></path>
-									</svg>
+									${window.FILE_SVG}
 									<span>Tileset D (${data.tilesetNames[2]})</span>
 								</div>
 							`;
@@ -284,9 +292,7 @@
 								<div class="file ${data.tilesetNames[3] === data.fileValue[0] && tilesetIndex === 3 && hasSelect ? 'selected' : ''}" style="${(count + 3) % 2 === 0 ? '' : 'background-color: #ffffff17;'}" 
 									onclick="selectTileset(this)" data-src="${data.tilesetNames[3]}" data-tileset="3" data-tilesetLetter="E"
 								>
-									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--color)" width="25" height="25" style="width: 1.5em; height: 1.5em;">
-										<path d="M6 2C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2H6ZM13 9V3.5L18.5 9H13Z"></path>
-									</svg>
+									${window.FILE_SVG}
 									<span>Tileset E (${data.tilesetNames[3]})</span>
 								</div>
 							`;
@@ -294,10 +300,14 @@
 					
 					folderContent.innerHTML = content;
 					
-					if (folderContent.querySelector('.selected'))
-						folderContent.querySelector('.selected').onclick();
-					else 
-						folderContent.querySelector('.file').onclick();
+					const selected = folderContent.querySelector('.selected');
+					if (selected)
+						selected.onclick();
+					else {
+						const firstFile = folderContent.querySelector('.file');
+						if (firstFile)
+							firstFile.onclick();
+					}
 				}
 			};
 			
@@ -365,7 +375,7 @@
 				else
 					data.fileCount > 1 ? data.src[containerId].push(src) : data.src.push(src);
 				
-				showDirectoryContent(false, false);
+				showDirectoryContent();
 			};
 			
 			function showTilesetPreview(file, tilesetLetter) {
@@ -402,8 +412,6 @@
 				data._isTilesetPreview = false;
 				
 				for (const [id, directoryPath] of getSrc().entries()) {
-				// const directoryPath = getSrc()[id];
-					
 					if (data.previewType === "image") {
 						let image = contentPreview.querySelector(`img[data-id='${id}']`);
 						
@@ -549,11 +557,25 @@
 			
 			function getSrc() {
 				const src = data.fileCount > 1 ? data.src.map(src => src.join("/") || "./") : [(data.src.join("/") || "./")];
-				return src.map(item => item.replace("//", "/"));
+				return src.map(item => item.replace(/\/+/g, "/"));
 			};
 			
-			function getFolder() {
-				return data.src[data.src.length - 1];
+			function getFolder(index = null) {
+				if (data.fileCount > 1) {
+					if (index !== null) {
+						const src = data.src[index];
+						return src[src.length - 1];
+					} else
+						return data.src.map(src => src[src.length - 1]);
+				} else
+					return data.src[data.src.length - 1];
+			};
+			
+			function getRestrictedFolder(index = null) {
+				if (data.fileCount > 1 && index !== null) {
+					return data.restrictedFolder[index];
+				} else
+					return data.restrictedFolder;
 			};
 			
 			function hasSubSelection() {
@@ -564,11 +586,17 @@
 				const path = require('path');	
 				if (data && data.selectedFile !== undefined && (!hasSubSelection() || data.selectedIndex !== undefined) && data.src !== undefined) {
 					let value = "";
-					data.selectedFile = data.selectedFile.map(file => file !== undefined ? file : "");
-					for (const file of data.selectedFile) {
-						const selectedFile = path.parse(file).name;
-						const src = selectedFile ? data.src.splice(data.src.indexOf(data.restrictedFolder) + 1).join("/") : "";
 					
+					data.selectedFile = data.selectedFile.map(file => file !== undefined ? file : "");
+					for (const [i, file] of data.selectedFile.entries()) {
+						const selectedFile = path.parse(file).name;
+						
+						const srcFolders = data.fileCount > 1 ? data.src[i] : data.src;
+						const restrictedFolder = getRestrictedFolder(i);
+						const restrictedIndex = srcFolders.indexOf(restrictedFolder);
+						
+						const src = selectedFile && restrictedIndex >= 0 ? srcFolders.slice(restrictedIndex + 1).join("/") : "";
+						
 						if (hasSubSelection())
 							value += (src !== "" ? src + "/" : "") + selectedFile + "," + (selectedFile !== "" ? data.selectedIndex : "");
 						else 
@@ -577,10 +605,12 @@
 						value += ",";
 					}
 					value = value.slice(0, -1); 
+					
 					data.input.value = value;
 					data.input.dispatchEvent(new Event('change', {bubbles: true}));
 				}
-				window.close();
+				
+				quit();
 			};
 			
 			function quit() {
