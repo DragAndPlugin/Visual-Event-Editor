@@ -130,9 +130,16 @@
 			
 			function showStructInputsFields(structValue, structName, nodeTarget) {
 				const pluginName = data.pluginName;
-				let inputs = $.Drag.VisualEvent.pluginJSDocData[pluginName].structs[structName].params.map(item => {return {...item}}); //two level deep copy
+				const pluginData = $.Drag.VisualEvent.pluginJSDocData[pluginName];
+				const structData = pluginData && pluginData.structs && pluginData.structs[structName];
+
+				if (!structData || !Array.isArray(structData.params)) {
+					nodeTarget.innerHTML = `<span style="color:red;">Unknown structure: ${$.Drag.VisualEvent.escapeHTML(structName)}</span>`;
+					return;
+				}
+
+				const inputs = $.Drag.VisualEvent.deepCopyJSON(structData.params);
 				let content = "";
-				
 				for (const input of inputs) {
 					content += `
 							<span class="inputContainer ${input.type === "empty" ? 'hidden' : ''}">
@@ -168,12 +175,23 @@
 						
 						if (input.type === "location") {
 							let defaultValue;
-							try { defaultValue = JSON.parse(input.default); } catch(err) { defaultValue = {mapId: 0, x: 0, y: 0} };
+							try { 
+								defaultValue = JSON.parse(input.default); 
+							} catch(err) { 
+								defaultValue = {mapId: 0, x: 0, y: 0}
+							}
 							
-							const loc = structValue[input.name] ? JSON.parse(structValue[input.name]) : defaultValue;
+							let loc = defaultValue;
+							try {
+								loc = typeof value === "string" ? JSON.parse(value) : value || defaultValue;
+							} catch (err) {
+								loc = defaultValue;
+							}
 							
 							input.value[i] = [parseInt(loc.mapId) || 0, parseInt(loc.x) || 0, parseInt(loc.y) || 0];
-							input.data += ` data-allowSearch=true' data-allowMapChange='true'"`;
+							
+							input.data = input.data || "";
+							input.data += ` data-allowSearch="true" data-allowMapChange="true"`;
 						}
 						
 						if (input.type === "struct")
@@ -184,7 +202,7 @@
 									try {
 										input.value[i] = JSON.parse($.Drag.VisualEvent.unescapeQuotes(input.value[i], true));
 									} catch(err2) {
-										input.value = {};
+										input.value[i] = {};
 									}
 								}
 							else
@@ -198,7 +216,8 @@
 					
 					for (const [j, value] of values.entries()) {
 						input.value = value;
-						input.data += ` data-inputName="${input.name}"`;
+						input.data = input.data || "";
+						input.data += ` data-inputName="${$.Drag.VisualEvent.escapeHTML(input.name)}"`;
 						input.noAutofitCheckbox = true;
 						content += `
 									<div class="firstChildWidth100 ${input.type === 'struct' ? 'structWrapper' : 'inputWrapper'}">
@@ -253,7 +272,7 @@
 								val[inputName] = val[inputName] || [];
 								val[inputName].push($.Drag.VisualEvent.getPluginCommandInputValue(input));
 							} else 
-								val[inputName] = $.Drag.VisualEvent.getPluginCommandInputValue(input
+								val[inputName] = $.Drag.VisualEvent.getPluginCommandInputValue(input);
 								
 							input.setAttribute('data-valueGathered', "true");
 						}
@@ -280,9 +299,16 @@
 			};
 
 			function ok() {
-				const val = gatherStructureValues();
-				data.input.setAttribute('data-structValue', JSON.stringify(val));
-				data.input.dispatchEvent(new Event('change', {bubbles: true}));
+				try {
+					const val = gatherStructureValues();
+					data.input.setAttribute('data-structValue', JSON.stringify(val));
+					data.input.dispatchEvent(new Event('change', {bubbles: true}));
+				} catch (error) {
+					const editor = $.Drag.VisualEvent.getEditor();
+					if (editor)
+						editor.console.error(`Couldn't parse struct ${pluginName}:${structName} :`, error);
+				}
+				
 				quit();
 			};
 
