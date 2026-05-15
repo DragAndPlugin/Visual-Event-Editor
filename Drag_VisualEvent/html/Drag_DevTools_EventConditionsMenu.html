@@ -121,11 +121,12 @@
 			
 			function setup() {
 				data._conditions = [];
-				data._pageCount = data.eventData.pages.length;
+				const pages = data.eventData && Array.isArray(data.eventData.pages) ? data.eventData.pages : [];
+				data._pageCount = pages.length;
 				
 				for (let pageId = 0; pageId < data._pageCount; pageId++) {
 					if (data.eventData.pages[pageId])
-						data._conditions.push({...data.eventData.pages[pageId].conditions});
+						data._conditions.push($.Drag.VisualEvent.deepCopyJSON(data.eventData.pages[pageId].conditions || {}));
 					else 
 						data._conditions.push({});
 				}
@@ -224,8 +225,14 @@
 				const turnbInput = $.Drag.VisualEvent.getInputParameters("integer", {id: "turnb-value-condition", value: conditionsData.turnB, disabled: !conditionsData.turnValid});
 				
 				const enemyhpCheckbox = $.Drag.VisualEvent.getInputParameters("checkbox", {id: "enemyhp-valid-condition", value: conditionsData.enemyValid, name: "Enemy HP", onchange: "toggleInput(this);"});
-				const membersName = data.eventData.members.map((member, index) => `#${index + 1} ${$.$dataEnemies[member.enemyId].name}`);
-				const enemyOptions = new Array(8).fill(null).map((item, index) => membersName[index] ? membersName[index] : `#${index + 1} ?`);
+				const membersName = (data.eventData.members || []).map((member, index) => {
+					const enemy = $.$dataEnemies && $.$dataEnemies[member.enemyId];
+					return `#${index + 1} ${enemy ? enemy.name : "?"}`;
+				});
+				const maxEnemyOptions = Math.max(8, membersName.length);
+				const enemyOptions = new Array(maxEnemyOptions).fill(null).map((item, index) =>
+					membersName[index] ? membersName[index] : `#${index + 1} ?`
+				);
 				const enemyInput = $.Drag.VisualEvent.getInputParameters("select", {id: "enemy-id-condition", options: enemyOptions, value: conditionsData.enemyIndex, disabled: !conditionsData.enemyValid});
 				const enemyValue = $.Drag.VisualEvent.getInputParameters("percentage", {id: "enemy-value-condition", value: conditionsData.enemyHp, disabled: !conditionsData.enemyValid});
 				
@@ -287,6 +294,9 @@
 				element.classList.add('selected-page');
 				
 				const pageId = parseInt(element.getAttribute('data-pageId'));
+				if (isNaN(pageId) || !data._conditions[pageId])
+					return;
+				
 				data.pageId = pageId;
 				showPageConditions();
 			};
@@ -343,6 +353,8 @@
 			
 			function savePageConditions() {
 				const val = gatherConditions();
+				if (!val)
+					return;
 				data._conditions[data.pageId] = val;
 			};
 

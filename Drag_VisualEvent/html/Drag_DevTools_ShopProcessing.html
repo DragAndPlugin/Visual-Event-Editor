@@ -30,7 +30,8 @@
 				width: 100%;
 				margin: 0;
 				position: relative;
-				overflow: hidden;
+				overflow: auto;
+				margin-bottom: 3.125em;
 			}
 			
 			#search-merchandises {
@@ -162,6 +163,7 @@
 				display: flex;
 				justify-content: flex-end;
 				box-sizing: border-box;
+				z-index: 10;
 			}
 			
 			#bottom-container > * {
@@ -246,10 +248,12 @@
 				if (!data.value)
 					data.value = [];
 				else
-					data.value = data.value.split(',').map(Number);
+					data.value = String(data.value).split(',').map(value => parseInt(value)).filter(value => !isNaN(value));
 				
-				if (data.value.length % 4 > 0)
+				if (data.value.length % 4 > 0) {
 					console.warn(`Number of values is not valid: ${data.value.length}`);
+					data.value = data.value.slice(0, data.value.length - (data.value.length % 4));
+				}
 			};
 			
 			function showMerchandisesList() {
@@ -269,7 +273,7 @@
 				}
 				
 				document.querySelector('#merchandises-list').innerHTML = content;
-			}
+			};
 			
 			function getMerchandiseElements(itemType = 0, itemId = 1, priceType = 0, price = 0) {
 				return `
@@ -288,7 +292,7 @@
 							${getAddMerchandiseButton()}
 							${getRemoveMerchandiseButton()}
 						</div>
-						<div id="merchandise-grab" onmousedown="startGrabMerchandise(this);">&#8942;</div>
+						<div id="merchandise-grab" onmousedown="startGrabMerchandise(event, this);">&#8942;</div>
 					</div>
 				`;
 			};
@@ -311,7 +315,7 @@
 			
 			
 			//grab and drag
-			function startGrabMerchandise(elem) {				
+			function startGrabMerchandise(event, elem) {			
 				window._grabTarget = elem.parentElement;
 				if (!window._grabTarget)
 					return;
@@ -359,8 +363,7 @@
 			window.addEventListener("mouseup", onMouseUp);
 			function onMouseUp(ev) {				
 				for (const selected of document.querySelectorAll('.selected'))
-					if (ev.path.filter(elem => elem.id === "move-route")[0] !== selected)
-						selected.classList.remove('selected');
+					selected.classList.remove('selected');
 				
 				if (!window._grabTarget)
 					return;
@@ -375,12 +378,14 @@
 				const merchandisesContainer = document.querySelector('#merchandises-list');
 				const merchandises = Array.from(merchandisesContainer.querySelectorAll('#merchandise-container'));
 				
-				if (orderBy === "asc")
-					merchandises.sort((a, b) => parseInt(a.querySelector('#merchandise-price-value').value) - parseInt(b.querySelector('#merchandise-price-value').value))
-				else if (orderBy === "desc")
-					merchandises.sort((a, b) => parseInt(b.querySelector('#merchandise-price-value').value) - parseInt(a.querySelector('#merchandise-price-value').value))
+				merchandises.sort((a, b) => {
+					const priceA = parseInt(a.querySelector('#merchandise-price-value').value) || 0;
+					const priceB = parseInt(b.querySelector('#merchandise-price-value').value) || 0;
+					return orderBy === "asc" ? priceA - priceB : priceB - priceA;
+				});
 				
-				merchandisesContainer.innerHTML = merchandises.map(element => element.outerHTML).join('');
+				for (const merchandise of merchandises)
+					merchandisesContainer.appendChild(merchandise);
 			};
 			
 			function reorderByType(button) {
@@ -389,7 +394,9 @@
 				const merchandises = Array.from(merchandisesContainer.querySelectorAll('#merchandise-container'));
 				
 				merchandises.sort((a, b) => orderBy.indexOf(a.querySelector('#merchandise-item-type').value) - orderBy.indexOf(b.querySelector('#merchandise-item-type').value))
-				merchandisesContainer.innerHTML = merchandises.map(element => element.outerHTML).join('');
+				
+				for (const merchandise of merchandises)
+					merchandisesContainer.appendChild(merchandise);
 			};
 			
 			//add & remove
@@ -402,9 +409,10 @@
 			};
 			
 			function removeMerchandise(button) {
-				button.parentElement.parentElement.remove();
+				const container = button.closest('#merchandise-container');
+				if (container)
+					container.remove();
 			};
-			
 			
 			//getters & setters
 			function getSelectItemTypeElement(itemType = 0, itemId = 1) {
@@ -461,6 +469,10 @@
 			};
 			
 			function setDefaultItemPrice(merchandiseContainer) {
+				const priceType = parseInt(merchandiseContainer.querySelector('#merchandise-price-type').value) || 0;
+				if (priceType !== 0)
+					return;
+				
 				const itemTypeInput = merchandiseContainer.querySelector('#merchandise-item-type');
 				const itemIdInput = merchandiseContainer.querySelector('#merchandise-item-id');
 				
@@ -524,7 +536,7 @@
 					input.setAttribute('data-userValue', input.value);
 					
 					const itemType = parseInt(container.previousElementSibling.querySelector('select').value);
-					const itemId = parseInt(container.previousElementSibling.querySelector('input').value);
+					const itemId = parseInt(container.previousElementSibling.querySelector('input').getAttribute('data-value')) || 1;
 					input.value = $.Drag.VisualEvent.getDefaultItemPrice(itemType, itemId);
 				} else {
 					input.disabled = false;
@@ -550,7 +562,7 @@
 			function ok() {
 				const val = gatherMerchandisesValues();
 				if (data.input) {
-					data.input.setAttribute('data-value', val);
+					data.input.setAttribute('data-value', val.join(','));
 					data.input.dispatchEvent(new Event('change', {bubbles: true}));
 				}
 				quit();
