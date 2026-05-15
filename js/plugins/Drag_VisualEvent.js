@@ -2341,8 +2341,12 @@ Drag.VisualEvent.version = "0.1.047";
 		const editor = Drag.VisualEvent.getEditor();
 		
 		//prevent action if last list element or min list requires it
-		const parent = button.parentElement.parentElement; 
-		const listElementCount = Array.from(parent.querySelectorAll('#add-list-input-button')).length;
+		const parent = button.parentElement.parentElement;
+		// const listElementCount = Array.from(parent.querySelectorAll('#add-list-input-button')).length;
+		const input = parent.querySelector('*[data-isList="true"]');
+		const listId = input.getAttribute('data-listId');
+		
+		const listElementCount = Array.from(parent.querySelectorAll(`*[data-listId="${listId}"]`)).length;
 		const minList = parseInt(button.getAttribute('data-minList')) || 1;
 		if (listElementCount <= minList) 
 			return;
@@ -2613,14 +2617,14 @@ Drag.VisualEvent.version = "0.1.047";
 				params.value = params.default;
 		
 		if (Drag.VisualEvent.databaseTypes.includes(params.type))
-			return Drag.VisualEvent.getDatabaseInputField(params, index, controller) + (params.isList ? Drag.VisualEvent.getListInputButtons() : '');
+			return Drag.VisualEvent.getDatabaseInputField(params, index, controller) + (params.isList ? Drag.VisualEvent.getListInputButtons(params.minList || 0) : '');
 		
 		const type = Drag.VisualEvent.capitalize(params.type);
 		const inputFieldFunction = `get${type}InputField`;
 		if (typeof Drag.VisualEvent[inputFieldFunction] !== "function")
-			return Drag.VisualEvent.getDefaultInputField(params, index, controller) + (params.isList ? Drag.VisualEvent.getListInputButtons() : '');
+			return Drag.VisualEvent.getDefaultInputField(params, index, controller) + (params.isList ? Drag.VisualEvent.getListInputButtons(params.minList || 0) : '');
 		else
-			return Drag.VisualEvent[inputFieldFunction](params, index, controller) + (params.isList ? Drag.VisualEvent.getListInputButtons() : '');
+			return Drag.VisualEvent[inputFieldFunction](params, index, controller) + (params.isList ? Drag.VisualEvent.getListInputButtons(params.minList || 0) : '');
 		
 		return "";
 	};
@@ -2657,7 +2661,7 @@ Drag.VisualEvent.version = "0.1.047";
 					<div class="rowGap05em" style="display: flex; flex-direction: column; margin-bottom: 0.5em; text-align: left;">
 						${inputs.join('')}
 					</div>
-					${Drag.VisualEvent.getListInputButtons()}
+					${Drag.VisualEvent.getListInputButtons(params.minList || 0)}
 				</div>
 			</div>
 		`;
