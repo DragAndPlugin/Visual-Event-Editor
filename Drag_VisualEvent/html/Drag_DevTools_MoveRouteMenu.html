@@ -275,10 +275,6 @@
 				<button onclick="quit();">Cancel</button>
 			</div>
 		</div>
-		<!--<div onclick="toggleLightMode()" id="lightMode">
-			<span>&#9790;</span>
-			<span>&#9728;</span>
-		</div>-->
 		<script type="text/javascript">
 			function main() {
 				document.title = "Drag_DevTools_MoveRouteMenu";
@@ -312,8 +308,9 @@
 											continue;
 										
 										const value = -1 + i;
+										const escapedOption = $.Drag.VisualEvent.escapeHTML(option);
 										res += `
-											<option ${value === data.eventId ? 'selected' : ''} data-name="${option}" value="${value}">${option}</option>
+											<option ${value === data.eventId ? 'selected' : ''} data-name="${escapedOption}" value="${value}">${escapedOption}</option>
 										`;
 									}
 									return res;
@@ -329,15 +326,15 @@
 					</div>
 					<div id="move-route-options">
 						<div class="flex">
-							<input id="move-route-repeat" type="checkbox" onchange=""/ ${data.repeat ? "checked" : ""}>
+							<input id="move-route-repeat" type="checkbox" onchange="" ${data.repeat ? "checked" : ""} />
 							<span onclick="toggleCheckbox(this.previousElementSibling);">Repeat Movements</span>
 						</div>
 						<div class="flex">
-							<input id="move-route-skip" type="checkbox" onchange=""/ ${data.skip ? "checked" : ""}>
+							<input id="move-route-skip" type="checkbox" onchange="" ${data.skip ? "checked" : ""} />
 							<span onclick="toggleCheckbox(this.previousElementSibling);">Skip If Cannot Move</span>
 						</div>
 						<div class="flex">
-							<input id="move-route-wait" ${data.thisEventOnly ? 'disabled' : ''} type="checkbox" onchange="" ${data.wait && !data.thisEventOnly ? "checked" : ""}/>
+							<input id="move-route-wait" ${data.thisEventOnly ? 'disabled' : ''} type="checkbox" onchange="" ${data.wait && !data.thisEventOnly ? "checked" : ""} />
 							<span ${!data.thisEventOnly ? 'onclick="toggleCheckbox(this.previousElementSibling);"' : ''} style="${data.thisEventOnly ? 'color: grey;' : ''}">Wait For Completion</span>
 						</div>
 					</div>
@@ -353,12 +350,13 @@
 					moveRouteList.appendChild(moveRoute);
 					
 					for (const [i, input] of Array.from(moveRoute.querySelectorAll('*[data-isCommandParameter="true"]')).entries()) {
+						input.setAttribute('data-parameterId', i);
+						
 						if (input.onchange)
 							input.onchange();
+						
 						if (input.onblur)
 							input.onblur();
-						// input.setAttribute('onchange', input.getAttribute('onchange') + " updateInputContainer(this);");
-						input.setAttribute('data-parameterId', i);
 					}
 				}
 			};
@@ -386,17 +384,26 @@
 				moveRouteCommands.style.gridTemplateColumns = `repeat(${columnCount}, 0.3fr)`;
 				
 				let content = "";
-				for (let i = 0; i < columnCount; i++) {
+				const commands = [];
+				for (let i = 1; i < names.length; i++)
+					commands.push(i);
+
+				const rowsPerColumn = Math.ceil(commands.length / columnCount);
+
+				for (let col = 0; col < columnCount; col++) {
 					content += `<div>`;
-					for (let j = 1; j < names.length / columnCount; j++) {
-						const index = i * Math.floor(names.length / columnCount) + j; 
-						const hasParams = !!$.Drag.VisualEvent.moveRouteParameters[index];
+					for (let row = 0; row < rowsPerColumn; row++) {
+						const commandIndex = commands[col * rowsPerColumn + row];
+						if (commandIndex === undefined)
+							continue;
+
+						const hasParams = !!$.Drag.VisualEvent.moveRouteParameters[commandIndex];
 						content += `
-							<button data-code="${index}" data-name="${names[index]}" onclick="${hasParams ? 'promptMoveRouteParameters(this)' : 'addMoveRouteList(this)'}">${names[index]}${hasParams ? '...' : ''}</button>
+							<button data-code="${commandIndex}" data-name="${names[commandIndex]}" onclick="${hasParams ? 'promptMoveRouteParameters(this)' : 'addMoveRouteList(this)'}">${names[commandIndex]}${hasParams ? '...' : ''}</button>
 						`;
-					}					
+					}
 					content += `</div>`;
-				};
+				}
 				content += `
 					<div id="move-route-parameters" class="hidden">
 						<div id="move-route-parameters-container"></div>
@@ -456,13 +463,15 @@
 				
 				const inputs = Array.from(document.querySelectorAll('#move-route-parameters-container *[data-isCommandParameter="true"]'));
 				for (const input of inputs) 
-					input.setAttribute('value', input.value); // sounds stupid but needed to refresh outerhtml
+					input.setAttribute('value', input.value); // needed to refresh outerhtml
+				
 				const html = inputs.map(input => input.tagName === "SELECT" ? input.parentElement.outerHTML : input.outerHTML);
 				const parameters = inputs.map(input => input.type === "number" ? Number(input.value) : input.value);
 				const moveRoute = getMoveRouteElement(button.getAttribute('data-code'), [], html);
 				
-				for (const input of moveRoute.querySelectorAll('*[data-isCommandParameter="true"]')) {
+				for (const [i, input] of Array.from(moveRoute.querySelectorAll('*[data-isCommandParameter="true"]')).entries()) {
 					input.value = input.getAttribute('value');
+					input.setAttribute('data-parameterId', i);
 					input.setAttribute('onchange', (input.getAttribute('onchange') || "") + " updateInputContainer(this);");
 				}
 				
@@ -574,12 +583,30 @@
 				return moveRoute;
 			};
 			
-			function startGrabMoveRoute(ev) {
-				const targetIsInput = ev.path.filter(elem => elem.getAttribute && elem.getAttribute('data-iscommandparameter')).length > 0;
+			function getEventPath(event) {
+				if (event.composedPath)
+					return event.composedPath();
+
+				const path = [];
+				let elem = event.target;
+
+				while (elem) {
+					path.push(elem);
+					elem = elem.parentElement;
+				}
+
+				path.push(window);
+				return path;
+			};
+			
+			function startGrabMoveRoute(event) {
+				const path = getEventPath(event);
+				
+				const targetIsInput = path.some(elem => elem.getAttribute && elem.getAttribute('data-iscommandparameter'));
 				if (targetIsInput)
 					return;
 				
-				window._grabTarget = ev.path.filter(elem => elem.id === "move-route")[0];
+				window._grabTarget = path.find(elem => elem.id === "move-route");
 				if (!window._grabTarget)
 					return;
 				
@@ -595,20 +622,20 @@
 			};
 			
 			window.addEventListener("mousemove", moveGrabbedMoveRoute);
-			function moveGrabbedMoveRoute(ev) {
+			function moveGrabbedMoveRoute(event) {
 				if (!window._grabTarget)
 					return;
 				
 				const container = window._grabTarget.parentElement;
 				const moveRoutes = Array.from(container.children);
 				const rects = moveRoutes.map(child => child.getBoundingClientRect());
-				let index = rects.findIndex((rect, i) => ev.y >= rect.y && ev.y <= rect.y + rect.height);
+				let index = rects.findIndex((rect, i) => event.y >= rect.y && event.y <= rect.y + rect.height);
 				
 				if (index === -1)
-					index = ev.y <= rects[0].y ? 0 : - 1;
+					index = event.y <= rects[0].y ? 0 : - 1;
 				
 				if (index === -1)
-					index = ev.y >= rects[rects.length - 1].y + rects[rects.length - 1].height / 2 ? rects.length : rects.length - 1;
+					index = event.y >= rects[rects.length - 1].y + rects[rects.length - 1].height / 2 ? rects.length : rects.length - 1;
 				
 				const currentIndex = moveRoutes.indexOf(window._grabTarget);
 				if (index !== currentIndex) {
@@ -621,31 +648,30 @@
 				}
 			};
 			
-			function moveMoveRoute(elems, direction) {	
+			function moveMoveRoute(elems, direction) {
 				if (!elems || elems.length < 1)
 					return;
+				
 				if (!Array.isArray(elems))
 					elems = [elems];
 				
 				const container = elems[0].parentElement;
-				const moveRoutes = Array.from(container.children);
 				
 				for (const elem of elems) {
-					const currentIndex = moveRoutes.indexOf(elem);
-					direction = direction > 0 ? direction + 1 : direction;
-					const index = (currentIndex + direction) > moveRoutes.length ? 0 : currentIndex + direction;
-					container.insertBefore(elem, moveRoutes[index]);
-				};
+					if (!elem || elem.parentElement !== container)
+						continue;
+					
+					if (direction < 0 && elem.previousElementSibling)
+						container.insertBefore(elem, elem.previousElementSibling);
+					else if (direction > 0 && elem.nextElementSibling)
+						container.insertBefore(elem.nextElementSibling, elem);
+				}
 				
 				data._refreshPreview = true;
 			};
 			
 			window.addEventListener("mouseup", onMouseUp);
-			function onMouseUp(ev) {				
-				// for (const selected of document.querySelectorAll('.selected'))
-					// if (ev.path.filter(elem => elem.id === "move-route")[0] !== selected)
-						// selected.classList.remove('selected');
-				
+			function onMouseUp(event) {								
 				if (!window._grabTarget)
 					return;
 				
@@ -653,9 +679,9 @@
 				window._grabTarget = null;
 			};
 			
-			window.addEventListener("mousedown", function(ev) {
+			window.addEventListener("mousedown", function(event) {
 				const moveRouteParameters = document.querySelector('#move-route-parameters');
-				if (!ev.path.includes(moveRouteParameters))
+				if (!getEventPath(event).includes(moveRouteParameters))
 					moveRouteParameters.classList.add('hidden');
 			});
 			
@@ -668,16 +694,27 @@
 					deleteMoveRoute(Array.from(document.querySelectorAll('.selected')));
 			}, false);
 			
+			function parseMoveRouteParameters(moveRoute) {
+				try {
+					const parameters = moveRoute.getAttribute('data-parameters') || "[]";
+					const parsed = JSON.parse(parameters);
+					return Array.isArray(parsed) && parsed.length ? parsed : null;
+				} catch (error) {
+					console.warn("Couldn't parse move route parameters :", error);
+					return null;
+				}
+			};
+			
 			function gatherMoveRouteListAndParameters() {
 				const moveRouteList = document.querySelector('#move-route-list');
 				const moveRoutes = moveRouteList.querySelectorAll('#move-route');
 				
 				const list = Array.from(moveRoutes).map(moveRoute => parseInt(moveRoute.getAttribute('data-code'))).filter(code => !isNaN(code)).concat([0]);
-				const parameters = Array.from(moveRoutes).map(moveRoute => moveRoute.getAttribute('data-parameters') !== '[]' ? JSON.parse(moveRoute.getAttribute('data-parameters')) : null).concat([null]);
+				const parameters = Array.from(moveRoutes).map(parseMoveRouteParameters).concat([null]);
 				
 				return [list, parameters];
 			};
-
+			
 			function ok() {
 				const [list, parameters] = gatherMoveRouteListAndParameters();
 
@@ -690,8 +727,11 @@
 				
 				quit();
 			};
-
+			
 			function quit() {
+				if (window._previewInterval)
+					clearInterval(window._previewInterval);
+				
 				window.close();
 			};
 

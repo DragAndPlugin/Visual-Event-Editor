@@ -357,6 +357,9 @@
 			};
 
 			function setup() {
+				data.x = parseInt(data.x) || 0;
+				data.y = parseInt(data.y) || 0;
+				
 				if (data.allowSearch === undefined)
 					data.allowSearch = true;
 				
@@ -459,21 +462,34 @@
 
 			function showMapPreview(file) {
 				if (!file) {
-					file = document.querySelector('.map.selected');
-					file = file.getAttribute('data-src');
+					const selected = document.querySelector('.map.selected');
+					if (selected)
+						file = selected.getAttribute('data-src');
 				}
+				
 				if (!file) {
-					file = document.querySelector('.map');
-					file = file.getAttribute('data-src');
+					const firstMap = document.querySelector('.map');
+					if (firstMap)
+						file = firstMap.getAttribute('data-src');
 				}
+				
 				if (!file)
 					return;
 				
-				const mapData = $.Drag.VisualEvent.getMapData(file, makeMapPreview);
+				const mapLoadId = Date.now() + Math.random();
+				window._mapLoadId = mapLoadId;
+
+				$.Drag.VisualEvent.getMapData(file, function(mapData) {
+					if (window._mapLoadId !== mapLoadId)
+						return;
+
+					makeMapPreview(mapData);
+				});
 			};
 
 			function makeMapPreview(mapData) {
-				this._subSelectionReady = false;
+				window._subSelectionReady = false;
+				window._mapData = mapData;
 
 				const contentPreview = document.querySelector('#map-preview #img-container');
 				contentPreview.classList.remove('hidden');
@@ -518,11 +534,13 @@
 			};
 
 			function hideFilePreview() {
-				const contentPreview = document.querySelector('#map-preview > div').classList.add("hidden");
+				const contentPreview = document.querySelector('#img-container');
+				if (contentPreview)
+					contentPreview.classList.add("hidden");
 			};
 			
 			function onImageLoad(img, ev) {
-				if (!this._subSelectionReady)
+				if (!window._subSelectionReady)
 					setupSubSelection(img, ev);
 				
 				const imageLayerId = parseInt(img.getAttribute('data-layerId'));
@@ -534,37 +552,31 @@
 			};
 
 			function setupSubSelection(element, ev) {
-				this._subSelectionReady = true;
-				const container = document.querySelector('#sub-selection-container');
-				const targetWidth = element.naturalWidth;
-				const targetHeight = element.naturalHeight;
-				const width = 100 / (element.naturalWidth / ($.$dataSystem.tileSize || 48));
-				const height = 100 / (element.naturalHeight / ($.$dataSystem.tileSize || 48));
+				window._subSelectionReady = true;
 				data.selectedIndex = 0;
-
-				let tWidth = 0;
-				let tHeight = 0;
+				
+				const container = document.querySelector('#sub-selection-container');
+				const tileSize = $.$dataSystem.tileSize || 48;
+				const mapWidth = Math.round(element.naturalWidth / tileSize);
+				const mapHeight = Math.round(element.naturalHeight / tileSize);
+				
 				let content = '';
 				let count = 0;
-				let x = 0;
-				let y = 0;
-				while (tHeight < 100) {
-					while (tWidth < 100) {
+				for (let y = 0; y < mapHeight; y++) {
+					for (let x = 0; x < mapWidth; x++) {
+						const left = (x / mapWidth) * 100;
+						const top = (y / mapHeight) * 100;
+						const width = 100 / mapWidth;
+						const height = 100 / mapHeight;
 						content += `
 							<div class="sub-selection ${data.x === x && data.y === y ? 'selected initial' : ''}" onclick="selectSubSelection(this);" onmouseover="hoverSubSelection(this);" onmouseout="unhoverSubSelection(this);"
 								data-x="${x}" data-y="${y}" data-index="${count}"
-								style="left: ${tWidth}%; top: ${tHeight}%; width: ${width}%; height: ${height}%">
+								style="left: ${left}%; top: ${top}%; width: ${width}%; height: ${height}%">
 								<div id="move-route-preview-container"></div>
 							</div>
 						`;
-						tWidth += width;
 						count++;
-						x++;
 					}
-					tWidth = 0;
-					x = 0;
-					y++;
-					tHeight += height;
 				}
 				container.innerHTML = content;
 				document.querySelector('#selected-display > b').innerHTML = ` x:${data.x} y:${data.y}`;
@@ -613,8 +625,8 @@
 				event.preventDefault();
 				
 				const imgContainer = document.querySelector('#img-container');
-				imgContainer.setAttribute('data-mousex', event.x);
-				imgContainer.setAttribute('data-mousey', event.y);
+				imgContainer.setAttribute('data-mousex', event.clientX);
+				imgContainer.setAttribute('data-mousey', event.clientY);
 
 				window._moveMapPreview = true;
 				return false;
@@ -634,12 +646,12 @@
 				const mousex = parseInt(imgContainer.getAttribute('data-mousex')) || 0;
 				const mousey = parseInt(imgContainer.getAttribute('data-mousey')) || 0;
 
-				const xMapPreview = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--xMapPreview'));
-				const yMapPreview = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--yMapPreview'));
+				const xMapPreview = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--xMapPreview')) || 0;
+				const yMapPreview = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--yMapPreview')) || 0;
 
 				const scaleMult = 100 / (scale * 100);
-				const hMovement = (event.x - mousex) * scaleMult;
-				const vMovement = (event.y - mousey) * scaleMult;
+				const hMovement = (event.clientX - mousex) * scaleMult;
+				const vMovement = (event.clientY - mousey) * scaleMult;
 
 				document.querySelector(':root').style.setProperty('--xMapPreview', xMapPreview + hMovement + "px");
 				document.querySelector(':root').style.setProperty('--yMapPreview', yMapPreview + vMovement + "px");
@@ -670,11 +682,13 @@
 			};
 
 			function ok() {
-				if (data && !data.isMoveRoutePreview && data.selectedFile !== undefined && data.input && data.input.getAttribute('data-value')) {
-					const includeMapId = data.input.getAttribute('data-value').split(',').length > 2;
+				if (data && !data.isMoveRoutePreview && data.selectedFile !== undefined && data.input) {
+					const dataValue = data.input.getAttribute('data-value') || "";
+					const includeMapId = dataValue.split(',').length > 2;
 					const selectedMap = document.querySelector('.map.selected');
 					const mapId = selectedMap ? parseInt(selectedMap.getAttribute('data-mapId')) : data.mapId;
 					const literalMapId = includeMapId ? `Map${mapId.toString().padStart(3, '0')}` : "Current Map";
+					
 					const x = data.x || 0;
 					const y = data.y || 0;
 					const value = `${literalMapId}: x: ${x}, y: ${y}`;
@@ -688,10 +702,19 @@
 					data.input.value = value;
 					data.input.dispatchEvent(new Event('change', {bubbles: true}));
 				}
-				window.close();
+				
+				quit();
 			};
 
 			function quit() {
+				clearMoveRoutePreview();
+
+				if (window._moveRouteUpdateInterval)
+					clearInterval(window._moveRouteUpdateInterval);
+					
+				window.removeEventListener("mouseup", disableMapPreviewMovement);
+				window.removeEventListener("mousemove", moveMapPreview);
+
 				window.close();
 			};
 
@@ -710,8 +733,13 @@
 				
 				if (data.input.getAttribute('data-needRefresh') === "true") {
 					data.input.setAttribute('data-needRefresh', "false");
-					data.list = JSON.parse(data.input.getAttribute('data-list'));
-					data.parameters = JSON.parse(data.input.getAttribute('data-parameters'));
+					try {
+						data.list = JSON.parse(data.input.getAttribute('data-list') || "[]");
+						data.parameters = JSON.parse(data.input.getAttribute('data-parameters') || "[]");
+					} catch (error) {
+						console.error("Could not parse move route preview data.", error);
+						return;
+					}
 					startShowMoveRoutePreview();
 				}
 			};
@@ -819,16 +847,6 @@
 				}, delay));
 			};
 			
-			// ${tile.firstElementChild.childElementCount === 0 ? `
-							// <div id="move-route-preview-symbol" style="transform: translate(-50%, -50%) rotate(0deg);">
-								// <div id="preview-wrapper">
-									// <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" xml:space="preserve" width="24" height="24">
-										// <circle cx="12" cy="12" r="10" fill="black" stroke="black" stroke-width="2"></circle>
-									// </svg>
-								// </div>
-							// </div>
-						// ` : ''}
-			
 			function clearMoveRoutePreview() {
 				if (window._moveRouteTimeoutIds)
 					for (const timeoutId of window._moveRouteTimeoutIds)
@@ -873,6 +891,9 @@
 			};
 			
 			function showNextMoveRoutePreview(moveRouteId = 0, coords = [0, 0], faceDir = "down") {
+				if (!Array.isArray(data.list) || moveRouteId > data.list.length || !window._mapData)
+					return;
+				
 				const moveRoute = data.list[moveRouteId];
 				const delay = getPreviewDelay();
 				
@@ -889,8 +910,8 @@
 				if (skip)
 					return showNextMoveRoutePreview(++moveRouteId, coords, newFaceDir);
 				
-				coords[0] = Math.max(coords[0] + dir[0], 0);
-				coords[1] = Math.max(coords[1] + dir[1], 0);
+				coords[0] = Math.min(Math.max(coords[0] + dir[0], 0), window._mapData.width);
+				coords[1] = Math.min(Math.max(coords[1] + dir[1], 0), window._mapData.height);
 				
 				// jump
 				if (moveRoute === 14) {
@@ -1146,23 +1167,23 @@
 			function getArrowStyleFromDir(dir) {
 				switch (dir.join(",")) {
 					case "1,0":
-						return ["transform: translate(-50%, -50%); left: 106%;"];
+						return "transform: translate(-50%, -50%); left: 106%;";
 					case "0,1":
-						return ["transform: translate(-50%, -50%) rotate(90deg); top: 106%;"];
+						return "transform: translate(-50%, -50%) rotate(90deg); top: 106%;";
 					case "-1,0":
-						return ["transform: translate(-50%, -50%) rotate(180deg); left: -6%;"];
+						return "transform: translate(-50%, -50%) rotate(180deg); left: -6%;";
 					case "0,-1":
-						return ["transform: translate(-50%, -50%) rotate(270deg); top: -6%;"];
+						return "transform: translate(-50%, -50%) rotate(270deg); top: -6%;";
 					case "-1,1":
-						return ["transform: translate(-50%, -50%) rotate(135deg); left: -6%; top: 112.5%;"];
+						return "transform: translate(-50%, -50%) rotate(135deg); left: -6%; top: 112.5%;";
 					case "1,1":
-						return ["transform: translate(-50%, -50%) rotate(45deg); left: 112.5%; top: 112.5%;"];
+						return "transform: translate(-50%, -50%) rotate(45deg); left: 112.5%; top: 112.5%;";
 					case "-1,-1":
-						return ["transform: translate(-50%, -50%) rotate(225deg); left: -6%; top: -6%;"];
+						return "transform: translate(-50%, -50%) rotate(225deg); left: -6%; top: -6%;";
 					case "1,-1":
-						return ["transform: translate(-50%, -50%) rotate(315deg); left: 112.5%; top: -6%;"];	
+						return "transform: translate(-50%, -50%) rotate(315deg); left: 112.5%; top: -6%;";	
 					default:
-						return [null, ""];
+						return "";
 				}
 			};
 			
@@ -1178,7 +1199,7 @@
 						return "transform: translate(-50%, -50%) rotate(270deg);";	
 					default:
 						return "transform: translate(-50%, -50%) rotate(90deg);";
-				}
+				}	
 			};
 			
 			function hideMoveRouteSummary() {
@@ -1187,23 +1208,32 @@
 			};
 			
 			function showMoveRouteSummary(tile) {
-				hideMoveRouteSummary();				
+				hideMoveRouteSummary();
+				
 				if (!tile.hasAttribute('data-moveRoute'))
 					return;
 				
-				const dataMoveRoute = tile.getAttribute('data-moveRoute').trim().split(" ").map(s => JSON.parse(s));
+				let dataMoveRoute = [];
+				try {
+					dataMoveRoute = tile.getAttribute('data-moveRoute').trim().split(" ").map(s => JSON.parse(s));
+				} catch (error) {
+					console.warn("Couldn't parse move route data: ", error);
+					return;
+				}
+				
 				if (dataMoveRoute.length === 0)
 					return;
 				
 				let html = "";
 				for (const data of dataMoveRoute) {
-					if (!data[1])
+					if (!data || !data[1])
 						continue;
+					
 					const index = data[0]; 
 					const name = data[1] === -1 ? "Start" : data[1] === - 2 ? "End" : $.Drag.VisualEvent.moveRouteNames[data[1]]
 					html += `<span>${index}: ${name}</span>`;
 				}
-					
+				
 				const moveRoutePreviewTooltip = document.querySelector('#move-route-preview-tooltip');
 				moveRoutePreviewTooltip.innerHTML = html;
 				moveRoutePreviewTooltip.classList.remove('hidden');
