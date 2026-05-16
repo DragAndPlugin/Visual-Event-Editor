@@ -46,13 +46,7 @@ function copyNodes() {
 	const selectedNodes = getSelectedNodes().filter(node => !node.classList.contains('uncopyable'));
 	
 	for (const [nodeIndex, node] of selectedNodes.entries()) {
-		const clonedNode = cloneNode(node);
-		clonedNode.data = {
-			id: node.data.id,
-			commandCode: node.data.commandCode,
-			isCustom: node.data.isCustom,
-			context: $.Drag.VisualEvent.deepCopyJSON(node.data.context)
-		};
+		const clonedNode = cloneNode(node, true);
 		window._nodeClipboard.nodes.push(clonedNode);
 		
 		const connections = getNodeConnections(node);					
@@ -97,15 +91,10 @@ function pasteNodes(useNodeListPosition = false) {
 	const clones = [];
 	for (const [nodeIndex, node] of window._nodeClipboard.nodes.entries()) {
 		//clone and add node
-		const clone = node.cloneNode(true);
+		const clone = cloneNode(node);
 		clones.push(clone);
-		clone.data = {
-			commandCode: node.data.commandCode,
-			isCustom: node.data.isCustom,
-			node: clone,
-		};
-		$.Drag.VisualEvent.attributeRadioUniqueId(clone);
 		addNodeToGraphNode(clone);
+		console.log(clone, clone.data);
 		
 		//place copied node
 		const oldPosition = window._nodeClipboard.positions[nodeIndex];
@@ -144,6 +133,7 @@ function pasteNodes(useNodeListPosition = false) {
 		}
 		
 		const nodeCache = getGraphNodeFromCache(window._nodeClipboard.nodes[nodeIndex]);
+		console.log(nodeCache);
 		const copiedNodeCache = nodeCache ? $.Drag.VisualEvent.deepCopyJSON(nodeCache) : null;
 		if (copiedNodeCache) {
 			copiedNodeCache.nodeId = getNodeId(node);
