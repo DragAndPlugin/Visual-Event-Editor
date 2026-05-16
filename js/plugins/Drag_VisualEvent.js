@@ -2298,6 +2298,40 @@ Drag.VisualEvent.version = "0.1.047";
 		return clone;
 	};
 	
+	Drag.VisualEvent.attributeRadioUniqueId = function(container) {
+		if (!container)
+			return;
+		
+		const radios = Array.from(container.querySelectorAll('input[type="radio"]'));
+		const id = `nodeRadioInput${Drag.VisualEvent.getUniqueId()}`;
+		for (const radio of radios) {
+			radio.setAttribute('id', id);
+			radio.setAttribute('name', id);
+			radio.previousElementSibling.setAttribute('for', id);
+		}
+	};
+	
+	Drag.VisualEvent.attributeRadioUniqueId = function(container) {
+		if (!container)
+			return;
+
+		const radios = Array.from(container.querySelectorAll('input[type="radio"]'));
+		const ids = {};
+
+		for (const radio of radios) {
+			const prevId = radio.getAttribute('name') || radio.getAttribute('id') || "radio";
+			if (!ids[prevId])
+				ids[prevId] = `nodeRadioInput${Drag.VisualEvent.getUniqueId()}`;
+
+			const newId = ids[prevId];
+
+			radio.setAttribute('id', newId);
+			radio.setAttribute('name', newId);
+			if (radio.previousElementSibling)
+				radio.previousElementSibling.setAttribute('for', newId);
+		}
+	};
+	
 	Drag.VisualEvent.addListInput = function(button) {
 		if (!button)
 			return;
@@ -2306,14 +2340,7 @@ Drag.VisualEvent.version = "0.1.047";
 		const node = Drag.VisualEvent.getAncestorById(button, 'graphNode');
 		const editor = Drag.VisualEvent.getEditor();
 		
-		//attribute unique id to radios
-		const radios = Array.from(clone.querySelectorAll('input[type="radio"]'));
-		const id = `nodeRadioInput${Drag.VisualEvent.getUniqueId()}`;
-		for (const radio of radios) {
-			radio.setAttribute('id', id);
-			radio.setAttribute('name', id);
-			radio.previousElementSibling.setAttribute('for', id);
-		}
+		Drag.VisualEvent.attributeRadioUniqueId(clone);
 		
 		if (node && editor) {
 			//deconnect connections
