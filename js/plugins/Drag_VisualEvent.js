@@ -2814,27 +2814,20 @@ Drag.VisualEvent.version = "0.1.047";
 		
 		if (!params.addOptions || !Array.isArray(params.addOptions))
 			params.addOptions = [];
-		if (params.isPluginParameter)
-			params.addOptions.push("None");
 		
-		// const databaseOptions = Drag.VisualEvent.getDatabaseData(params.type);
-		// params.options = params.addOptions.map((option, optionId) => ({id: optionId - params.addOptions.length + 1, name: option})).concat(databaseOptions);
+		if (params.isPluginParameter && !params.addOptions.includes("None"))
+			params.addOptions.push("None");
 		
 		const defaultId = params.default !== undefined ? params.default : 1;
 		const id = Math.max(params.value !== undefined ? params.value : defaultId, -params.addOptions.length + 1);
 		
-		// let optionValue = params.options.find(option => option.id === id);
-		// if (!optionValue) {
-			// optionValue = {id: id, name: "??? [NOT IN DB]"};
-			// params.options.push(optionValue);
-		// }
-		
-		const padId = String(id).padStart(4, "0");
-		const name = Drag.VisualEvent.getDatabaseItemName(params.type, id); //optionValue.name;
-		const literalValue = id <= 0 ? name : `${padId}: ${name}`;
-		// const literalValue = '';
-		
-		// const literalsOptions = params.options.map(option => `<option value="${option.id}">${option.id > 0 ? String(option.id).padStart(4, "0") + ': ' : ''}${option.name || ''}</option>`);
+		let literalValue = "";
+		if (id > 0) { 
+			const padId = String(id).padStart(4, "0");
+			const name = Drag.VisualEvent.getDatabaseItemName(params.type, id - 1);
+			literalValue = `${padId}: ${name}`;
+		} else
+			literalValue = params.addOptions[params.addOptions.length - 1 + id];
 		
 		if (params.isInteractiveController === true) {
 			const databaseOptions = Drag.VisualEvent.getDatabaseData(params.type);
@@ -2870,7 +2863,7 @@ Drag.VisualEvent.version = "0.1.047";
 						</svg>
 					</div>
 				` : ''}
-			</div>`; //${literalsOptions.join("")}		
+			</div>`;
 			
 		// if (!Drag.VisualEvent._databaseInputFieldCache[params.type])
 			// Drag.VisualEvent._databaseInputFieldCache[params.type] = input;
