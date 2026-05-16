@@ -130,7 +130,7 @@ function pasteNodes(useNodeListPosition = false) {
 		closeNodeListMenu();
 	}
 	
-	//rebuild all connections and curves and copy cache
+	//rebuild all connections and curves, copy cache and refresh cull
 	const eventCache = getEventCache();
 	for (const [nodeIndex, node] of clones.entries()) {
 		for (const [connectionTargetIndex, connectionTarget] of window._nodeClipboard.connections[nodeIndex].entries()) {
@@ -151,6 +151,8 @@ function pasteNodes(useNodeListPosition = false) {
 			copiedNodeCache.connectionsMap = getNodeConnectionsMap(node); //connections maps seems to not be calculated correctly sometimes, to fix
 			eventCache.nodes[copiedNodeCache.nodeId] = copiedNodeCache;
 		}
+		
+		refreshNodeCull(node);
 	}
 	
 	//history
