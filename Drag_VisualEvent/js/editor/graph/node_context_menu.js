@@ -104,6 +104,7 @@ function pasteNodes(useNodeListPosition = false) {
 			isCustom: node.data.isCustom,
 			node: clone,
 		};
+		$.Drag.VisualEvent.attributeRadioUniqueId(clone);
 		addNodeToGraphNode(clone);
 		
 		//place copied node
