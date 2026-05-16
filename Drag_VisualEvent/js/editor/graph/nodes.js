@@ -582,7 +582,7 @@ function moveSelectedNodes() {
 			movement = [xOffset, yOffset];
 			setNodePosition(node, xNode + xOffset, yNode + yOffset);
 			setNodeOffset(node, 0, 0);
-			setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
+			// setAsUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, window.data.pageId || 0);
 		}
 	}
 	
