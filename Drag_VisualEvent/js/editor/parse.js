@@ -242,15 +242,15 @@ function getRawNodeInputsValues(node, nodeInputs, filterHidden = true) {
 	return nodeInputs.map(input => input.getAttribute('data-value') !== null ? input.getAttribute('data-value') : input.value);
 };
 
-function parseNodeInputs(node, nodeInputs, filterHidden = true, filterRadios = true, flatten = true) {
+function parseNodeInputs(node, nodeInputs, filterHidden = true, filterRadios = true, flatten = true, filterNonParameters = true) {
 	if (!node)
 		return [];
 	
 	if (!nodeInputs)
-		nodeInputs = getNodeInputs(node, filterHidden, filterRadios);
+		nodeInputs = getNodeInputs(node, filterHidden, filterRadios, filterNonParameters);
 	
 	const commandCode = getNodeCommandCode(node);
-		
+	
 	if (commandCode === 357) { //plugin commands need specific formating
 		const pluginName = node.getAttribute('data-pluginName');
 		const pluginCommandName = node.getAttribute('data-pluginCommandName');
@@ -264,10 +264,11 @@ function parseNodeInputs(node, nodeInputs, filterHidden = true, filterRadios = t
 	}
 };
 
-function getNodeInputs(node, filter = true, filterRadios = true) {
+function getNodeInputs(node, filter = true, filterRadios = true, filterNonParameters = true) {
 	const commandCode = getNodeCommandCode(node);
+	const selector = filterNonParameters ? '*[data-isCommandParameter="true"]' : '*[data-inputType]:not([data-inputType="interactive"])';
 	
-	const nodeInputs = Array.from(node.querySelectorAll('*[data-isCommandParameter="true"]')).filter( //remove hidden && disabled dependances (except ones with noIgnore)
+	const nodeInputs = Array.from(node.querySelectorAll(selector)).filter( //remove hidden && disabled dependances (except ones with noIgnore)
 		input => !filter || input.getAttribute('data-noIgnore') === "true" || !(input.getAttribute('data-dependance') === "true" && (!isVisible(input) || input.disabled))
 	).filter(
 		input => !filterRadios || !(input.type === "radio" && !input.checked) // remove unchecked radios

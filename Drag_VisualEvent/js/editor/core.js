@@ -1164,7 +1164,7 @@ function assignNodeParametersValues(node, values) {
 	
 	const commandCode = getNodeCommandCode(node);
 	if (commandCode !== 357) {
-		const inputs = getNodeInputs(node, false, false);
+		const inputs = getNodeInputs(node, false, false, false);
 		for (const [i, value] of values.entries())
 			if (inputs[i])
 				$.Drag.VisualEvent.setInputValue(inputs[i], value);
