@@ -51,6 +51,7 @@ function copyNodes() {
 			id: node.data.id,
 			commandCode: node.data.commandCode,
 			isCustom: node.data.isCustom,
+			context: $.Drag.VisualEvent.deepCopyJSON(node.data.context)
 		};
 		window._nodeClipboard.nodes.push(clonedNode);
 		
