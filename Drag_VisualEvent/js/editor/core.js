@@ -1377,7 +1377,7 @@ function showSaveNotification(success = true) {
 	window._saveTimeout = setTimeout(() => {
 		clearTimeout(window._saveTimeout);
 		
-		notification.style.transition = 'opacity cubic-bezier(0.55, 0.06, 0.68, 0.19) 2s';
+		notification.style.transition = 'opacity cubic-bezier(0.55, 0.06, 0.68, 0.19) 1s';
 		notification.style.opacity = 0;
 		
 		window._saveTimeout = setTimeout(() => {
@@ -1385,7 +1385,7 @@ function showSaveNotification(success = true) {
 			
 			saveButton.classList.remove('hidden');
 			saveAllButton.classList.remove('hidden');
-		}, 2000);
+		}, 1000);
 		
 	}, 100);
 };
