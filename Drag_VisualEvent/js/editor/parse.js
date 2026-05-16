@@ -217,13 +217,15 @@ function parseNodesBehavior(startingNode = getFirstNode(), indent = 0, sequence 
 			} catch (error) {
 				console.error(`Couldn't parse correctly command ${commandCode}, please retry. Error : `, error);
 			}				
-		} else
+		} else {
+			nodesBehavior.push(command);
 			try {
 				if (typeof window._customNodes[commandCode].parse === "function")
 					window._customNodes[commandCode].parse(window, command, node, nodesBehavior, nodeInputs, data.subSequence);
 			} catch (error) {
 				console.error(`Couldn't parse properly custom node ${commandCode}, please retry or contact author of the custom code. Error : `, error);
 			}
+		}
 	}
 	
 	if (addEndBehavior)

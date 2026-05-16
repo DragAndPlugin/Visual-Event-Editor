@@ -1064,7 +1064,11 @@ function getNodeCommandDescription(node) {
 };
 
 //custom Nodes
-function getCustomNodeData(name) {
+function hasCustomNodeData(name = "") {
+	return !!window._customNodes[name]
+};
+
+function getCustomNodeData(name = "") {
 	const data = window._customNodes[name] || {};
 	
 	if (typeof data.exec_input !== "boolean")
@@ -1091,4 +1095,9 @@ function getCustomNodeParameters(name) {
 	const customNode = getCustomNodeData(name);
 	const parameters = customNode.inputs.concat(customNode.outputs).map(parameter => $.Drag.VisualEvent.interactiveInputs[parameter] ? $.Drag.VisualEvent.getInteractiveInputParameters(parameter) : $.Drag.VisualEvent.getInputParameters(parameter)); //$.Drag.VisualEvent.inputs[parameter]
 	return parameters;
+};
+
+function isNodeCustom(node) {
+	const commandCode = getNodeCommandCode(node);
+	return typeof commandCode === "string" && hasCustomNodeData(commandCode);
 };

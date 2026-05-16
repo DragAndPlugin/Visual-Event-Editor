@@ -594,23 +594,49 @@ function setupGraphNodes(target) {
 		if (!command)
 			continue;
 		
-		//ignore command0
 		const commandCode = command.code;
-		if (commandCode === 0) {
+		if (commandCode === 0) { //ignore command0
 			window._indentNodes[command.indent] = null;
 			y += window._highestHeightBranch[command.indent] || 0;
 			window._highestHeightBranch[command.indent] = 0;
 			continue;
 		}
 		
-		//ignore associated commands
-		if (flattenedAssociatedCommands.includes(`command${commandCode}`))
+		if (flattenedAssociatedCommands.includes(`command${commandCode}`)) //ignore associated commands
 			continue;
 		
-		const commandParameters = $.Drag.VisualEvent.getCommandParameters(commandCode);
-		//ignore command without parameters
-		if (!Array.isArray(commandParameters)) 
+		const isCustom = typeof commandCode === "string" && hasCustomNodeData(commandCode);
+		const customNodeData = isCustom ? getCustomNodeData(commandCode) : null;
+		const commandParameters = isCustom ? customNodeData.inputs : $.Drag.VisualEvent.getCommandParameters(commandCode);
+		if (!Array.isArray(commandParameters) && !isCustom) //ignore command without parameters unless custom
 			continue;
+			
+		x += 500;
+		y = command.indent * 500;
+			
+		if (isCustom) {
+			const node2 = addNodeFromParams({
+				x: x, y: y, isCustom: isCustom,
+				isPluginCommand: false, commandName: customNodeData.name, commandCategory: customNodeData.category,
+				commandCode: commandCode, parametersValues: command.parameters, _lazyLoadInputs: false
+			}, false, false);
+			
+			if (!node2)
+				continue;
+			
+			const prevNode = window._indentNodes[command.indent] ? window._indentNodes[command.indent] : window._indentNodes[command.indent - 1];
+			const outputConnection = isNodeCustom(prevNode) ? prevNode.querySelector(`.outputConnection.exec[data-connected="false"][data-indent="${command.indent}"]`) : prevNode.querySelector(`.outputConnection.exec[data-connected="false"][data-indent="${command.indent}"]:not([data-keepUnconnected="true"])`);
+			const inputConnection = node2.querySelector(`.inputConnection.exec[data-connected="false"]`);
+			if (inputConnection && outputConnection)
+				connectConnections(outputConnection, inputConnection);
+			
+			updateCacheGraphNodeParameters(node2);
+			registerNodeReferences(node2);
+			cacheNodeProperty(node2, "parsedParameters", parseNodeInputs(node2));
+			
+			window._indentNodes[command.indent] = node2;
+			continue;
+		}
 		
 		const commandParametersIndex = $.Drag.VisualEvent.commandsParametersIndex[`command${commandCode}`];
 		setCommandParametersIndexs(commandParameters, commandParametersIndex);
@@ -619,18 +645,16 @@ function setupGraphNodes(target) {
 		const miscInputs = commandParameters.filter(param => param.notParam && !param.isOutput) || [];
 		const [inputs, attributes, hasWarning] = commandCode !== 357 ? makeInputsFromCommand(commandParameters, command, commandId, list) : makeInputsFromPluginCommand(command.parameters[0], command.parameters[1], command.parameters[2], command.parameters[3]);
 		
-		const classList = getCommandClassList(commandCode);
+		const classList = isCustom ? makeCustomClassList(customNodeData.category) : getCommandClassList(commandCode);
 		const outputLabel = getCommandOutputLabel(commandCode);
-		const name = commandCode === 357 ? getCommandName(commandCode, command.parameters[0], command.parameters[1]) : getCommandName(commandCode);
+		const name = commandCode === 357 ? getCommandName(commandCode, command.parameters[0], command.parameters[1]) : isCustom ? customNodeData.name : getCommandName(commandCode);
 		const footer = getCommandFooter(commandCode, hasWarning);
 		
 		const prevNode = window._indentNodes[command.indent] ? window._indentNodes[command.indent] : window._indentNodes[command.indent - 1];
 		const prevNodeCommandCode = parseInt(prevNode.getAttribute('data-commandCode'));
 		
-		x += 500;
-		y = command.indent * 500;
 		const node2 = makeNodeFromParams({
-			x: x, y: y, name: name, commandCode: commandCode, attributes: attributes,
+			x: x, y: y, name: name, commandCode: commandCode, attributes: attributes, isCustom: isCustom,
 			classList: classList + (hasWarning ? ' warning' : ''), haveInputExecNode: true, haveOutputExecNode: true, 
 			inputs: inputs, miscInputs: miscInputs, outputsExec: outputs, indent: command.indent, outputLabel: outputLabel, footer: footer,
 			_lazyLoadInputs: false
@@ -639,9 +663,10 @@ function setupGraphNodes(target) {
 		if (!node2)
 			continue;
 		
-		const outputConnection = prevNode.querySelector(`.outputConnection.exec[data-connected="false"][data-indent="${command.indent}"]:not([data-keepUnconnected="true"])`);
+		const outputConnection = isNodeCustom(prevNode) ? prevNode.querySelector(`.outputConnection.exec[data-connected="false"][data-indent="${command.indent}"]`) : prevNode.querySelector(`.outputConnection.exec[data-connected="false"][data-indent="${command.indent}"]:not([data-keepUnconnected="true"])`);
 		const inputConnection = node2.querySelector(`.inputConnection.exec[data-connected="false"]`);
-		connectConnections(outputConnection, inputConnection);
+		if (inputConnection && outputConnection)
+			connectConnections(outputConnection, inputConnection);
 		
 		updateCacheGraphNodeParameters(node2);
 		registerNodeReferences(node2);
