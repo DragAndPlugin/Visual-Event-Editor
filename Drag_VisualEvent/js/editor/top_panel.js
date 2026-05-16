@@ -38,7 +38,7 @@ function setupTopPanel() {
 				return topPanel.innerHTML = ``;
 			
 			const name = target.name || "";
-			const note = target.note || "";
+			const note = getEventCacheItem("note", "Map Event", window.data.mapTargetId, window.data.targetId) || target.note || "";
 			
 			const locationInput = $.Drag.VisualEvent.getInputParameters('currentMapLocation');
 			locationInput.id = "map-event-location";
@@ -58,10 +58,10 @@ function setupTopPanel() {
 						<label for="map-event-name">Name :</label>
 						${$.Drag.VisualEvent.getInputField({type: "string", id: "map-event-name", value: name, onchange: "updateEventName(this.value);"})}
 					</div>
-					<div id="manage-notetag-container" onclick="openNotetagManager(this.lastElementChild);" onchange="updateEventNote(this);">
+					<div id="manage-notetag-container" onclick="openNotetagManager(this.lastElementChild);">
 						<label for="map-event-notes">Manage note(tag)s :</label>
 						${$.Drag.VisualEvent.getInputField({type: "string", id: "map-event-notes", class: "onReadyOnChange", value: note, 
-							data: `data-context='Map Event' data-eventType='${window.data.targetType}' data-eventId='${window.data.targetId}' data-mapId='${window.data.mapTargetId}'`, onchange: "$.Drag.VisualEvent.autoFitInput(this);"})}
+							data: `data-context='Map Event' data-eventType='${window.data.targetType}' data-eventId='${window.data.targetId}' data-mapId='${window.data.mapTargetId}'`, onchange: "$.Drag.VisualEvent.autoFitInput(this); updateEventNote(this);"})}
 					</div>
 					<div>
 						<label for="map-event-location">Set Location :</label>
@@ -143,6 +143,9 @@ function updateEventMembers(troopId, members) {
 };
 
 function updateEventNote(input) {
+	if (input.classList.contains('onReadyOnChange'))
+		return;
+	
 	const value = $.Drag.VisualEvent.getInputValue(input);
 	const eventType = input.getAttribute('data-eventType');
 	const eventId = parseInt(input.getAttribute('data-eventId'));
