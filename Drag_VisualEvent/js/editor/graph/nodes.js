@@ -394,12 +394,20 @@ function onAllNodeReady() {
 	}
 };
 
-function cloneNode(node) {
+function cloneNode(node, cloneNodeId = false) {
 	const clone = node.cloneNode(true);
 	
-	clone.nodeId = node.data.nodeId;
-	clone.commandCode = node.data.commandCode;
-	clone.isCustom = node.data.isCustom;
+	clone.data = {
+		commandCode: node.data.commandCode,
+		isCustom: node.data.isCustom,
+		node: clone,
+		context: $.Drag.VisualEvent.deepCopyJSON(node.data.context)
+	};
+	
+	if (cloneNodeId) 
+		clone.data.id = getNodeId(node);
+	
+	$.Drag.VisualEvent.attributeRadioUniqueId(clone);
 	
 	return clone;
 };
