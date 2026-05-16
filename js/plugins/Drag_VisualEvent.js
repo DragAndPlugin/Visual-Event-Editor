@@ -196,8 +196,10 @@ Drag.VisualEvent.version = "0.1.047";
 			return arr2;
 	};
 	
+	Drag.VisualEvent._uniqueIdCounter = 0;
+	Drag.VisualEvent._uniqueIdPrefix = `_uid_${Math.random().toString(16).slice(2)}`;
 	Drag.VisualEvent.getUniqueId = function() {
-		return Math.random().toString(16).slice(2);
+		return `${this._uniqueIdPrefix}${this._uniqueIdCounter++}`;
 	};
 	
 	Drag.VisualEvent.getDefaultItemPrice = function(itemType, itemId) {
