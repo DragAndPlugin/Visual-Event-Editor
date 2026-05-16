@@ -2342,7 +2342,6 @@ Drag.VisualEvent.version = "0.1.047";
 		
 		//prevent action if last list element or min list requires it
 		const parent = button.parentElement.parentElement;
-		// const listElementCount = Array.from(parent.querySelectorAll('#add-list-input-button')).length;
 		const input = parent.querySelector('*[data-isList="true"]');
 		const listId = input.getAttribute('data-listId');
 		
@@ -2830,9 +2829,9 @@ Drag.VisualEvent.version = "0.1.047";
 			// params.options.push(optionValue);
 		// }
 		
-		// const padId = String(id).padStart(4, "0");
-		// const name = Drag.VisualEvent.getDatabaseItemName(params.type, id); //optionValue.name;
-		// const literalValue = id <= 0 ? name : `${padId}: ${name}`;
+		const padId = String(id).padStart(4, "0");
+		const name = Drag.VisualEvent.getDatabaseItemName(params.type, id); //optionValue.name;
+		const literalValue = id <= 0 ? name : `${padId}: ${name}`;
 		// const literalValue = '';
 		
 		// const literalsOptions = params.options.map(option => `<option value="${option.id}">${option.id > 0 ? String(option.id).padStart(4, "0") + ': ' : ''}${option.name || ''}</option>`);
@@ -2849,7 +2848,7 @@ Drag.VisualEvent.version = "0.1.047";
 		const input =  `
 			<div class="relative flex" style="align-items: center">
 				<input
-					type="text" class="${params.class ? params.class : ''}" id="${params.id ? params.id : ''}" value="${id}" placeholder="${params.placeholder || ''}"
+					type="text" class="${params.class ? params.class : ''}" id="${params.id ? params.id : ''}" value="${literalValue}" placeholder="${params.placeholder || ''}"
 					${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} data-value="${id}" data-addOptions='${JSON.stringify(params.addOptions)}'
 					onchange="$.Drag.VisualEvent.onInputComboChange(this); ${params.isInteractiveController ? 'handleInteractiveInput(this, this.parentElement.parentElement);' : ''}" 
 					oninput="this.onchange();" onfocus="$.Drag.VisualEvent.populateDatabaseSelectOptions(this); $.Drag.VisualEvent.onInputComboFocus(this);"
@@ -2861,7 +2860,6 @@ Drag.VisualEvent.version = "0.1.047";
 					onchange="$.Drag.VisualEvent.onSelectComboChange(this);" onclick="this.onchange();" onblur="$.Drag.VisualEvent.hideSelect(this);"
 					class="hidden" style="display: list-item; position: absolute; top: calc(100% - 2px); padding-top: 0px; padding-bottom: 0px; padding-left: 7px; overflow-y: scroll; background-color: var(--background-color); border: 1px solid var(--color); z-index: 2;"
 				>
-						
 				</select>
 				${params.type === "switch" || params.type === "variable" ? `
 					<div id="rename-switch-variable-container" title="Rename ${params.type === 'switch' ? 'Switches' : 'Variables'}" class="flex">
@@ -2882,10 +2880,13 @@ Drag.VisualEvent.version = "0.1.047";
 	
 	Drag.VisualEvent.populateDatabaseSelectOptions = function(input) {
 		const select = input.nextElementSibling;
+		if (select._populated)
+			return;
+		
 		const frag = document.createDocumentFragment();
 		const type = input.getAttribute('data-inputType');
+		const value = Drag.VisualEvent.getInputValue(input);
 		const addOptions = JSON.parse(input.getAttribute('data-addOptions'));
-		
 		const databaseOptions = Drag.VisualEvent.getDatabaseData(type);
 		const options = addOptions.map((option, optionId) => ({id: optionId - addOptions.length + 1, name: option})).concat(databaseOptions);
 		
@@ -2893,11 +2894,21 @@ Drag.VisualEvent.version = "0.1.047";
 			const optionElement = document.createElement('option');
 			optionElement.value = option.id;
 			optionElement.innerHTML = `${option.id > 0 ? String(option.id).padStart(4, "0") + ': ' : ''}${option.name || ''}`;
+			
+			if (value === option.id) 
+				optionElement.selected = true;
+			
 			frag.appendChild(optionElement);
 		}
 		
+		select._populated = true;
 		select.innerHTML = '';
 		select.appendChild(frag);
+	};
+	
+	Drag.VisualEvent.scrollToSelectedOption = function(select, selectedOption = null) {
+		const pos = select.selectedIndex * select.options[0].scrollHeight;
+		select.scrollTop = pos;
 	};
 	
 	Drag.VisualEvent.getCommandInputField = function(params, index, controller = null) {
@@ -2997,6 +3008,7 @@ Drag.VisualEvent.version = "0.1.047";
 		Drag.VisualEvent.showSelect(select); 
 		input.select();
 		Drag.VisualEvent.filterSelectOptions(select, "");
+		Drag.VisualEvent.scrollToSelectedOption(select);
 	};
 	
 	Drag.VisualEvent.onInputComboChange = function(input) {
