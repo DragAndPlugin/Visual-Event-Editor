@@ -2853,7 +2853,7 @@ Drag.VisualEvent.version = "0.1.047";
 					onchange="$.Drag.VisualEvent.onInputComboChange(this); ${params.isInteractiveController ? 'handleInteractiveInput(this, this.parentElement.parentElement);' : ''}" 
 					oninput="this.onchange();" onfocus="$.Drag.VisualEvent.populateDatabaseSelectOptions(this); $.Drag.VisualEvent.onInputComboFocus(this);"
 					onblur="$.Drag.VisualEvent.onInputComboBlur(this);" ${params.onchange ? `data-onchange="${params.onchange}"` : ''}
-					${params.disabled ? 'disabled' : ''} style="min-width: 12.5em;"
+					${params.disabled ? 'disabled' : ''} autocomplete="off" style="min-width: 12.5em;"
 				>
 				<select 
 					onmouseover="$.Drag.VisualEvent.onSelectMouseOver(this);" onmouseout="$.Drag.VisualEvent.onSelectMouseOut(this);" data-
