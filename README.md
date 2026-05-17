@@ -1,4 +1,6 @@
-# Visual-Event-Editor
+##  Visual-Event-Editor
+
+<img width="2560" height="1440" alt="efzfzefzefzfze" src="https://github.com/user-attachments/assets/0079deae-2dbe-4f1e-80a8-845c3a736d1d" />
 
 <p align="center">
   <strong>A node-based visual scripting tool for RPG Maker MV & MZ</strong>
@@ -39,10 +41,9 @@ Designed for both beginners and advanced users, it brings modern visual scriptin
 -  **Automatic Save** with customizable interval (optionnal)
 -  **Various QOL** over the native editor
 -  **Extended Self-Switches** from A-D to A-Z
-
----
-
-## Screenshots
+-  **Event page naming**
+-  **Unlimited common, map and troop events**
+-  **Unlimited switches and variables**
 
 ---
 
