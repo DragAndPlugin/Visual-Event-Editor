@@ -41,6 +41,7 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.pluginVersionUrl = "https://raw.githubusercontent.com/DragAndPlugin/Visual-Event-Editor/refs/heads/main/version";
 	Drag.VisualEvent.patreonUrl = "http://www.patreon.com/dragandplugin";
 	Drag.VisualEvent.itchUrl = "https://drag-and-plug-in.itch.io";
+	Drag.VisualEvent.discordUrl = "https://discord.gg/xytkQy3Yy5";
 	
 	Drag.VisualEvent.nwVisualEventWindowPath = "./Drag_VisualEvent/html/Drag_DevTools_VisualEventEditor.html";
 	Drag.VisualEvent.nwVisualEventWindowName = "Drag's DevTools Graph Editor";
