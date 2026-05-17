@@ -2373,9 +2373,9 @@ Drag.VisualEvent.version = "0.1.047";
 		//prevent action if last list element or min list requires it
 		const parent = button.parentElement.parentElement;
 		const input = parent.querySelector('*[data-isList="true"]');
-		const listId = input.getAttribute('data-listId');
+		const listId = input ? input.getAttribute('data-listId') : null;
 		
-		const listElementCount = Array.from(parent.querySelectorAll(`*[data-listId="${listId}"]`)).length;
+		const listElementCount = listId !== null ? Array.from(parent.querySelectorAll(`*[data-listId="${listId}"]`)).length : parent.querySelectorAll('#remove-list-input-button').length;
 		const minList = parseInt(button.getAttribute('data-minList')) || 1;
 		if (listElementCount <= minList) 
 			return;
