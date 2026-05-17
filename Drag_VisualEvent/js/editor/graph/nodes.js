@@ -394,6 +394,28 @@ function onAllNodeReady() {
 	}
 };
 
+function onNodeInputChange_command319(input, node) {
+	const inputs = getNodeInputs(node);
+	const selectEquipment = inputs[2];
+	if (!selectEquipment || input === selectEquipment)
+		return;
+	
+	const parameters = parseNodeInputs(node, inputs);
+	const actorId = parameters[0];
+	const equipmentType = parameters[1];
+	if (selectEquipment.actorId === actorId && selectEquipment.equipmentType === equipmentType)
+		return;
+	
+	const actor = data.$dataActors[actorId];
+	const equipments = $.Drag.VisualEvent.getActorEquippableItemsByType(actor, equipmentType);
+	const options = equipments.map(equipment => `<option value="${equipment.id}" ${equipment.id === parameters[2] ? 'selected' : ''}>${equipment.name}</option>`).join('');
+	
+	selectEquipment.innerHTML = `<option value="0">None</option>${options}`;
+	selectEquipment.actorId = parameters[0];
+	selectEquipment.equipmentType = equipmentType;
+	console.log("hoy");
+};
+
 function cloneNode(node, cloneNodeId = false) {
 	const clone = node.cloneNode(true);
 	
