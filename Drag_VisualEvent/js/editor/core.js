@@ -1662,10 +1662,14 @@ function onInputChange(input) {
 	if (!input || input.classList.contains('onReadyOnChange'))
 		return;
 	
+	const node = $.Drag.VisualEvent.getAncestorById(input, 'graphNode');
+	const commandCode = getNodeCommandCode(node);
+		if (typeof window[`onNodeInputChange_command${commandCode}`] === 'function')
+			window[`onNodeInputChange_command${commandCode}`](input, node);
+	
 	if (!window._registerInputChange)
 		return;
 	
-	const node = $.Drag.VisualEvent.getAncestorById(input, 'graphNode');
 	if (node) {
 		if (node._preventInputChange)
 			return;
@@ -1678,9 +1682,12 @@ function onInputChange(input) {
 		if (!isUnsaved(eventType, eventId, mapId, pageId || 0))
 			setAsUnsaved(eventType, eventId, mapId, pageId || 0);
 		
-			updateCacheGraphNodeParameters(node);
-			registerNodeReferences(node);
-			cacheNodeProperty(node, "parsedParameters", parseNodeInputs(node));
+		updateCacheGraphNodeParameters(node);
+		registerNodeReferences(node);
+		cacheNodeProperty(node, "parsedParameters", parseNodeInputs(node));
+		
+		
+		
 	} else if ($.Drag.VisualEvent.getAncestorById(input, 'event-data-container')) {
 		const eventType = input.getAttribute('data-eventType') || window.data.targetType;
 		const eventId = parseInt(input.getAttribute('data-eventId')) || window.data.targetId;
@@ -1690,7 +1697,7 @@ function onInputChange(input) {
 	}
 };
 
-function isFormInput (element) {
+function isFormInput(element) {
 	return isInput(element) || isTextArea(element) || isSelect(element) || isCheckbox(element) || isRadio(element);
 };
 
