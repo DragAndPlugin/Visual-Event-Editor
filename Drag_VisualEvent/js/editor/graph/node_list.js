@@ -215,12 +215,13 @@ function showNodeListMenu(e, exclusivity = "") {
 		nodeListPaste.classList.add('disabled');
 	
 	window._nodeListDisplayed = true;
+	
 	const search = nodeList.querySelector('#node-list-search');
 	search.focus();
 	search.select();
 
 	nodeList.setAttribute('data-exclusivity', exclusivity || "");
-	filterNodeList();
+	filterNodeList(search.value);
 };
 
 function closeNodeListMenu() {
