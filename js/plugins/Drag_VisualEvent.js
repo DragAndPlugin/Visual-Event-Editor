@@ -217,6 +217,36 @@ Drag.VisualEvent.version = "0.1.047";
 		}
 	};
 	
+	Drag.VisualEvent.getActorEquippableItemsByType = function(dataActor, etypeId) {
+		if (!dataActor || !etypeId)
+			return [];
+		
+		const traits = Drag.VisualEvent.getDataActorEquipTraits(dataActor);
+		const wtypes = traits.filter(trait => trait.code === Game_BattlerBase.TRAIT_EQUIP_WTYPE).map(trait => trait.dataId);
+		const atypes = traits.filter(trait => trait.code === Game_BattlerBase.TRAIT_EQUIP_ATYPE).map(trait => trait.dataId);
+		const sealed = traits.filter(trait => trait.code === Game_BattlerBase.TRAIT_EQUIP_SEAL).map(trait => trait.dataId);
+		if (sealed.includes(etypeId))
+			return [];
+		
+		const weapons = $dataWeapons.filter(weapon => weapon && weapon.etypeId === etypeId && wtypes.includes(weapon.wtypeId));
+		const armors = $dataArmors.filter(armor => armor &&	armor.etypeId === etypeId && atypes.includes(armor.atypeId));
+		return weapons.concat(armors);
+	};
+	
+	Drag.VisualEvent.getDataActorEquipTraits = function(dataActor) {
+		if (!dataActor)
+			return [];
+			
+		const traits = [];
+		traits.push(...(dataActor.traits || []));
+		
+		const dataClass = $dataClasses[dataActor.classId];
+		if (dataClass)
+			traits.push(...(dataClass.traits || []));
+		
+		return traits;
+	};
+	
 	Drag.VisualEvent.getDefaultMapInfo = function(id) {
 		return {"id": id, "expanded": true, "name": "", "order": id, "parentId": 1, "scrollX": 0, "scrollY": 0, "quick": false};
 	};
