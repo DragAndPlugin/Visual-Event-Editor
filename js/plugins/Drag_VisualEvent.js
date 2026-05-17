@@ -2730,10 +2730,6 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.autoFitTextArea = function(textArea) {		
 		if (textArea.getAttribute('data-resizeWidth') !== "false")
 			textArea.style.width = Math.max(...textArea.value.split('\n').map(line => Drag.VisualEvent.measureTextWidth(textArea, line))) + 8 + "px";
-			// textArea.style.width = "";
-			// textArea.style.width = (Math.max(...textArea.value.split('\n').map(text => text.length)) + 2) * 8 + "px";
-			
-		// }
 		
 		if (textArea.getAttribute('data-resizeHeight') !== "false") {
 			textArea.style.height = ""; 
@@ -2854,7 +2850,7 @@ Drag.VisualEvent.version = "0.1.047";
 		let literalValue = "";
 		if (id > 0) { 
 			const padId = String(id).padStart(4, "0");
-			const name = Drag.VisualEvent.getDatabaseItemName(params.type, id - 1);
+			const name = Drag.VisualEvent.getDatabaseItemName(params.type, Math.max(id - 1, 1));
 			literalValue = `${padId}: ${name}`;
 		} else
 			literalValue = params.addOptions[params.addOptions.length - 1 + id];
