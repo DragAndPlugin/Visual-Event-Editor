@@ -263,6 +263,10 @@ function openItchLink() {
 	$.Drag.VisualEvent.openUrl($.Drag.VisualEvent.itchUrl);
 };
 
+function openDiscordLink() {
+	$.Drag.VisualEvent.openUrl($.Drag.VisualEvent.discordUrl);
+};
+
 function openDevTools() {
 	nw.Window.get().showDevTools();
 };
