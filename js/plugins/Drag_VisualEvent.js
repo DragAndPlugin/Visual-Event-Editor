@@ -2227,28 +2227,29 @@ Drag.VisualEvent.version = "0.1.047";
 	};
 	
 	Drag.VisualEvent._databaseDataCache = {};
-	Drag.VisualEvent.getDatabaseData = function(type) {		
-		if (Drag.VisualEvent._databaseDataCache[type])
-			return Drag.VisualEvent._databaseDataCache[type];
+	Drag.VisualEvent.getDatabaseData = function(type, filter = true) {		
+		if (Drag.VisualEvent._databaseDataCache[type] && Drag.VisualEvent._databaseDataCache[type][filter])
+			return Drag.VisualEvent._databaseDataCache[type][filter];
 		else {
 			let data;
 			const editorData = Drag.VisualEvent.getEditor().data;
 			
 			if (type === "map_event")
-				data = editorData.loadedMap ? editorData.loadedMap.events.filter(ev => ev) : [];
+				data = editorData.loadedMap ? editorData.loadedMap.events.filter(ev => !filter || ev) : [];
 			else if (type === "switch" || type === "variable") {
 				const dataType = Drag.VisualEvent.getDatabaseTypePlural(type).toLowerCase();
-				data = editorData.$dataSystem[`${dataType}`] ? editorData.$dataSystem[`${dataType}`].filter((data, index) => index > 0).map((data, index) => ({id: index + 1, name: data})) : [];
+				data = editorData.$dataSystem[`${dataType}`] ? editorData.$dataSystem[`${dataType}`].filter((data, index) => !filter || index > 0).map((data, index) => ({id: index + (filter ? 1 : 0), name: data})) : [];
 			} else if (type === "equipment_type")
-				data = editorData.$dataSystem.equipTypes.slice(1).map((type, index) => ({name: type === "" ? `#${(index + 1).toString().padStart(2, "0")}` : type, id: index + 1}));
+				data = editorData.$dataSystem.equipTypes.filter((equipType, index) => !filter || index > 0).map((type, index) => ({name: type === "" ? `#${(index + (filter ? 1 : 0)).toString().padStart(2, "0")}` : type, id: index + (filter ? 1 : 0)}));
 			else if (type === "element_type")
-				data = editorData.$dataSystem.elements.slice(1).map((type, index) => ({name: type === "" ? `#${(index + 1).toString().padStart(2, "0")}` : type, id: index + 1}));
+				data = editorData.$dataSystem.elements.filter((element, index) => !filter || index > 0).map((type, index) => ({name: type === "" ? `#${(index + (filter ? 1 : 0)).toString().padStart(2, "0")}` : type, id: index + (filter ? 1 : 0)}));
 			else {
 				const dataType = Drag.VisualEvent.capitalizeAll(Drag.VisualEvent.replaceAll(Drag.VisualEvent.getDatabaseTypePlural(type), "_", " "), ""); 
-				data = editorData[`$data${dataType}`] ? editorData[`$data${dataType}`].filter(data => data) : [];
+				data = editorData[`$data${dataType}`] ? editorData[`$data${dataType}`].filter(data => !filter || data) : [];
 			}
 			
-			Drag.VisualEvent._databaseDataCache[type] = data;
+			Drag.VisualEvent._databaseDataCache[type] = Drag.VisualEvent._databaseDataCache[type] || {};
+			Drag.VisualEvent._databaseDataCache[type][filter] = data;
 			return data;
 		}
 	};
@@ -2257,7 +2258,8 @@ Drag.VisualEvent.version = "0.1.047";
 		if (!type || !id || id < 1)
 			return '';
 		
-		const item = Drag.VisualEvent.getDatabaseData(type)[id];
+		const items = Drag.VisualEvent.getDatabaseData(type, false);
+		const item = items[id];
 		return item ? item.name : '';
 	};		
 	
@@ -2863,11 +2865,7 @@ Drag.VisualEvent.version = "0.1.047";
 		`;	
 	};
 	
-	// Drag.VisualEvent._databaseInputOptionsCache = {};
 	Drag.VisualEvent.getDatabaseInputField = function(params, index, controller = null) {
-		// if (Drag.VisualEvent._databaseInputFieldCache[params.type])
-			// return Drag.VisualEvent._databaseInputFieldCache[params.type];
-		
 		if (!params.addOptions || !Array.isArray(params.addOptions))
 			params.addOptions = [];
 		
@@ -2880,7 +2878,7 @@ Drag.VisualEvent.version = "0.1.047";
 		let literalValue = "";
 		if (id > 0) { 
 			const padId = String(id).padStart(4, "0");
-			const name = Drag.VisualEvent.getDatabaseItemName(params.type, Math.max(id - 1, 1));
+			const name = Drag.VisualEvent.getDatabaseItemName(params.type, id);
 			literalValue = `${padId}: ${name}`;
 		} else
 			literalValue = params.addOptions[params.addOptions.length - 1 + id];
@@ -2920,9 +2918,6 @@ Drag.VisualEvent.version = "0.1.047";
 					</div>
 				` : ''}
 			</div>`;
-			
-		// if (!Drag.VisualEvent._databaseInputFieldCache[params.type])
-			// Drag.VisualEvent._databaseInputFieldCache[params.type] = input;
 		
 		return input;
 	}; 
@@ -3103,7 +3098,7 @@ Drag.VisualEvent.version = "0.1.047";
 		if (!option) {
 			const id = parseInt(input.getAttribute('data-value'));
 			const type = input.getAttribute('data-inputType');
-			const name = Drag.VisualEvent.getDatabaseItemName(type, id - 1);
+			const name = Drag.VisualEvent.getDatabaseItemName(type, id);
 			const padId = String(id).padStart(4, "0");
 			const literalValue = id <= 0 ? name : `${padId}: ${name}`;
 			input.value = literalValue;
