@@ -4,18 +4,35 @@
 
 /*:
  * @target MZ
- * @plugindesc (v0.1.047) An alternative node-based editor for common/map/troop events.
- * @author Drag
+ * @plugindesc A node-based eventing tool for RPG Maker MV & MZ
+ * @author DragAndPlugin
  *
- * @url
+ * @url https://drag-and-plug-in.itch.io/visual-event-editor
  *
  * @help 
- * An alternative node-based editor for common/map/troop events. 
- * It aims to improve the experience over the native editor and to speed up your 
- * workflow, offering a lot of QOL and others improvements.
- * 
- * No plugin parameters, every options can be tuned within the editor.
+ * Visual Event Editor is a node-based eventing tool for RPG Maker MV and MZ. 
+ * It transforms the native list of event commands into an intuitive graph 
+ * interface, making event creation faster, clearer, and easier to maintain.
  *
+ * Designed for both beginners and advanced users, it brings modern 
+ * visual scripting concepts to the RPG Maker ecosystem, while maintaining 
+ * compatibility with the native editor and plugins.
+ * 
+ * No plugin parameters, every settings can be adjustable within the editor.
+ * To open the editor, start a playtest after installing this plugin. 
+ *
+ * 
+ * LICENSE : 
+ * This project is distributed under the Visual Event Editor License.
+ *
+ * -Free for personal and commercial game development
+ * -Source code available for learning and customization
+ * -Redistribution of the editor is not permitted without permission
+ * -Custom nodes and extensions may be freely distributed
+ * -Attribution is required (Visual Event Editor by DragAndPlugin)
+ * -Please refer to the included LICENSE file for full details.
+ *
+ * Do not remove or modify this header.
  */
  
 var Imported = Imported || {};
@@ -24,7 +41,7 @@ Imported.Drag_VisualEvent = true;
 var Drag = Drag || {};
 Drag.VisualEvent = {};
 Drag.VisualEvent.alias = {};
-Drag.VisualEvent.version = "0.1.047";
+Drag.VisualEvent.version = "0.1.132";
 
 // (function() {
 	
@@ -75,7 +92,6 @@ Drag.VisualEvent.version = "0.1.047";
 	Drag.VisualEvent.loadInteractiveInputData('interactive_input_data.js');
 	
 	try {
-		// require(`./Drag_VisualEvent/js/mz_plugin_command.js`)(Drag.VisualEvent, Utils.RPGMAKER_NAME);
 		require(`./Drag_VisualEvent/js/data/command_data.js`)(Drag.VisualEvent, Utils.RPGMAKER_NAME);
 		require(`./Drag_VisualEvent/js/data/event_data.js`)(Drag.VisualEvent, Utils.RPGMAKER_NAME);
 		Drag.VisualEvent.pluginJSDocData = require(`./Drag_VisualEvent/cache/plugins.json`);
@@ -837,10 +853,6 @@ Drag.VisualEvent.version = "0.1.047";
 	
 	Drag.VisualEvent.openWindow = function(filename, name, width, height, top, left, data = {}) {
 		const filepath = `./Drag_VisualEvent/html/`;
-		
-		// if (Utils.RPGMAKER_NAME === "MV")
-			// top += 30;
-		
 		try {
 			if (!Drag.VisualEvent.windowsHandlers)
 				Drag.VisualEvent.windowsHandlers = {};
@@ -2959,7 +2971,7 @@ Drag.VisualEvent.version = "0.1.047";
 		if (!params.addOptions || !Array.isArray(params.addOptions))
 			params.addOptions = [];
 		
-		const commandOptions = Drag.VisualEvent.flattenArray(Object.values(Drag.VisualEvent.commandsCategories)).map(command => [parseInt(command.replace('command', '')), Drag.VisualEvent.getCommandName(command).replaceAll('&#8620;', '').replaceAll('&#10100;', '')]);		
+		const commandOptions = Drag.VisualEvent.flattenArray(Object.values(Drag.VisualEvent.commandsCategories)).map(command => [parseInt(command.replace('command', '')), Drag.VisualEvent.replaceAll(Drag.VisualEvent.replaceAll(Drag.VisualEvent.getCommandName(command), '&#8620;', ''), '&#10100;', '')]);		
 		params.options = commandOptions;
 		
 		const defaultId = 101; //show text	
