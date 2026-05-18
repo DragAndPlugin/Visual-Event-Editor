@@ -316,7 +316,8 @@ function onNodeInputsReady(node, onNodeReady) {
 	autofitAllTextArea(node);
 	
 	if (!node.isDummy) {
-		updateNodeReadyCountGauge();
+		if (window._updateNodeReadyCountGauge)
+			updateNodeReadyCountGauge();
 		registerNodeReferences(node);
 		
 		if (node._cacheNodeOnInputsReady) {
@@ -388,6 +389,7 @@ function onAllNodeReady() {
 	
 	window._graphReady = true;
 	window._registerInputChange = true;
+	window._updateNodeReadyCountGauge = false;
 	if (window._startPerformance) {
 		console.log(`Editor ready (${performance.now() - window._startPerformance}ms).`);
 		delete window._startPerformance;
@@ -413,7 +415,6 @@ function onNodeInputChange_command319(input, node) {
 	selectEquipment.innerHTML = `<option value="0">None</option>${options}`;
 	selectEquipment.actorId = parameters[0];
 	selectEquipment.equipmentType = equipmentType;
-	console.log("hoy");
 };
 
 function cloneNode(node, cloneNodeId = false) {
