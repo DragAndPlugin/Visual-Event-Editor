@@ -386,6 +386,7 @@ function resetGraphState() {
 	window.nodes = [];
 	window.indentNodes = [];
 	window.nodesReadyCount = 0;
+	window._updateNodeReadyCountGauge = true;
 	
 	window._graphNodeQueue = [];
 	window._graphNodeQueueParams = {};
