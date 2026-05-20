@@ -50,7 +50,7 @@ Designed for both beginners and advanced users, it brings modern visual scriptin
 ## Installation
 
 1. Download the latest release from the **Releases** page.
-2. Copy the files into your RPG Maker project root (where `Game.rmmzproject` or `Game.rmmvproject` is located).
+2. Copy the folders into your RPG Maker project root (where `Game.rmmzproject` or `Game.rmmvproject` is located).
 3. Open RPG Maker MV or MZ.
 4. Enable the plugin in the **Plugin Manager**.
 5. Start a **Playtest** to open the **Visual Event Editor**
