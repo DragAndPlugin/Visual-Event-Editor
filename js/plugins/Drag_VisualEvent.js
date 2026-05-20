@@ -41,7 +41,7 @@ Imported.Drag_VisualEvent = true;
 var Drag = Drag || {};
 Drag.VisualEvent = {};
 Drag.VisualEvent.alias = {};
-Drag.VisualEvent.version = "0.1.132";
+Drag.VisualEvent.version = "0.1.135";
 
 // (function() {
 	
