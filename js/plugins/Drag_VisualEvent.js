@@ -2971,7 +2971,7 @@ Drag.VisualEvent.version = "0.1.132";
 		if (!params.addOptions || !Array.isArray(params.addOptions))
 			params.addOptions = [];
 		
-		const commandOptions = Drag.VisualEvent.flattenArray(Object.values(Drag.VisualEvent.commandsCategories)).map(command => [parseInt(command.replace('command', '')), Drag.VisualEvent.replaceAll(Drag.VisualEvent.replaceAll(Drag.VisualEvent.getCommandName(command), '&#8620;', ''), '&#10100;', '')]);		
+		const commandOptions = Drag.VisualEvent.flattenArray(Object.values(Drag.VisualEvent.commandsCategories)).map(command => [parseInt(command.replace('command', '')), Drag.VisualEvent.getCommandName(command).replaceAll('&#8620;', '').replaceAll('&#10100;', '')]);		
 		params.options = commandOptions;
 		
 		const defaultId = 101; //show text	
