@@ -16,7 +16,7 @@ function init() {
 	document.querySelector('#bottom-panel-rm-version').innerHTML = `RPG Maker ${$.Utils.RPGMAKER_NAME} Corescript v${$.Utils.RPGMAKER_VERSION},`;
 	document.querySelector('#bottom-panel-environment-version').innerHTML = `Chromium v${process.versions["chromium"]}, NodeJS v${process.versions["node"]}, NWJS v${process.versions["nw"]}, PIXI v${$.PIXI.VERSION},`;
 	document.querySelector('#bottom-panel-unsaved-status').innerHTML = `0 events unsaved.`;
-	document.querySelector('#title-visual-event-version').innerHTML = ` v${$.Drag.VisualEvent.version}`;
+	document.querySelector('#title-visual-event-version').innerHTML = ` v${$.Drag.VisualEvent.version} BETA`;
 	
 	window.graphNodes = document.querySelector('#graphNodes');
 	window.graphSVG = document.querySelector('#graphSVG');
@@ -1800,11 +1800,17 @@ function setLeftPanelWidth(width) {
 	else 
 		for (const span of document.querySelectorAll('#author-links-container span'))
 			span.style.removeProperty("display");
-	
-	if (percentage < 12.75)
-		document.querySelector('#window-title-container').style.fontSize = "0.9375em";
-	else 
-		document.querySelector('#window-title-container').style.removeProperty("font-size");
+		
+	const container = document.querySelectorAll('#author-links-container svg');
+	if (width < 275) {
+		container[0].children[0].style.display = "none";
+		container[1].children[0].style.display = "none";
+		container[2].children[1].style.display = "none";
+	} else {
+		container[0].children[0].style.display = "block";
+		container[1].children[0].style.display = "block";
+		container[2].children[1].style.display = "block";
+	}
 };
 
 function handleSelectionBox(event) {

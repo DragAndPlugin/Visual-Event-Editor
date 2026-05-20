@@ -170,7 +170,8 @@ function getRangedMapEventList(min = 1, max = min + 100, data = window.data.load
 			list += `
 				<div class="${i === window.data.targetId && window.data.targetType === "Map Event" ? 'selected' : ''} selectable" 
 					data-eventId="${i}" data-eventType="Map Event" ${isUnsaved("Map Event", i, window.data.mapTargetId) ? 'data-unsaved="true"' : ''} onclick="selectEvent(this);">
-					${String(i).padStart(3, "0")} ${(hasItemInEventCache("data", "Map Event", window.data.mapTargetId, i) ? getEventCacheItem("data", "Map Event",  window.data.mapTargetId, i).name : data.events[i].name) || '<span class="red">No name</span>'}
+					<span class="event-id">${String(i).padStart(3, "0")}</span> 
+					<span class="event-name">${(hasItemInEventCache("data", "Map Event", window.data.mapTargetId, i) ? getEventCacheItem("data", "Map Event",  window.data.mapTargetId, i).name : data.events[i].name) || '<span class="unnamed">No name</span>'}</span>
 				</div>
 			`;
 	}
@@ -224,8 +225,8 @@ function getRangedCommonEventList(min = 1, max = min + 100) {
 		list += `
 			<div class="${i === window.data.targetId && window.data.targetType === "Common Event" ? 'selected' : ''} selectable" 
 				data-eventId="${i}" data-eventType="Common Event" ${isUnsaved("Common Event", i) ? 'data-unsaved="true"' : ''} onclick="selectEvent(this);">
-				${String(i).padStart(4, "0")} 
-				${(hasItemInEventCache("data", "Common Event", 0, i) ? getEventCacheItem("data", "Common Event", 0, i).name : window.data.$dataCommonEvents[i] ? window.data.$dataCommonEvents[i].name : "") || '<span class="red">No name</span>'}
+				<span class="event-id">${String(i).padStart(4, "0")}</span> 
+				<span class="event-name">${(hasItemInEventCache("data", "Common Event", 0, i) ? getEventCacheItem("data", "Common Event", 0, i).name : window.data.$dataCommonEvents[i] ? window.data.$dataCommonEvents[i].name : "") || '<span class="unnamed">No name</span>'}</span>
 			</div>
 		`;
 	return list;
@@ -279,8 +280,8 @@ function getRangedTroopEventList(min = 1, max = min + 100) {
 		list += `
 			<div class="${i === window.data.targetId && window.data.targetType === "Troop Event" ? 'selected' : ''} selectable" 
 				data-eventId="${i}" data-eventType="Troop Event" ${isUnsaved("Troop Event", i) ? 'data-unsaved="true"' : ''} onclick="selectEvent(this);">
-				${String(i).padStart(4, "0")} 
-				${(hasItemInEventCache("data", "Troop Event", 0, i) ? getEventCacheItem("data", "Troop Event", 0, i).name : window.data.$dataTroops[i] ? window.data.$dataTroops[i].name : "") || '<span class="red">No name</span>'}
+				<span class="event-id">${String(i).padStart(4, "0")}</span> 
+				<span class="event-name">${(hasItemInEventCache("data", "Troop Event", 0, i) ? getEventCacheItem("data", "Troop Event", 0, i).name : window.data.$dataTroops[i] ? window.data.$dataTroops[i].name : "") || '<span class="unnamed">No name</span>'}</span>
 			</div>
 		`;
 	return list;
@@ -302,51 +303,51 @@ function searchEvent(input) {
 	
 	const value = input.value.toLowerCase().trim();
 	for (const ev of list.querySelectorAll('div'))
-		if (ev.innerHTML.toLowerCase().includes(input.value))
-			ev.classList.remove('hidden')
+		if (!value || ev.children[0].textContent.trim().toLowerCase().includes(value) || ev.children[1].textContent.trim().toLowerCase().includes(value))
+			ev.classList.remove('hidden');
 		else 
 			ev.classList.add('hidden');
 };
 
 function updateEventName(name = "", type = window.data.targetType, id = window.data.targetId) {
-	const eventElement = document.querySelector(`#event-container div[data-eventType="${type}"][data-eventId="${id}"]`);
+	const eventElement = document.querySelector(`#event-container div[data-eventType="${type}"][data-eventId="${id}"] .event-name`);
 	if (eventElement)
-		eventElement.innerHTML = `${String(id).padStart(4, '0')} ${name || "<span class='red'>No name</span>"}`;
+		eventElement.innerHTML = `${name || '<span class="unnamed">No name</span>'}`;
 };
 
 function updateCommonEventListName(eventId = 0, name = null) {
 	if (!eventId)
 		return;
 	
-	const ce = document.querySelector('#common-event-list').querySelector(`*[data-eventId="${eventId}"]`);
+	const ce = document.querySelector('#common-event-list').querySelector(`*[data-eventId="${eventId}"] .event-name`);
 	if (!ce)
 		return;
 	
 	if (name === null)
-		name = (hasItemInEventCache("data", "Common Event", 0, eventId) ? getEventCacheItem("data", "Common Event", 0, eventId).name : window.data.$dataCommonEvents[eventId].name) || "<span class='red'>No name</span>";
+		name = (hasItemInEventCache("data", "Common Event", 0, eventId) ? getEventCacheItem("data", "Common Event", 0, eventId).name : window.data.$dataCommonEvents[eventId].name) || '<span class="unnamed">No name</span>';
 	
-	ce.innerHTML = `${String(eventId).padStart(4, "0")} ${name}`;
+	ce.innerHTML = `${name}`;
 };
 
 function updateTroopEventListName(eventId = 0, name = null) {
 	if (!eventId)
 		return;
 	
-	const ce = document.querySelector('#troop-event-list').querySelector(`*[data-eventId="${eventId}"]`);
+	const ce = document.querySelector('#troop-event-list').querySelector(`*[data-eventId="${eventId}"] .event-name`);
 	if (!ce)
 		return;
 	
 	if (name === null)
-		name = (hasItemInEventCache("data", "Troop Event", 0, eventId) ? getEventCacheItem("data", "Troop Event", 0, eventId).name : window.data.$dataTroops[eventId].name) || "<span class='red'>No name</span>";
+		name = (hasItemInEventCache("data", "Troop Event", 0, eventId) ? getEventCacheItem("data", "Troop Event", 0, eventId).name : window.data.$dataTroops[eventId].name) || '<span class="unnamed">No name</span>';
 	
-	ce.innerHTML = `${String(eventId).padStart(4, "0")} ${name}`;
+	ce.innerHTML = `${name}`;
 };
 
 function updateMapEventListName(eventId = 0, name = null) {
 	if (!eventId)
 		return;
 	
-	const e = document.querySelector('#map-event-list').querySelector(`*[data-eventId="${eventId}"]`);
+	const e = document.querySelector('#map-event-list').querySelector(`*[data-eventId="${eventId}"] .event-name`);
 	if (!e)
 		return;
 	
@@ -356,7 +357,7 @@ function updateMapEventListName(eventId = 0, name = null) {
 	if (name === null)
 		name = (hasItemInEventCache("data", "Map Event", window.data.mapTargetId, eventId) ? getEventCacheItem("data", "Map Event", window.data.mapTargetId, eventId).name : window.data.loadedMap.events[eventId].name);
 	
-	e.innerHTML = `${String(eventId).padStart(3, "0")} ${name}`;
+	e.innerHTML = `${name}`;
 };
 
 function removeFromMapEventList(eventId) {
@@ -376,13 +377,9 @@ function selectEvent(div) {
 	
 	showLoading();
 	setLoadingText("Saving event in cache...");
-	// setLoadingText("Loading event...");
 	
 	requestAnimationFrame(() => {
-		requestAnimationFrame(() => {
-			// if (!window._graphReady)
-				// return selectEvent(div);
-			
+		requestAnimationFrame(() => {			
 			ensureLeftPanelSelection(div);
 			saveEventInCache();
 			

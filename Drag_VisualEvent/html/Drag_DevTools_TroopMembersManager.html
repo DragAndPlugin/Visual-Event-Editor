@@ -114,6 +114,7 @@
 			}
 
 			#enemy-list > * > button {
+				height: 100%;
 				padding: 0 1.25em;
 				border: none;
 				border-left: 0.0625em solid white;
@@ -599,7 +600,7 @@
 				
 				return {
 					x: (res.width - uiRes.width) / 2,
-					y: (res.height - uiRes.height) / 2 - (typeof $.Spriteset_Battle.prototype.battleFieldOffsetY === 'function' ? $.Spriteset_Battle.prototype.battleFieldOffsetY() : -32)
+					y: (res.height - uiRes.height) / 2 - (typeof $.Spriteset_Battle.prototype.battleFieldOffsetY === 'function' ? $.Spriteset_Battle.prototype.battleFieldOffsetY() : 0)
 				};
 			};
 			
