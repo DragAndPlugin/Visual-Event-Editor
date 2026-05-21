@@ -174,24 +174,24 @@ function eventCacheReferenceMeetSearch(reference, search) {
 		} else {
 			const indexes = $.Drag.VisualEvent.findAllIndexes(reference.types, type);
 			const values = reference.values;
+			
+			if (referenceRangeMatches(reference.commandCode, type, values, indexes, search.items.values[typeId])) {
+				if (search.mode === 0)
+					return true;
+				else
+					result[typeId] = true;
+
+				continue;
+			}
+			
 			for (const index of indexes) {
-				if (type === "text" && values[index].includes(search.items.values[typeId])) {
-					if (search.mode === 0)
-						return true;
-					else
-						result[typeId] = true;
-				} else if (Array.isArray(values[index]) && Array.isArray(search.items.values[typeId]) && $.Drag.VisualEvent.arrayIncludesArray(values[index], search.items.values[typeId])) {
-					if (search.mode === 0)
-						return true;
-					else
-						result[typeId] = true;
-				} else if (values[index] == search.items.values[typeId]) {
+				if (referenceValueMatches(type, values[index], search.items.values[typeId])) {
 					if (search.mode === 0)
 						return true;
 					else
 						result[typeId] = true;
 				}
-			}
+			}	
 		}
 	}
 	
@@ -248,8 +248,18 @@ function commandMeetSearch(command, search) {
 			}
 		} else {
 			const indexes = $.Drag.VisualEvent.findAllIndexes(parametersTypes, type);
+			
+			if (referenceRangeMatches(command.code, type, parametersValues, indexes, search.items.values[typeId])) {
+				if (search.mode === 0)
+					return true;
+				else
+					result[typeId] = true;
+
+				continue;
+			}
+			
 			for (const index of indexes) {
-				if (parametersValues[index] == search.items.values[typeId]) {
+				if (referenceValueMatches(type, parametersValues[index], search.items.values[typeId])) {
 					if (search.mode === 0)
 						return true;
 					else
@@ -260,4 +270,54 @@ function commandMeetSearch(command, search) {
 	}
 
 	return result.every(item => item);
+};
+
+function referenceValueMatches(type, value, searchedValue) {	
+	value = tryParseArray(value);
+
+	if (type === "text") 
+		return String(value || "").toLowerCase().includes(String(searchedValue || "").toLowerCase());
+	
+	if (Array.isArray(value) && Array.isArray(searchedValue))
+		return $.Drag.VisualEvent.arrayIncludesArray(value, searchedValue);
+	
+	return value == searchedValue;
+};
+
+function tryParseArray(value) {
+	if (Array.isArray(value))
+		return value;
+	
+	if (typeof value === "string" && value.trim()[0] === "[") {
+		try {
+			const parsed = JSON.parse(value);
+			return Array.isArray(parsed) ? parsed : value;
+		} catch (e) {
+			return value;
+		}
+	}
+	
+	return value;
+};
+
+function commandHasRangeReference(commandCode, type) {
+	commandCode = Number(commandCode);
+	return ((type === "switch" && commandCode === 121) || (type === "variable" && commandCode === 122));
+};
+
+function referenceRangeMatches(commandCode, type, values, indexes, searchedValue) {
+	if (!commandHasRangeReference(commandCode, type))
+		return false;
+	
+	const searchedId = Number(searchedValue);
+	if (isNaN(searchedId) || indexes.length < 2)
+		return false;
+	
+	const start = Number(values[indexes[0]]);
+	const end = Number(values[indexes[1]]);
+	
+	if (isNaN(start) || isNaN(end))
+		return false;
+	
+	return Math.min(start, end) <= searchedId && searchedId <= Math.max(start, end);
 };
