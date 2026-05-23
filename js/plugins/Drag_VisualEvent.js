@@ -515,8 +515,8 @@ Drag.VisualEvent.version = "0.1.135";
 		if (Drag.VisualEvent.pluginJSDocData[pluginName].mtimeMs !== stat.mtimeMs)
 			return false;
 		
-		if (!Drag.VisualEvent.pluginJSDocData[pluginName]._paramsParsed)
-			return false;
+		// if (!Drag.VisualEvent.pluginJSDocData[pluginName]._paramsParsed)
+			// return false;
 		
 		return true;
 	};
