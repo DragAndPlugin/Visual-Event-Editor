@@ -515,6 +515,9 @@ Drag.VisualEvent.version = "0.1.135";
 		if (Drag.VisualEvent.pluginJSDocData[pluginName].mtimeMs !== stat.mtimeMs)
 			return false;
 		
+		if (!Drag.VisualEvent.pluginJSDocData[pluginName]._paramsParsed)
+			return false;
+		
 		return true;
 	};
 	
@@ -885,6 +888,15 @@ Drag.VisualEvent.version = "0.1.135";
 		} catch(err) {
 			console.error(err);
 		}
+	};
+	
+	Drag.VisualEvent.openPluginManager = function(input) {
+		const rect = input.getBoundingClientRect();
+		Drag.VisualEvent.openWindow(
+			'Drag_DevTools_PluginManager.html', 'Plugin Manager', 
+			window.screen.width * 0.7, window.screen.height * 0.7, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
+			{input: input}
+		);
 	};
 	
 	Drag.VisualEvent.openAdvancedSearchWindow = function(input) {
