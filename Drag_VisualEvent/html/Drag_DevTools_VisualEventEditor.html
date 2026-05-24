@@ -185,6 +185,20 @@
 					/>
 				</div>
 			</div>
+			<div class="relative">
+				<label for="">Font Style :</label>
+				<div class="flex relative" style="padding: 0px 10px; margin-top: 5px;">
+					<div class="select">
+						<select data-inputType="select" data-defaultValue="serif" id="editor-options-font-style" onchange="saveOptions(); setFontStyle(this.value);">
+							<option value="serif">Serif</option>
+							<option value="sans-serif">Sans-Serif</option>
+							<option value="monospace">Monospace</option>
+							<option value="cursive">Cursive</option>
+						</select>
+						<span class="focus"></span>
+					</div>
+				</div>
+			</div>
 		</div>
 		<div id="left-panel">
 			<div id="window-title-container">
