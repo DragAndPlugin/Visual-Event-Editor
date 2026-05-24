@@ -112,6 +112,11 @@ function setupOptions() {
 	
 	if (options.uiScale !== undefined)
 		document.querySelector('#editor-options-ui-scale').value = options.uiScale;
+	
+	if (options.fontStyle !== undefined) {
+		document.querySelector('#editor-options-font-style').value = options.fontStyle;
+		setFontStyle(options.fontStyle);
+	}
 };
 
 function saveOptions() {
@@ -126,6 +131,7 @@ function saveOptions() {
 	options.backupLocation = document.querySelector('#editor-options-backup-location').value;
 	options.backupFilename = document.querySelector('#editor-options-backup-filename').value;
 	options.uiScale = parseInt(document.querySelector('#editor-options-ui-scale').value);
+	options.fontStyle = document.querySelector('#editor-options-font-style').value;
 };
 
 function restoreLastEvent() {
@@ -168,6 +174,10 @@ function setAppropriateFontSize() {
 function setFontSize(fontSize) {
 	$.Drag.VisualEvent.setDocumentFontSize(document, fontSize);				
 	document.querySelector('#editor-options-ui-scale').value = parseInt(fontSize);
+};
+
+function setFontStyle(font) {
+	document.documentElement.style.setProperty('--font-family',`${font}`);
 };
 
 function loadDataMainWindow() {
