@@ -6,7 +6,7 @@
  * @target MZ
  * @plugindesc A node-based eventing tool for RPG Maker MV & MZ
  * @author DragAndPlugin
- *
+ * @version 0.1.135
  * @url https://drag-and-plug-in.itch.io/visual-event-editor
  *
  * @help 
@@ -508,15 +508,16 @@ Drag.VisualEvent.version = "0.1.135";
 		if (!Drag.VisualEvent.pluginJSDocData[pluginName])
 			return false;
 		
+		//used to force invalidation and jsdoc parsing
+		// if (!Drag.VisualEvent.pluginJSDocData[pluginName]._paramsParsed)
+			// return false;
+		
 		const stat = Drag.VisualEvent.getPluginStat(pluginName);
 		if (Drag.VisualEvent.pluginJSDocData[pluginName].size !== stat.size)
 			return false;
 		
 		if (Drag.VisualEvent.pluginJSDocData[pluginName].mtimeMs !== stat.mtimeMs)
 			return false;
-		
-		// if (!Drag.VisualEvent.pluginJSDocData[pluginName]._paramsParsed)
-			// return false;
 		
 		return true;
 	};
@@ -607,6 +608,7 @@ Drag.VisualEvent.version = "0.1.135";
 			}
 		}
 
+		pluginData.meta.help = Drag.VisualEvent.fetchMultilineJSDocTag(text, "help");
 		Drag.VisualEvent.pluginJSDocData[name] = pluginData;
 		return pluginData;
 	};
@@ -665,6 +667,16 @@ Drag.VisualEvent.version = "0.1.135";
 	
 	Drag.VisualEvent.getStructName = function(structString) {
 		return structString.replace("struct<", "").replace("~struct~", "").replace(">", "").replace(":", "").replace("[]", "").trim();
+	};
+	
+	Drag.VisualEvent.fetchMultilineJSDocTag = function(text, tagName) {
+		const regex = new RegExp(`@${tagName}\\s*([\\s\\S]*?)(?=\\n\\s*\\*\\s*@\\w+|\\n\\s*\\*\\/|$)`, "i");
+		const match = text.match(regex);
+
+		if (!match)
+			return "";
+
+		return match[1].split("\n").map(line => line.replace(/^\s*\*\s?/, "")).join("\n").trim();
 	};
 	
 	Drag.VisualEvent.getPluginCommandParameters = function(pluginName, commandName) {
@@ -1662,7 +1674,37 @@ Drag.VisualEvent.version = "0.1.135";
 	};
 	
 	//------------------------------------------------------------------------------------------------------------
-	// FS Write JSON
+	// FS Write Files
+	
+	Drag.VisualEvent.backupFile = function(filepath, backupFolder = "backup") {
+		if (!filepath)
+			return false;
+
+		try {
+			if (!Drag.VisualEvent.modules.fs.existsSync(filepath)) {
+				console.error(`File don't exist: ${filepath}`);
+				return false;
+			}
+
+			if (!Drag.VisualEvent.modules.fs.existsSync(backupFolder))
+				Drag.VisualEvent.modules.fs.mkdirSync(backupFolder, {recursive: true});
+
+			const ext = Drag.VisualEvent.modules.path.extname(filepath);
+			const filename = Drag.VisualEvent.modules.path.basename(filepath, ext);
+
+			const now = new Date();
+
+			const timestamp = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0") + "_" + String(now.getHours()).padStart(2, "0") + "-" + String(now.getMinutes()).padStart(2, "0") + "-" + String(now.getSeconds()).padStart(2, "0");
+			const backupPath = Drag.VisualEvent.modules.path.join(backupFolder, `${filename}_${timestamp}${ext}`);
+
+			Drag.VisualEvent.modules.fs.copyFileSync(filepath, backupPath);
+			
+			return true;
+		} catch (error) {
+			console.error("Failed to backup file:", error);
+			return false;
+		}
+	};
 	
 	Drag.VisualEvent.editJSON = function(filepath, filename, filetype, val) {
 		if (!Drag.VisualEvent.modules.fs || !filename || !filetype || val === null || val === undefined)
