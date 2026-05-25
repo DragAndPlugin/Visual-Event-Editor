@@ -172,12 +172,13 @@ function setAppropriateFontSize() {
 };
 
 function setFontSize(fontSize) {
+	fontSize = Math.max(Math.min(20, fontSize), 6); 
 	$.Drag.VisualEvent.setDocumentFontSize(document, fontSize);				
 	document.querySelector('#editor-options-ui-scale').value = parseInt(fontSize);
 };
 
 function setFontStyle(font) {
-	document.documentElement.style.setProperty('--font-family',`${font}`);
+	document.documentElement.style.fontFamily = font;
 };
 
 function loadDataMainWindow() {
