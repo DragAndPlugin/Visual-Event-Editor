@@ -508,9 +508,8 @@ Drag.VisualEvent.version = "0.1.135";
 		if (!Drag.VisualEvent.pluginJSDocData[pluginName])
 			return false;
 		
-		//used to force invalidation and jsdoc parsing
-		// if (!Drag.VisualEvent.pluginJSDocData[pluginName]._paramsParsed)
-			// return false;
+		//used to force invalidation and jsdoc parsing, don't ship to prod with that
+		// return false;
 		
 		const stat = Drag.VisualEvent.getPluginStat(pluginName);
 		if (Drag.VisualEvent.pluginJSDocData[pluginName].size !== stat.size)
@@ -857,13 +856,21 @@ Drag.VisualEvent.version = "0.1.135";
 	Drag.VisualEvent.setDocumentFontSize = function(doc, fontSize) {
 		fontSize = parseInt(fontSize);
 		
-		const body = doc.body;	
-		body.style.fontSize = `${fontSize}px`;
+		doc.body.style.fontSize = `${fontSize}px`;
 		doc.documentElement.style.fontSize = `${fontSize}px`;
 	};
 	
 	Drag.VisualEvent.getDocumentFontSize = function(doc) {
 		return parseInt(doc.documentElement.style.fontSize) || 16;
+	};
+	
+	Drag.VisualEvent.setDocumentFontStyle = function(doc, fontStyle) {
+		doc.body.style.fontFamily = fontStyle;
+		doc.documentElement.style.fontFamily = fontStyle;
+	};
+	
+	Drag.VisualEvent.getDocumentFontStyle = function(doc) {
+		return doc.documentElement.style.fontFamily || "serif";
 	};
 	
 	Drag.VisualEvent.openWindow = function(filename, name, width, height, top, left, data = {}) {
@@ -887,10 +894,14 @@ Drag.VisualEvent.version = "0.1.135";
 					Drag.VisualEvent.windowsHandlers[`${name}`] = window.open(filename, name, `attributionsrc=1, dependent=1, menubar=1, resizable=1, width=${width}, height=${height}, top=${top}, left=${left}`);
 					Drag.VisualEvent.windowsHandlers[`${name}`].data = data;
 					
-					const editor = Drag.VisualEvent.getEditor();
-					const fontSize = editor ? Drag.VisualEvent.getDocumentFontSize(editor.document) : 16;
 					Drag.VisualEvent.windowsHandlers[`${name}`].addEventListener('load', () => {
+						const editor = Drag.VisualEvent.getEditor();
+						
+						const fontSize = editor ? Drag.VisualEvent.getDocumentFontSize(editor.document) : 16;
 						Drag.VisualEvent.setDocumentFontSize(Drag.VisualEvent.windowsHandlers[`${name}`].document, fontSize);
+						
+						const fontStyle = editor ? Drag.VisualEvent.getDocumentFontStyle(editor.document) : "serif";
+						Drag.VisualEvent.setDocumentFontStyle(Drag.VisualEvent.windowsHandlers[`${name}`].document, fontStyle);
 					});
 				} else { 
 					console.error(`Couldn't open ${name}. ${filepath}${filename} file does not exist or is not in the right place.`);
@@ -1673,8 +1684,10 @@ Drag.VisualEvent.version = "0.1.135";
 		console.error(`Couldn't load data file ${url}`);
 	};
 	
+	
+	
 	//------------------------------------------------------------------------------------------------------------
-	// FS Write Files
+	// FS Files Helpers
 	
 	Drag.VisualEvent.backupFile = function(filepath, backupFolder = "backup") {
 		if (!filepath)
@@ -1704,6 +1717,49 @@ Drag.VisualEvent.version = "0.1.135";
 			console.error("Failed to backup file:", error);
 			return false;
 		}
+	};
+	
+	Drag.VisualEvent.moveFile = function(sourcePath, targetPath, renameExist = true) {
+		if (!sourcePath || !targetPath)
+			return false;
+
+		if (!Drag.VisualEvent.modules.fs.existsSync(sourcePath)) {
+			console.warn(`Move file aborted: source file does not exist: ${sourcePath}`);
+			return false;
+		}
+
+		const targetFolder = Drag.VisualEvent.modules.path.dirname(targetPath);
+		if (!Drag.VisualEvent.modules.fs.existsSync(targetFolder))
+			Drag.VisualEvent.modules.fs.mkdirSync(targetFolder, {recursive: true});
+
+		if (renameExist)
+			targetPath = Drag.VisualEvent.getAvailableFilePath(targetPath);
+		else if (Drag.VisualEvent.modules.fs.existsSync(targetPath)) {
+			console.warn(`Move file aborted: target file already exist: ${targetPath}`);
+			return false;
+		}
+
+		Drag.VisualEvent.modules.fs.renameSync(sourcePath, targetPath);
+		return targetPath;
+	};
+
+	Drag.VisualEvent.getAvailableFilePath = function(filePath) {
+		if (!Drag.VisualEvent.modules.fs.existsSync(filePath))
+			return filePath;
+
+		const dir = Drag.VisualEvent.modules.path.dirname(filePath);
+		const ext = Drag.VisualEvent.modules.path.extname(filePath);
+		const base = Drag.VisualEvent.modules.path.basename(filePath, ext);
+
+		let index = 1;
+		let path;
+
+		do {
+			path = path.join(dir, `${base}_${index}${ext}`);
+			index++;
+		} while (Drag.VisualEvent.modules.fs.existsSync(path));
+
+		return path;
 	};
 	
 	Drag.VisualEvent.editJSON = function(filepath, filename, filetype, val) {
