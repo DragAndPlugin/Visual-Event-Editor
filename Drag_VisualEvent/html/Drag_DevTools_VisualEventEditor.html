@@ -181,19 +181,24 @@
 				<div class="flex relative" style="padding: 0px 10px; margin-top: 5px;">
 					<input type="number" id="editor-options-ui-scale" value="16"
 						onchange="$.Drag.VisualEvent.sanitizeInput(this); saveOptions(); setFontSize(parseInt(this.value));" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"
-						data-isInputInteger="true" data-inputType="integer" data-defaultValue="16" min="6"
+						data-isInputInteger="true" data-inputType="integer" data-defaultValue="16" min="6" max="20"
 					/>
 				</div>
 			</div>
 			<div class="relative">
 				<label for="">Font Style :</label>
 				<div class="flex relative" style="padding: 0px 10px; margin-top: 5px;">
-					<div class="select">
+					<div class="select" style="width: 100%;">
 						<select data-inputType="select" data-defaultValue="serif" id="editor-options-font-style" onchange="saveOptions(); setFontStyle(this.value);">
-							<option value="serif">Serif</option>
-							<option value="sans-serif">Sans-Serif</option>
-							<option value="monospace">Monospace</option>
-							<option value="cursive">Cursive</option>
+							<option style="font-family: OpenDyslexic;" value="OpenDyslexic">OpenDyslexic (Serif)</option>
+							<option style="font-family: Arial;" value="Arial">Arial (Sans-Serif)</option>
+							<option style="font-family: Consolas;" value="Consolas">Consolas (Monospace)</option>
+							<option style="font-family: cursive;" value="cursive">Cursive</option>
+							<option style="font-family: Segoe UI;" value="Segoe UI">Segoe UI</option>
+							<option style="font-family: Verdana;" value="Verdana">Verdana</option>
+							<option style="font-family: Tahoma;" value="Tahoma">Tahoma</option>
+							<option style="font-family: Georgia;" value="Georgia">Georgia</option>
+							<option style="font-family: serif;" value="wingdings">Wingdings (don't)</option>
 						</select>
 						<span class="focus"></span>
 					</div>
