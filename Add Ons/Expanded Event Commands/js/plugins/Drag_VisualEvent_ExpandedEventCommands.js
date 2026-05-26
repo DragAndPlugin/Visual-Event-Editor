@@ -6,11 +6,76 @@
  * @target MZ
  * @plugindesc A node-based eventing tool for RPG Maker MV & MZ
  * @author DragAndPlugin
- * @version 0.1.135
- * @url https://drag-and-plug-in.itch.io/visual-event-editor
+ * @version 1.0.0
+ * @url https://drag-and-plug-in.itch.io/visualevent-expandedeventcommands
  *
  * @help 
+ * Expanded Event Commands is an official add-on for my Visual Event Editor 
+ * that extends the native event system with advanced flow control, 
+ * text manipulation, array support, picture utilities, and many other 
+ * quality-of-life features.
  *
+ * Unlike traditional plugin commands, these commands are fully integrated 
+ * as real nodes/event commands with execution flow support 
+ * (branching/looping outputs) and interactive typed inputs.
+ *
+ * Full List Of Included Commands
+ * 	Wait (Variable)
+ * 	Wait (Script)
+ *
+ * 	Replace Picture
+ * 	Rotate Picture (Angle)
+ * 	Move Picture (Position)
+ * 	Get Picture Data
+ * 	Resize Picture
+ * 	Change Picture Opacity
+ * 	Change Picture Blend Mode
+ * 	Is Picture Shown
+ * 	Center Picture
+ * 	Erase Pictures In Range
+ *
+ * 	Open Item Screen
+ * 	Open Options Screen
+ * 	Open Load Screen
+ *
+ * 	Common Event (Variable)
+ * 	Switch
+ * 	For Loop
+ *
+ * 	Set Variable Text
+ * 	Is Variable Text
+ * 	Concat Variable Text
+ * 	Change Variable Text Casing
+ * 	Trim Variable Text
+ * 	Replace Variable Text
+ * 	Variable Text Starts With
+ * 	Variable Text Ends With
+ * 	Variable Text Includes
+ *
+ * 	Control Event Self Switch
+ * 	Toggle Event Self Switch
+ * 	Is Event Self Switch On
+ *
+ * 	Set Variable Random With Weight
+ *
+ * 	Set Gold
+ *
+ * 	Create Variable Array
+ * 	Set Item In Variable Array
+ * 	Add Item In Variable Array
+ * 	Get Item In Variable Array
+ * 	Get Random Item In Variable Array
+ * 	Shuffle Items Variable Array
+ * 	Sort Items Variable Array
+ * 	Merge Variables Array
+ * 	Reverse Items Variable Array
+ * 	Variable Array Includes Item
+ * 	Variable Array Includes Item (Exec)
+ * 	Replace Item In Variable Array
+ * 	Set Variable Array Length
+ * 	Remove Item From Variable Array
+ * 	Remove Index From Variable Array
+ * 	Join Items From Variable Array 
 */
 
 
