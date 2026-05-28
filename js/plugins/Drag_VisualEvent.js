@@ -516,7 +516,7 @@ Drag.VisualEvent.version = "0.1.135";
 			return false;
 		
 		//used to force invalidation and jsdoc parsing, don't ship to prod with that
-		return false;
+		// return false;
 		
 		const stat = Drag.VisualEvent.getPluginStat(pluginName);
 		if (pluginData.size !== stat.size)
