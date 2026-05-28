@@ -2172,21 +2172,35 @@ Drag.VisualEvent.version = "0.1.135";
 			index = Drag.VisualEvent.getLinearIndex(index);
 		
 		const fileCount = parseInt(element.getAttribute('data-filecount')) || 1;
-		const src = fileCount > 1 ? JSON.parse(element.getAttribute('data-src')) : element.getAttribute('data-src');
+		
+		let src = element.getAttribute('data-src');
+		if (fileCount > 1) {
+			try {
+				src = JSON.parse(src);
+			} catch (error) {
+				const editor = $.Drag.VisualEvent.getEditor();
+				if (editor)
+					editor.console.warn("Invalid data-src for picture preview:", src, element);
+				else
+					console.warn("Invalid data-src for picture preview:", src, element);
+				
+				src = [];
+			}
+		}
 		
 		if (isTile)
-			element.style.backgroundImage = "url(../../img/tilesets/" + filename[0] + ".png)";
+			element.style.backgroundImage = `url("../../img/tilesets/${filename[0]}.png")`;
 		else {
 			if (Array.isArray(src)) {
 				let bgImage = '';
 				for (const [i, url] of src.entries())
 					if (url && filename[i])
-						bgImage += "url(../../" + url + "/" + filename[i] + ".png), ";
+						bgImage += `url("../../${url}/${filename[i]}.png"), `;
 				
 				if (bgImage)
 					element.style.backgroundImage = bgImage.substring(0, bgImage.length - 2);
 			} else if (filename[0])
-				element.style.backgroundImage = "url(../../" + src + "/" + filename[0] + ".png)";
+				element.style.backgroundImage = `url("../../${src}/${filename[0]}.png")`;
 		}
 		
 		const isFullCharacterSheet = element.getAttribute('data-isFullCharacterSheet') === "true";
@@ -2224,6 +2238,16 @@ Drag.VisualEvent.version = "0.1.135";
 			const bgpy = -(frameHeight * rowIndex);
 			const bgpx = -(frameWidth * colIndex);
 			element.style.backgroundPosition = `${bgpx}px ${bgpy}px`;
+		};
+		
+		image.onerror = function() {
+			const editor = $.Drag.VisualEvent.getEditor();
+			if (editor)
+				editor.console.warn("Failed to load preview image:", image.src, element);
+			else
+				console.warn("Failed to load preview image:", image.src, element);
+			
+			element.style.backgroundImage = "unset";
 		};
 	};
 	
