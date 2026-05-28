@@ -1053,12 +1053,12 @@ function loadDummyNodes() {
 	
 	if ($.Utils.RPGMAKER_NAME === "MZ") 
 		for (const pluginName in $.Drag.VisualEvent.pluginJSDocData) {
-			for (const commandName in $.Drag.VisualEvent.pluginJSDocData[pluginName].commands) {
+			for (const commandName in $.Drag.VisualEvent.getLocalizedPluginData(pluginName).commands) {
 				if (!window._dummyNodes[pluginName])
 					window._dummyNodes[pluginName] = {};
 				
 				window._dummyNodes[pluginName][commandName] = addNodeFromParams({
-					x: 0, y: 0, isPluginCommand: true, commandCode: 357, commandName: commandName, commandText: $.Drag.VisualEvent.pluginJSDocData[pluginName].commands[commandName].text, commandCategory: pluginName
+					x: 0, y: 0, isPluginCommand: true, commandCode: 357, commandName: commandName, commandText: $.Drag.VisualEvent.getLocalizedPluginData(pluginName).commands[commandName].text, commandCategory: pluginName
 				});
 				window._dummyNodes[pluginName][commandName].isDummy = true;
 				

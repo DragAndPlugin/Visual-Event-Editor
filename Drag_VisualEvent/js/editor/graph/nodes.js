@@ -1086,7 +1086,7 @@ function getNodeCommandDescription(node) {
 		const pluginName = node.getAttribute('data-pluginName');
 		const pluginCommandName = node.getAttribute('data-pluginCommandName');
 		if (pluginName && pluginCommandName) {
-			const pluginCommandData = $.Drag.VisualEvent.pluginJSDocData[pluginName].commands[pluginCommandName];
+			const pluginCommandData = $.Drag.VisualEvent.getLocalizedPluginData(pluginName).commands[pluginCommandName];
 			return pluginCommandData && pluginCommandData.desc ? pluginCommandData.desc : "";
 		} else
 			return "";

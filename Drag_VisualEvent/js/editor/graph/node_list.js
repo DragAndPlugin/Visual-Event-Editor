@@ -42,8 +42,10 @@ function setupNodeList() {
 		for (const plugin of pluginList) {
 			console.log(`Importing commands from ${plugin}...`);
 			
-			function makePluginCommandHTML(pluginData) {
+			function makePluginCommandHTML() {
+				const pluginData = $.Drag.VisualEvent.getLocalizedPluginData(plugin);
 				html = ``;
+				
 				if (pluginData.commands && Object.keys(pluginData.commands).length > 0) {
 					html += `<div><p data-commandCategory="${plugin}">${plugin.toUpperCase()}</p>`;
 					for (const command in pluginData.commands) {
@@ -71,10 +73,10 @@ function setupNodeList() {
 				if (!$.Drag.VisualEvent.validatePluginCache(plugin)) {
 					console.log(`${plugin} cache invalidated, fetch and parse...`); 
 					window._invalidatedPluginCache = true;
-					$.Drag.VisualEvent.fetchPluginCommands(plugin, makePluginCommandHTML, false, true);
+					$.Drag.VisualEvent.fetchPluginCommands(plugin, makePluginCommandHTML);
 				} else {
 					console.log(`${plugin} cache validated !`); 
-					makePluginCommandHTML($.Drag.VisualEvent.pluginJSDocData[plugin]);
+					makePluginCommandHTML($.Drag.VisualEvent.getLocalizedPluginData(plugin));
 				}
 			} catch(error) {
 				console.error(`Couldn't import commands from ${plugin}. Error : ${error}`);
@@ -102,7 +104,7 @@ function setupNodeList() {
 						pluginReady++;
 						if (pluginReady >= pluginList.length)
 							window._pluginsImported = true;
-					}), false, true);
+					}));
 				} else {
 					console.log(`${plugin} cache validated !`); 
 					pluginReady++;
