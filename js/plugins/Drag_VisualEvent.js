@@ -492,9 +492,15 @@ Drag.VisualEvent.version = "0.1.135";
 				const stat = Drag.VisualEvent.getPluginStat(name);
 				parsed.size = stat.size;
 				parsed.mtimeMs = stat.mtimeMs;
+				parsed.parserVersion = Drag.VisualEvent.version;
 				callback(parsed);
 			} catch (error) {
-				console.log(`Couldn't parse plugin ${name} JSDoc. Error: ${error}`);
+				const editor = Drag.VisualEvent.getEditor();
+				if (editor)
+					editor.console.log(`Couldn't parse plugin ${name} JSDoc. Error: ${error}`);
+				else
+					console.log(`Couldn't parse plugin ${name} JSDoc. Error: ${error}`);
+				
 				callback({});
 			}
 		});
@@ -505,23 +511,61 @@ Drag.VisualEvent.version = "0.1.135";
 	};
 	
 	Drag.VisualEvent.validatePluginCache = function(pluginName) {
-		if (!Drag.VisualEvent.pluginJSDocData[pluginName])
+		const pluginData = Drag.VisualEvent.pluginJSDocData[pluginName];
+		if (!pluginData)
 			return false;
 		
 		//used to force invalidation and jsdoc parsing, don't ship to prod with that
-		// return false;
+		return false;
 		
 		const stat = Drag.VisualEvent.getPluginStat(pluginName);
-		if (Drag.VisualEvent.pluginJSDocData[pluginName].size !== stat.size)
+		if (pluginData.size !== stat.size)
 			return false;
 		
-		if (Drag.VisualEvent.pluginJSDocData[pluginName].mtimeMs !== stat.mtimeMs)
+		if (pluginData.mtimeMs !== stat.mtimeMs)
+			return false;
+		
+		if (pluginData.parserVersion !== Drag.VisualEvent.version)
 			return false;
 		
 		return true;
 	};
 	
 	Drag.VisualEvent.parsePluginJSDoc = function(text, name, options = {parseParams: true, parseCommands: true, parseNotetags: true}) {
+		const textBlocks = Drag.VisualEvent.extractJSDocBlocks(text);
+
+		if (!textBlocks.length) {
+			const parsed = Drag.VisualEvent.parsePluginJSDocBlock(fullText, name, options);
+			Drag.VisualEvent.pluginJSDocData[name] = parsed;
+			return parsed;
+		}
+		
+		const results = {};
+		for (const textBlock of textBlocks) {
+			const parsed = Drag.VisualEvent.parsePluginJSDocBlock(textBlock.text, name, options);
+			results[textBlock.lang] = parsed;
+		}
+		
+		Drag.VisualEvent.pluginJSDocData[name] = results;
+		return results;
+	};
+	
+	Drag.VisualEvent.extractJSDocBlocks = function(text) {
+		const regex = /\/\*:([a-zA-Z-]*)\s*([\s\S]*?)\*\//g;
+		const blocks = [];
+		let match;
+		
+		while ((match = regex.exec(text)) !== null) {
+			blocks.push({
+				lang: match[1] ? match[1].trim().toLowerCase() : "en",
+				text: match[2]
+			});
+		}
+		
+		return blocks;
+	};
+	
+	Drag.VisualEvent.parsePluginJSDocBlock = function(text, name, options = {parseParams: true, parseCommands: true, parseNotetags: true}) {
 		if (Utils.RPGMAKER_NAME !== "MZ")
 			options.parseCommands = false;
 
@@ -608,7 +652,6 @@ Drag.VisualEvent.version = "0.1.135";
 		}
 
 		pluginData.meta.help = Drag.VisualEvent.fetchMultilineJSDocTag(text, "help");
-		Drag.VisualEvent.pluginJSDocData[name] = pluginData;
 		return pluginData;
 	};
 	
@@ -678,8 +721,20 @@ Drag.VisualEvent.version = "0.1.135";
 		return match[1].split("\n").map(line => line.replace(/^\s*\*\s?/, "")).join("\n").trim();
 	};
 	
-	Drag.VisualEvent.getPluginCommandParameters = function(pluginName, commandName) {
-		const pluginData = Drag.VisualEvent.pluginJSDocData[pluginName];
+	Drag.VisualEvent.getPluginData = function(pluginName) {
+		if (!pluginName)
+			return {};
+		
+		return Drag.VisualEvent.pluginJSDocData[pluginName] || {};
+	};
+	
+	Drag.VisualEvent.getLocalizedPluginData = function(pluginName, lang = "en") {
+		const pluginData = Drag.VisualEvent.getPluginData(pluginName);		
+		return pluginData[lang] || pluginData.en || pluginData[Object.keys(pluginData).find(key => key.length === 2 && typeof pluginData[key] === "object")] || {};
+	};
+	
+	Drag.VisualEvent.getPluginCommandParameters = function(pluginName, commandName, lang = "en") {
+		const pluginData = Drag.VisualEvent.getLocalizedPluginData(pluginName, lang);
 		const commandData = pluginData ? pluginData.commands[commandName] : null;
 		const commandArgs = commandData ? commandData.args : null;
 		return commandArgs ? commandArgs.map(item => {return {...item}}) : []; //two level deep copy
