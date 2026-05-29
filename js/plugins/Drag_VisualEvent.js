@@ -516,7 +516,7 @@ Drag.VisualEvent.version = "0.1.135";
 			return false;
 		
 		//used to force invalidation and jsdoc parsing, don't ship to prod with that
-		// return false;
+		return false;
 		
 		const stat = Drag.VisualEvent.getPluginStat(pluginName);
 		if (pluginData.size !== stat.size)
@@ -533,17 +533,35 @@ Drag.VisualEvent.version = "0.1.135";
 	
 	Drag.VisualEvent.parsePluginJSDoc = function(text, name, options = {parseParams: true, parseCommands: true, parseNotetags: true}) {
 		const textBlocks = Drag.VisualEvent.extractJSDocBlocks(text);
+		const structs = textBlocks.filter(textBlock => textBlock.type === "struct");
+		const datas = textBlocks.filter(textBlock => textBlock.type === "data");
 
-		if (!textBlocks.length) {
-			const parsed = Drag.VisualEvent.parsePluginJSDocBlock(fullText, name, options);
+		if (!datas.length) {
+			const parsed = Drag.VisualEvent.parsePluginJSDocBlock(text, name, options);
 			Drag.VisualEvent.pluginJSDocData[name] = parsed;
 			return parsed;
 		}
 		
 		const results = {};
-		for (const textBlock of textBlocks) {
-			const parsed = Drag.VisualEvent.parsePluginJSDocBlock(textBlock.text, name, options);
-			results[textBlock.lang] = parsed;
+		for (const data of datas) {
+			const parsed = Drag.VisualEvent.parsePluginJSDocBlock(data.text, name, options);		
+			results[data.lang] = parsed;
+		}
+		
+		for (const struct of structs) {
+			const parsed = Drag.VisualEvent.parsePluginJSDocBlock(struct.text, name, options);
+			const structData = parsed.structs ? parsed.structs[struct.structName] : null;
+			
+			if (!structData)
+				continue;
+			
+			if (!results[struct.lang])
+				results[struct.lang] = {};
+			
+			if (!results[struct.lang].structs)
+				results[struct.lang].structs = {};
+			
+			results[struct.lang].structs[struct.structName] = structData;
 		}
 		
 		Drag.VisualEvent.pluginJSDocData[name] = results;
@@ -551,18 +569,49 @@ Drag.VisualEvent.version = "0.1.135";
 	};
 	
 	Drag.VisualEvent.extractJSDocBlocks = function(text) {
-		const regex = /\/\*:([a-zA-Z-]*)\s*([\s\S]*?)\*\//g;
+		// const regex = /\/\*(:([a-zA-Z-]*)?|~struct~\w+:)\s*([\s\S]*?)\*\//g;
+		// const regex = /\/*(:([a-zA-Z-]*)?|~struct~[^ \n*]+)\s*([\s\S]*?)\*/g;
+		const regex = /\/\*(:([a-zA-Z-]*)?|~struct~[^ \n*]+)\s*([\s\S]*?)\*\//g;
 		const blocks = [];
 		let match;
 		
 		while ((match = regex.exec(text)) !== null) {
-			blocks.push({
-				lang: match[1] ? match[1].trim().toLowerCase() : "en",
-				text: match[2]
-			});
+			const header = match[1] || "";
+			const lang = match[2] ? match[2].trim().toLowerCase() : "en";
+			const content = match[3];
+			
+			if (header.startsWith("~struct~")) {
+				const struct = Drag.VisualEvent.parseStructHeader(header);
+				blocks.push({
+					type: "struct",
+					lang: struct.lang,
+					structName: struct.name,
+					text: `${header}\n${content}`
+				});
+			} else {
+				blocks.push({
+					lang: lang,
+					type: "data",
+					text: content
+				});
+			}
 		}
 		
 		return blocks;
+	};
+	
+	Drag.VisualEvent.parseStructHeader = function(header = "") {
+		if (typeof header !== "string")
+			header = "";
+		
+		const match = header.match(/~struct~([^:]+):?([a-zA-Z-]*)?/);
+		if (!match)
+			return {name: "", lang: "en"};
+
+		return {
+			name: match[1].trim(),
+			lang: match[2] ? match[2].trim().toLowerCase() : "en"
+		};
 	};
 	
 	Drag.VisualEvent.parsePluginJSDocBlock = function(text, name, options = {parseParams: true, parseCommands: true, parseNotetags: true}) {
@@ -712,12 +761,13 @@ Drag.VisualEvent.version = "0.1.135";
 	};
 	
 	Drag.VisualEvent.fetchMultilineJSDocTag = function(text, tagName) {
-		const regex = new RegExp(`@${tagName}\\s*([\\s\\S]*?)(?=\\n\\s*\\*\\s*@\\w+|\\n\\s*\\*\\/|$)`, "i");
+		// const regex = new RegExp(`@${tagName}\\s*([\\s\\S]*?)(?=\\n\\s*\\*\\s*@\\w+|\\n\\s*\\*\\/|$)`, "i");
+		const regex = new RegExp(`@${tagName}\\s*([\\s\\S]*?)(?=\\n\\s*(?:\\*\\s*)?@\\w+|\\n\\s*\\*\\/|$)`, "i");
 		const match = text.match(regex);
-
+		
 		if (!match)
 			return "";
-
+		
 		return match[1].split("\n").map(line => line.replace(/^\s*\*\s?/, "")).join("\n").trim();
 	};
 	
@@ -731,6 +781,17 @@ Drag.VisualEvent.version = "0.1.135";
 	Drag.VisualEvent.getLocalizedPluginData = function(pluginName, lang = "en") {
 		const pluginData = Drag.VisualEvent.getPluginData(pluginName);		
 		return pluginData[lang] || pluginData.en || pluginData[Object.keys(pluginData).find(key => key.length === 2 && typeof pluginData[key] === "object")] || {};
+	};
+	
+	Drag.VisualEvent.getLocalizedStruct = function(pluginName = "", structName = "", lang = "en") {
+		const pluginData = Drag.VisualEvent.getLocalizedPluginData(pluginName, lang);
+		if (!pluginData)
+			return {};
+		
+		if (pluginData.structs && pluginData.structs[structName])
+			return pluginData.structs[structName];
+		
+		return {};
 	};
 	
 	Drag.VisualEvent.getPluginCommandParameters = function(pluginName, commandName, lang = "en") {
@@ -2178,7 +2239,7 @@ Drag.VisualEvent.version = "0.1.135";
 			try {
 				src = JSON.parse(src);
 			} catch (error) {
-				const editor = $.Drag.VisualEvent.getEditor();
+				const editor = Drag.VisualEvent.getEditor();
 				if (editor)
 					editor.console.warn("Invalid data-src for picture preview:", src, element);
 				else
@@ -2241,7 +2302,7 @@ Drag.VisualEvent.version = "0.1.135";
 		};
 		
 		image.onerror = function() {
-			const editor = $.Drag.VisualEvent.getEditor();
+			const editor = Drag.VisualEvent.getEditor();
 			if (editor)
 				editor.console.warn("Failed to load preview image:", image.src, element);
 			else
