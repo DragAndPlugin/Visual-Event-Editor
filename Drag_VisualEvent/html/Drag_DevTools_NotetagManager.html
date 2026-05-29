@@ -126,7 +126,7 @@
 					
 				let html = `<datalist id="notetags">`;
 				for (let plugin in $.Drag.VisualEvent.pluginJSDocData) {
-					const pluginData = $.Drag.VisualEvent.pluginJSDocData[plugin];
+					const pluginData = $.Drag.VisualEvent.getLocalizedPluginData(plugin);
 					if (!pluginData.notetags)
 						continue;
 						

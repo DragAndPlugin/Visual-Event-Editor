@@ -136,7 +136,7 @@
 			
 			function showStructInputsFields(structValue, structName, nodeTarget) {
 				const pluginName = data.pluginName;
-				const pluginData = $.Drag.VisualEvent.pluginJSDocData[pluginName];
+				const pluginData = $.Drag.VisualEvent.getLocalizedPluginData(pluginName);
 				const structData = pluginData && pluginData.structs && pluginData.structs[structName];
 
 				if (!structData || !Array.isArray(structData.params)) {
