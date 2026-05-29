@@ -42,7 +42,7 @@ function closeNodeContextMenu() {
 };
 
 function copyNodes() {
-	window._nodeClipboard = {nodes: [], connections: [], positions: []};
+	window._nodeClipboard = {nodes: [], connections: [], positions: [], caches: []};
 	const selectedNodes = getSelectedNodes().filter(node => !node.classList.contains('uncopyable'));
 	
 	for (const [nodeIndex, node] of selectedNodes.entries()) {
@@ -61,6 +61,8 @@ function copyNodes() {
 		}
 		
 		window._nodeClipboard.positions.push(getNodePosition(node));
+		
+		window._nodeClipboard.caches.push($.Drag.VisualEvent.deepCopyJSON(getGraphNodeFromCache(node)));
 	}
 	
 	closeNodeContextMenu();
@@ -94,7 +96,6 @@ function pasteNodes(useNodeListPosition = false) {
 		const clone = cloneNode(node);
 		clones.push(clone);
 		addNodeToGraphNode(clone);
-		console.log(clone, clone.data);
 		
 		//place copied node
 		const oldPosition = window._nodeClipboard.positions[nodeIndex];
@@ -132,16 +133,28 @@ function pasteNodes(useNodeListPosition = false) {
 			}
 		}
 		
-		const nodeCache = getGraphNodeFromCache(window._nodeClipboard.nodes[nodeIndex]);
-		console.log(nodeCache);
-		const copiedNodeCache = nodeCache ? $.Drag.VisualEvent.deepCopyJSON(nodeCache) : null;
-		if (copiedNodeCache) {
-			copiedNodeCache.nodeId = getNodeId(node);
-			copiedNodeCache.x = getNodePosition(node)[0];
-			copiedNodeCache.y = getNodePosition(node)[1];
-			copiedNodeCache.connectionsMap = getNodeConnectionsMap(node); //connections maps seems to not be calculated correctly sometimes, to fix
-			eventCache.nodes[copiedNodeCache.nodeId] = copiedNodeCache;
+		const nodeCache = getGraphNodeFromCache(node);		
+		if (nodeCache) {
+			nodeCache.nodeId = getNodeId(node);
+			
+			const nodePosition = getNodePosition(node);
+			nodeCache.x = nodePosition[0];
+			nodeCache.y = nodePosition[1];
+			
+			nodeCache.connectionsMap = getNodeConnectionsMap(node); //connections maps seems to not be calculated correctly sometimes ?, to fix
+			
+			//copy other cache properties + custom nodes cache properties
+			const cache = window._nodeClipboard.caches[nodeIndex];
+			for (const key of Object.keys(cache)) {
+				if (["nodeId", "x", "y", "connectionsMap"].includes(key))
+					continue
+				
+				nodeCache[key] = $.Drag.VisualEvent.deepCopyJSON(cache[key]);
+			}
+			
+			eventCache.nodes[nodeCache.nodeId] = nodeCache;
 		}
+		// console.log(nodeCache);
 		
 		refreshNodeCull(node);
 	}
