@@ -6,7 +6,7 @@
  * @target MZ
  * @plugindesc A node-based eventing tool for RPG Maker MV & MZ
  * @author DragAndPlugin
- * @version 0.1.135
+ * @version 0.1.144
  * @url https://drag-and-plug-in.itch.io/visual-event-editor
  *
  * @help 
@@ -32,7 +32,7 @@
  * -Attribution is required (Visual Event Editor by DragAndPlugin)
  * -Please refer to the included LICENSE file for full details.
  *
- * Do not remove or modify this header.
+ * Do not remove or modify this header. 
  */
  
 var Imported = Imported || {};
@@ -41,7 +41,7 @@ Imported.Drag_VisualEvent = true;
 var Drag = Drag || {};
 Drag.VisualEvent = {};
 Drag.VisualEvent.alias = {};
-Drag.VisualEvent.version = "0.1.135";
+Drag.VisualEvent.version = "0.1.144";
 
 // (function() {
 	
@@ -309,6 +309,14 @@ Drag.VisualEvent.version = "0.1.135";
 		return arr;
 	};
 	
+	Drag.VisualEvent.moveArrayIndex = function(arr, from, to) {
+		arr.splice(to, 0, arr.splice(from, 1)[0]);
+	};
+	
+	Drag.VisualEvent.swapArrayIndexs = function(arr, index1, index2) {
+		[arr[index1], arr[index2]] = [arr[index2], arr[index1]];
+	};		
+	
 	Drag.VisualEvent.findAllIndexes = function(arr, item) {
 		const indexes = arr.reduce((arr2, value, index) => {
 			if (value === item) arr2.push(index);
@@ -516,7 +524,7 @@ Drag.VisualEvent.version = "0.1.135";
 			return false;
 		
 		//used to force invalidation and jsdoc parsing, don't ship to prod with that
-		return false;
+		// return false;
 		
 		const stat = Drag.VisualEvent.getPluginStat(pluginName);
 		if (pluginData.size !== stat.size)
@@ -987,6 +995,27 @@ Drag.VisualEvent.version = "0.1.135";
 	
 	Drag.VisualEvent.getDocumentFontStyle = function(doc) {
 		return doc.documentElement.style.fontFamily || "serif";
+	};
+	
+	Drag.VisualEvent.ensureContextMenuFitViewport = function(win, contextmenu, x = 0, y = 0, margin = 8) {
+		if (!win || !contextmenu)
+			return;
+		
+		const rect = contextmenu.getBoundingClientRect();
+		
+		let left = x;
+		if (left + rect.width > win.innerWidth - margin)
+			left = win.innerWidth - rect.width - margin;
+		
+		let top = y;
+		if (top + rect.height > win.innerHeight - margin)
+			top = win.innerHeight - rect.height - margin;
+		
+		left = Math.max(margin, left);
+		top = Math.max(margin, top);
+		
+		contextmenu.style.left = `${left}px`;
+		contextmenu.style.top = `${top}px`;
 	};
 	
 	Drag.VisualEvent.openWindow = function(filename, name, width, height, top, left, data = {}) {
@@ -1805,6 +1834,24 @@ Drag.VisualEvent.version = "0.1.135";
 	//------------------------------------------------------------------------------------------------------------
 	// FS Files Helpers
 	
+	Drag.VisualEvent.readFile = function(filepath) {
+		if (!filepath)
+			return "";
+		
+		try {
+			Drag.VisualEvent.modules.fs.readFile(filepath, 'utf8', (err, data) => {
+			  if (err) {
+					console.error("Couldn't read file: ", error);
+					return "";
+				}
+				return data;
+			});
+		} catch (error) {
+			console.error("Couldn't read file: ", error);
+			return "";
+		};
+	};
+	
 	Drag.VisualEvent.backupFile = function(filepath, backupFolder = "backup") {
 		if (!filepath)
 			return false;
@@ -1830,7 +1877,7 @@ Drag.VisualEvent.version = "0.1.135";
 			
 			return true;
 		} catch (error) {
-			console.error("Failed to backup file:", error);
+			console.error("Failed to backup file: ", error);
 			return false;
 		}
 	};
