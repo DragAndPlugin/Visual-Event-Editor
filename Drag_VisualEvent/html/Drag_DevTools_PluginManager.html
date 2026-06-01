@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+<head>
+	<meta charset="UTF-8">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="viewport" content="user-scalable=no">
+	<link rel="icon" href="../../icon/icon.png" type="image/png">
+	<link rel="apple-touch-icon" href="../../icon/icon.png">
+	<link href="../css/Drag_DevTools.css" rel="stylesheet">
+	<style>
+		:root {
+			--background-color2: #21222b;
+		}
+
+		html, body {
+			height: 100%;
+			overflow: hidden;
+		}
+
+		#content {
+			display: grid;
+			grid-template-columns: 22em 1fr;
+			height: 100%;
+			margin: 0;
+			padding-bottom: 3.125em;
+			box-sizing: border-box;
+			background: var(--background-color);
+		}
+
+		#plugin-list-panel {
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+			min-height: 0;
+			border-right: 0.0625em solid rebeccapurple;
+			background: var(--background-color2);
+		}
+
+		#plugin-list-panel > div:first-child {
+			padding: 0.75em;
+			border-bottom: 0.0625em solid rebeccapurple;
+		}
+
+		#plugin-search-container {
+			display: flex;
+		}
+
+		#plugin-search-container > *:first-child {
+			margin-right: 0.5em;
+		}
+
+		#plugin-search, #plugin-add-container input {
+			padding: 0.5em 0.75em;
+			box-sizing: border-box;
+			background: var(--background-color2);
+		}
+
+		#plugin-search-container > .select {
+			padding: 0;
+			background: var(--background-color2);
+		}
+
+		#plugin-search-container > .select::after {
+			width: 0.65em;
+			height: 0.65em;
+			margin-right: 0.3em;
+			pointer-events: none;
+		}
+
+		#plugin-filter {
+			padding: 0.5em 2em 0.5em 0.75em;
+		}
+
+		#plugin-add-container {
+			margin-bottom: 0.65em;
+		}
+
+		#plugin-add-container > div {
+			position: relative;
+		}
+
+		#plugin-add-container input {
+			padding: 0.5em 0.65em;
+		}
+
+		#reorder-disabled {
+			display: block;
+			margin-top: 0.5em;
+			color: yellow;
+			font-size: 0.8em;
+			text-align: center;
+		}
+
+		#plugin-list {
+			display: flex;
+			flex: 1 1 auto;
+			flex-direction: column;
+			overflow-y: auto;
+			padding: 0.35em;
+			box-sizing: border-box;
+		}
+
+		.plugin-row {
+			cursor: pointer;
+			display: grid;
+			grid-template-columns: auto 1fr auto;
+			align-items: center;
+			min-height: 3.25em;
+			margin-bottom: 0.2em;
+			padding: 0.5em 0.85em;
+			box-sizing: border-box;
+			border: 0.0625em solid transparent;
+		}
+		
+		.plugin-row:nth-child(even) {
+			background: rgb(255 255 255 / 8%);
+		}
+
+		.plugin-row > * {
+			margin-right: 0.75em;
+		}
+
+		.plugin-row > *:last-child {
+			margin-right: 0em;
+		}
+
+		.plugin-row:hover {
+			background: rgb(255 255 255 / 12%);
+			border-color: rgb(255 255 255 / 0.25);
+		}
+
+		.plugin-row:active {
+			transform: scale(0.985);
+		}
+
+		.plugin-row.selected {
+			background: rgb(90 130 190 / 35%);
+			border-color: rgb(140 190 255 / 0.4);
+		}
+
+		.plugin-row.grabbing {
+			cursor: -webkit-grabbing;
+			opacity: 0.75;
+			border-color: white;
+		}
+
+		.plugin-row > div:first-child {
+			width: 0.85em;
+			height: 0.85em;
+			background: forestgreen;
+			border-radius: 100%;
+		}
+
+		.plugin-row[data-enabled="false"] > div:first-child {
+			background: grey;
+		}
+
+		.plugin-info-container {
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+		}
+
+		.plugin-info-container > div, #plugin-param > span {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.plugin-info-container > div:first-child {
+			font-weight: bold;
+		}
+
+		.plugin-info-container > div:last-child {
+			margin-top: 0.15em;
+			color: lightgrey;
+			font-size: 0.8em;
+			opacity: 0.7;
+		}
+
+		#plugin-data {
+			display: flex;
+			align-items: center;
+		}
+
+		#plugin-data > * {
+			margin-right: 0.25em;
+		}
+
+		#plugin-data > *:last-child {
+			margin-right: 0em;
+		}
+
+		#plugin-data > span {
+			padding: 0.15em 0.35em;
+			background: rgb(0 0 0 / 35%);
+			color: lightgrey;
+			font-size: 0.65em;
+			font-weight: bold;
+		}
+
+		#plugin-data > span.warning {
+			color: yellow;
+		}
+
+		#details-panel {
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+			min-height: 0;
+		}
+
+		#details-panel > div:first-child {
+			display: flex;
+			padding: 0 1em;
+			border-bottom: 0.0625em solid rebeccapurple;
+			background: var(--background-color2);
+		}
+
+		.tab {
+			cursor: pointer;
+			padding: 0.75em 1em;
+			color: lightgrey;
+			border-bottom: 0.125em solid transparent;
+		}
+
+		.tab:hover {
+			background: var(--background-color);
+		}
+
+		.tab.selected {
+			color: white;
+			border-bottom-color: #8070d4;
+		}
+		
+		.tab.disabled:hover {
+			background: unset;
+		}
+		
+		.tab.disabled {
+			color: dimgrey;
+			pointer-events: none;
+		}
+
+		#plugin-content {
+			flex: 1 1 auto;
+			min-height: 0;
+			overflow-y: auto;
+			padding: 1em 1.25em;
+			box-sizing: border-box;
+			font-size: 0.9em;
+		}
+
+		#info {
+			display: grid;
+			grid-template-columns: 10em 1fr;
+		}
+
+		#info > * {
+			margin-right: 1em;
+			margin-bottom: 0.65em;
+		}
+
+		#info > *:last-child {
+			margin-right: 0em;
+			margin-bottom: 0em;
+		}
+
+		#info > div:nth-child(odd) {
+			color: lightgrey;
+			font-weight: bold;
+			opacity: 0.7;
+		}
+
+		#info > div:nth-child(even) {
+			display: flex;
+			white-space: pre-wrap;
+		}
+
+		.plugin-enabled, .plugin-disabled, .plugin-remove {
+			margin-right: 2em;
+			font-size: 0.8em;
+		}
+
+		.plugin-enabled {
+			border-color: forestgreen;
+		}
+
+		.plugin-disabled {
+			border-color: grey;
+		}
+
+		.plugin-remove {
+			margin-right: 0em;
+			border-color: darkred;
+		}
+
+		#search-parameter-container {
+			position: sticky;
+			top: -1em;
+			z-index: 2;
+			padding-top: 0.25em;
+			padding-bottom: 0.85em;
+			background: var(--background-color);
+		}
+
+		#search-parameter-container > div {
+			width: 100%;
+			padding: 0.6em 0.8em;
+			box-sizing: border-box;
+			background: var(--background-color2);
+		}
+
+		.plugin-param {
+			margin-bottom: 0.85em;
+			padding: 0.65em 0.75em;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			background: rgb(255 255 255 / 5%);
+		}
+
+		.plugin-param[data-has-children="true"] {
+			background: rgb(255 255 255 / 10%);
+		}
+
+		#param-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-bottom: 0.35em;
+		}
+
+		#param-header.collapsible {
+			cursor: pointer;
+			margin: -0.35em -0.5em 0.35em -0.5em;
+			padding: 0.35em 0.5em;
+		}
+
+		#param-header.collapsible:hover {
+			background: rgb(255 255 255 / 10%);
+		}
+
+		#param-header > div:first-child {
+			display: flex;
+			align-items: center;
+			min-width: 0;
+		}
+
+		#collapse-arrow {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 1.25em;
+			margin-right: 0.25em;
+			color: #8070d4;
+			transition: transform 0.25s ease;
+		}
+
+		.plugin-param[data-collapsed="true"] #collapse-arrow {
+			transform: rotate(-90deg);
+		}
+
+		#param-header > div:last-child {
+			display: flex;
+			align-items: center;
+			margin-left: 0.75em;
+		}
+
+		#param-header > div:last-child > * {
+			margin-right: 0.45em;
+		}
+
+		#param-header > div:last-child > *:last-child {
+			margin-right: 0em;
+		}
+
+		#param-type {
+			color: lightgrey;
+			font-size: 0.75em;
+			opacity: 0.7;
+		}
+
+		#param-header button {
+			cursor: pointer;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 1.75em;
+			height: 1.75em;
+			padding: 0;
+			line-height: 1;
+		}
+
+		#param-header button:active {
+			transform: scale(0.9);
+		}
+		
+		#plugin-param > span {
+			margin-top: 0.15em;
+			margin-bottom: 0.5em;
+			color: lightgrey;
+			font-size: 0.85em;
+			opacity: 0.85;
+			max-width: 100%;
+		}
+
+		#input-param-container {
+			display: flex;
+			align-items: center;
+		}
+
+		#input-param-container > div {
+			max-width: 100%;
+		}
+
+		.plugin-param-children, .plugin-param-list {
+			margin-left: 1.25em;
+			padding-left: 0.85em;
+			border-left: 0.125em solid #8070d4;
+		}
+
+		.plugin-param-list-item {
+			position: relative;
+			margin-bottom: 0.75em;
+			padding-right: 3.5em;
+		}
+
+		#buttons-list {
+			position: absolute;
+			top: 0.45em;
+			right: -1.25em;
+			display: flex;
+		}
+
+		#buttons-list > button {
+			font-size: 0.65em;
+		}
+
+		#buttons-list > *:first-child {
+			margin-right: 0.25em;
+		}
+
+		#buttons-list button, #add-list button {
+			cursor: pointer;
+			min-width: 1.8em;
+			height: 1.8em;
+		}
+
+		#add-list {
+			margin-top: 0.5em;
+			margin-bottom: 1em;
+		}
+
+		#bottom-container {
+			position: fixed;
+			right: 0;
+			bottom: 0;
+			left: 0;
+			display: flex;
+			justify-content: flex-end;
+			max-height: 3.125em;
+			padding: 0.5em;
+			box-sizing: border-box;
+			border-top: 0.0625em solid rebeccapurple;
+			background: var(--background-color2);
+		}
+
+		#bottom-container > * {
+			margin-right: 1em;
+		}
+
+		#bottom-container > *:last-child {
+			margin-right: 0em;
+		}
+
+		#bottom-container > button {
+			cursor: pointer;
+			padding: 0.5em 2em;
+		}
+
+		input[type="text"], input[type="number"] {
+			min-width: 0 !important;
+			border: 0.0625rem solid var(--color);
+		}
+		
+		input[type="text"]:focus, input[type="number"]:focus {
+			border: 0.0625rem solid rebeccapurple;
+		}
+
+		input[data-inputtype="struct"], input[data-inputType="struct"] {
+			display: none;
+		}
+
+		#autofit-textarea-checkbox {
+			opacity: 0;
+		}
+
+		textarea {
+			max-width: 100%;
+			border: 0.0625rem solid var(--color);
+		}
+		
+		textarea:focus {
+			outline: none;
+			border: 0.0625rem solid rebeccapurple;
+		}
+
+		button {
+			padding: 0.625em 1.25em;
+			border: 0.0625em solid var(--color);
+		}
+
+		button:hover {
+			background: var(--background-color2);
+		}
+
+		button:active {
+			transform: scale(0.985);
+		}
+		
+		.search-hidden {
+			display: none !important;
+		}
+
+		.url {
+			cursor: pointer;
+			color: white;
+			text-decoration: underline;
+		}
+
+		.url:hover {
+			color: cornflowerblue;
+		}
+
+		.contextmenu {
+			position: absolute;
+			z-index: 100;
+			display: flex;
+			flex-direction: column;
+			min-width: 12em;
+			padding: 0.4em;
+			box-sizing: border-box;
+			border: 0.0625em solid rebeccapurple;
+			background: var(--background-color2);
+			cursor: initial;
+		}
+
+		.contextmenu > div {
+			cursor: pointer;
+			display: flex;
+			justify-content: flex-start;
+			padding: 0.55em 0.75em;
+			box-sizing: border-box;
+			user-select: none;
+		}
+
+		.contextmenu > div:hover {
+			background: var(--background-color);
+		}
+
+		.contextmenu > span {
+			display: block;
+			height: 0.0625em;
+			margin: 0.35em 0.5em;
+			padding: 0;
+			background: grey;
+			pointer-events: none;
+		}
+
+		.contextmenu > .danger {
+			color: #ffaaaa;
+		}
+	</style>
+	<script type="text/javascript" src="../../js/plugins.js"></script>
+</head>
+<body style="height: 100%">
+	<div id="content">
+		<div id="plugin-list-panel">
+			<div>
+				<div id="plugin-add-container">
+					<div>
+						<input type="text" style="cursor: pointer;" placeholder="Add a plugin..."
+							onclick="$.Drag.VisualEvent.openFileExplorer(this);" onchange="$.Drag.VisualEvent.onInputChange(this); addPlugin(this);" onfocus="this.blur()" onload=""
+							data-src='js/plugins' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='js' data-inputType="file"  data-defaultValue="" data-isCommandParameter="true" value=""
+							data-allowSubFolder='true' data-type="undefined" data-src='' data-allowNone='true' data-exitFolder='true' data-allowSubFolder='true'
+						/>
+					</div>
+				</div>
+				<div id="plugin-search-container">
+					<input id="plugin-search" type="text" placeholder="Search plugins..." oninput="refreshPluginList(this);">
+					<div class="select">
+						<select id="plugin-filter" onchange="refreshPluginList();">
+							<option value="all">All</option>
+							<option value="enabled">Enabled</option>
+							<option value="disabled">Disabled</option>
+							<option value="commands">Commands</option>
+							<option value="parameters">Parameters</option>
+							<option value="notetags">Notetags</option>
+							<option value="warnings">Warnings</option>
+						</select>
+					</div>
+				</div>
+				<span id="reorder-disabled" class="hidden">Plugin reorder is disabled while filtering or searching.</span>
+			</div>
+			<div id="plugin-list"></div>
+			<div id="plugin-contextmenu" class="contextmenu hidden">
+				<div onclick="togglePluginContextmenu();">Enable / Disable</div>
+				<span></span>
+				<div onclick="movePluginUp();">Move Up</div>
+				<div onclick="movePluginDown();">Move Down</div>
+				<div onclick="movePluginTop();">Move To Top</div>
+				<div onclick="movePluginBottom();">Move To Bottom</div>
+				<span></span>
+				<div onclick="setPluginsEnabledAbove(false);">Disable All Above</div>
+				<div onclick="setPluginsEnabledAbove(true);">Enable All Above</div>
+				<div onclick="setPluginsEnabledBelow(false);">Disable All Below</div>
+				<div onclick="setPluginsEnabledBelow(true);">Enable All Below</div>
+				<span></span>
+				<div onclick="revealPluginInExplorer();">Reveal In Explorer</div>
+				<span></span>
+				<div class="danger" onclick="removePluginContextmenu();">Remove Plugin</div>
+				<div class="danger" onclick="removeAllDisabled();">Remove All Disabled</div>
+			</div>
+		</div>
+		<div id="details-panel">
+			<div>
+				<div class="tab selected" data-tab="info" onclick="selectPluginTab(this);">Info</div>
+				<div class="tab" data-tab="parameters" onclick="selectPluginTab(this);">Parameters</div>
+				<div class="tab" data-tab="commands" onclick="selectPluginTab(this);">Commands</div>
+				<div class="tab" data-tab="notetags" onclick="selectPluginTab(this);">Notetags</div>
+				<div class="tab" data-tab="warnings" onclick="selectPluginTab(this);">Warnings</div>
+			</div>
+			<div id="plugin-content">
+				<div style="margin-top: 2em; color: grey; text-align: center;">No plugin selected.</div>
+			</div>
+		</div>
+		<div id="bottom-container">
+			<button onclick="apply()">Apply</button>
+			<button onclick="ok()">OK</button>
+			<button onclick="quit();">Cancel</button>
+		</div>
+	</div>
+	<script type="text/javascript">
+		function main() {
+			document.title = "Drag_DevTools_PluginManager";
+			loadDataMainWindow();
+			$.Drag.VisualEvent.setLightMode(document);
+		};
+		
+		function loadDataMainWindow() {
+			$ = window.opener;
+			setup();
+		};
+		
+		function setup() {
+			window._plugins = loadPlugins();
+			window._selectedPluginIndex = 0;
+			window._selectedPluginTab = "info";
+			
+			refreshPluginList();
+			
+			if (window._plugins.length > 0)
+				selectPlugin(0);
+		};
+		
+		function loadPlugins() {
+			// const plugins = $.Drag.VisualEvent.readFile('js/plugins.js');
+			// console.log($plugins);
+			if ($.Drag.VisualEvent.pluginJSDocData && $.$plugins) { //fetch directly js/plugins.js instead of $.plugins ?
+				return $.$plugins.filter(plugin => plugin && plugin.name).map((plugin, index) => {
+					const pluginName = plugin.name;
+					const pluginData = $.Drag.VisualEvent.getLocalizedPluginData(pluginName) || {};
+					const params = $.Drag.VisualEvent.deepCopyJSON(pluginData.params || {});
+					
+					return {
+						id: index,
+						name: pluginName,
+						filename: `${pluginName}.js`,
+						enabled: plugin.status,
+						description: pluginData.meta && pluginData.meta.plugindesc ? pluginData.meta.plugindesc : plugin.description || "",
+						author: pluginData.meta ? pluginData.meta.author || "" : "",
+						version: pluginData.meta ? pluginData.meta.version || "" : "",
+						url: pluginData.meta ? pluginData.meta.url || "" : "",
+						help: pluginData.meta ? pluginData.meta.help || "" : "",
+						parameters: applyParameterValues(params, plugin.parameters || {}),
+						structs: $.Drag.VisualEvent.deepCopyJSON(pluginData.structs || {}),
+						commands: pluginData.commands || {},
+						notetags: pluginData.notetags || {},
+						warnings: makePluginWarnings(pluginData),
+					};
+				});
+			}
+			
+			return [];
+		};
+		
+		function applyParameterValues(params, values) {
+			console.log(params, values);
+			for (const name in params) {
+				if (!Object.prototype.hasOwnProperty.call(values, name))
+					continue;
+				
+				params[name].value = $.Drag.VisualEvent.deepCopyJSON(values[name]);
+			}
+			console.log(params);
+			return params;
+		};
+		
+		function makePluginWarnings(pluginData) {
+			const warnings = [];
+			
+			if (pluginData.meta && pluginData.meta.target) { 
+				if (!pluginData.meta.target.trim().toUpperCase().includes($.Utils.RPGMAKER_NAME))
+					warnings.push(`This plugin may not support RPG Maker ${$.Utils.RPGMAKER_NAME}.`);
+			} else if ($.Utils.RPGMAKER_NAME !== "MV")
+				warnings.push(`This plugin may not support RPG Maker ${$.Utils.RPGMAKER_NAME}.`);
+			
+			return warnings;
+		};
+		
+		function refreshPluginList() {			
+			const warning = document.querySelector('#reorder-disabled');
+			if (isPluginListFiltered())
+				warning.classList.remove('hidden');
+			else
+				warning.classList.add('hidden');
+			
+			const list = document.querySelector('#plugin-list');
+			const filter = document.querySelector('#plugin-filter').value;
+			const search = document.querySelector('#plugin-search').value.toLowerCase().trim();
+			
+			let html = "";
+			for (const [index, plugin] of window._plugins.entries()) {
+				if (isPluginFiltered(plugin, filter))
+					continue;
+				
+				const searchText = `${plugin.name} ${plugin.filename} ${plugin.description} ${plugin.author}`.toLowerCase();
+				if (search && !searchText.includes(search))
+					continue;
+				
+				const hasCommands = getPluginCommandCount(plugin) > 0;
+				const hasParameters = getPluginParamsCount(plugin) > 0;
+				const hasNotetags = getPluginNotetagsCount(plugin) > 0;
+				const hasWarnings = plugin.warnings && plugin.warnings.length > 0;
+				
+				html += `
+					<div class="plugin-row ${index === window._selectedPluginIndex ? 'selected' : ''}"
+						data-index="${index}" data-enabled="${plugin.enabled ? 'true' : 'false'}"
+						onmouseup="selectPluginRow(event, this);" onmousedown="startGrabPluginRow(event, this);" oncontextmenu="openPluginContextmenu(event, this);"
+					>
+						<div onmouseup="togglePluginFromRow(event, this);" title="${plugin.enabled ? 'Enabled' : 'Disabled'}"></div>
+						<div class="plugin-info-container">
+							<div>${$.Drag.VisualEvent.escapeHTML(plugin.name)}</div>
+							<div>${$.Drag.VisualEvent.escapeHTML(plugin.description || "")}</div>
+						</div>
+						<div id="plugin-data">
+							${hasCommands ? '<span>CMD</span>' : ''}
+							${hasParameters ? '<span>PARAM</span>' : ''}
+							${hasNotetags ? '<span>NTAGS</span>' : ''}
+							${hasWarnings ? '<span class="warning">!</span>' : ''}
+						</div>
+					</div>
+				`;
+			}
+			
+			list.innerHTML = html || `<div style="margin-top: 2em; color: grey; text-align: center;">No plugin found.</div>`;
+		};
+		
+		function openPluginContextmenu(event, row) {
+			const contextmenu = document.querySelector('#plugin-contextmenu');
+			if (!contextmenu)
+				return;
+			
+			event.preventDefault();
+			event.stopPropagation();
+			
+			window._pluginContextmenuIndex = parseInt(row.getAttribute('data-index'));
+			
+			contextmenu.style.top = event.clientY + "px";
+			contextmenu.style.left = event.clientX + "px";
+			contextmenu.classList.remove('hidden');
+			
+			$.Drag.VisualEvent.ensureContextMenuFitViewport(window, contextmenu, event.clientX, event.clientY);
+		};
+		
+		window.addEventListener('mousedown', function(event) {
+			const contextmenu = document.querySelector('#plugin-contextmenu');
+			if (event.composedPath().includes(contextmenu))
+				return;
+			
+			closePluginContextmenu();
+		});
+		
+		window.addEventListener('blur', closePluginContextmenu);
+		window.addEventListener('resize', closePluginContextmenu);
+		window.addEventListener('scroll', closePluginContextmenu, true);
+		function closePluginContextmenu() {
+			const contextmenu = document.querySelector('#plugin-contextmenu');
+			contextmenu.classList.add('hidden');
+			
+			window._pluginContextmenuIndex = null;
+		};
+		
+		function getPluginContextmenuIndex() {
+			const index = parseInt(window._pluginContextmenuIndex);
+			return Number.isInteger(index) && window._plugins[index] ? index : -1;
+		};
+
+		function getPluginContextmenu() {
+			const index = getPluginContextmenuIndex();
+			return index >= 0 ? window._plugins[index] : null;
+		};
+		
+		function onPluginContextAction(index = null) {
+			closePluginContextmenu();
+			
+			if (index !== null)
+				window._selectedPluginIndex = Math.max(0, Math.min(index, window._plugins.length - 1));
+			window._pluginManagerDirty = true;
+			
+			refreshPluginList();
+			refreshPluginDetails();
+		};
+		
+		function togglePluginContextmenu() {
+			const plugin = getPluginContextmenu();
+			if (!plugin)
+				return;
+			
+			plugin.enabled = !plugin.enabled;
+			onPluginContextAction(getPluginContextmenuIndex());
+		};
+		
+		function movePluginUp() {
+			const index = getPluginContextmenuIndex();
+			if (index <= 0)
+				return;
+			
+			$.Drag.VisualEvent.swapArrayIndexs(window._plugins, index - 1, index);
+			
+			onPluginContextAction(index - 1);
+		};
+		
+		function movePluginDown() {
+			const index = getPluginContextmenuIndex();
+			if (index < 0 || index >= window._plugins.length - 1)
+				return;
+			
+			$.Drag.VisualEvent.swapArrayIndexs(window._plugins, index + 1, index);
+			
+			onPluginContextAction(index + 1);
+		};
+		
+		function movePluginTop() {
+			const index = getPluginContextmenuIndex();
+			if (index <= 0)
+				return;
+			
+			$.Drag.VisualEvent.moveArrayIndex(window._plugins, index, 0);
+			
+			onPluginContextAction(0);
+		};
+		
+		function movePluginBottom() {
+			const index = getPluginContextmenuIndex();
+			if (index < 0 || index >= window._plugins.length - 1)
+				return;
+			
+			$.Drag.VisualEvent.moveArrayIndex(window._plugins, index, window._plugins.length - 1);
+			
+			onPluginContextAction(window._plugins.length - 1);
+		};
+		
+		function setPluginsEnabledAbove(enabled) {
+			const index = getPluginContextmenuIndex();
+			if (index <= 0)
+				return;
+			
+			for (let i = 0; i < index; i++)
+				window._plugins[i].enabled = enabled;
+			
+			onPluginContextAction(index);
+		};
+		
+		function setPluginsEnabledBelow(enabled) {
+			const index = getPluginContextmenuIndex();
+			if (index < 0 || index >= window._plugins.length - 1)
+				return;
+			
+			for (let i = index + 1; i < window._plugins.length; i++)
+				window._plugins[i].enabled = enabled;
+			
+			onPluginContextAction(index);
+		};
+		
+		function revealPluginInExplorer() {
+			const plugin = getPluginContextmenu();
+			if (!plugin)
+				return;
+			
+			const path = require('path');
+			const nwGui = require('nw.gui');
+			const pluginPath = path.resolve(`js/plugins/${plugin.filename || plugin.name + ".js"}`);
+			
+			nwGui.Shell.showItemInFolder(pluginPath);
+			closePluginContextmenu();
+		};
+		
+		function removePluginContextmenu() {
+			let index = getPluginContextmenuIndex();
+			if (index < 0)
+				return;
+			
+			const plugin = window._plugins[index];
+			if (!confirm(`Remove ${plugin.name} from the plugin list ?`))
+				return;
+			
+			window._plugins.splice(index, 1);
+			
+			if (index >= window._plugins.length)
+				index = window._plugins.length - 1;
+
+			onPluginContextAction(index);
+		};
+		
+		function removeAllDisabled() {
+			const disabledPlugins = window._plugins.filter(plugin => plugin && !plugin.enabled);
+			if (!disabledPlugins.length)
+				return;
+			
+			if (!confirm(`Remove ${disabledPlugins.length} disabled plugin(s) from the plugin list and move them to js/plugins/removed ?`))
+				return;
+			
+			const path = $.Drag.VisualEvent.modules.path;
+			const folder = path.resolve("js/plugins");
+			const removedFolder = path.join(folder, "removed");
+			
+			for (const plugin of disabledPlugins) {
+				const filename = plugin.filename || `${plugin.name}.js`;
+				const source = path.join(folder, filename);
+				const target = path.join(removedFolder, filename);
+				
+				$.Drag.VisualEvent.moveFile(source, target);
+			}
+			
+			window._plugins = window._plugins.filter(plugin => plugin && plugin.enabled);
+			
+			onPluginContextAction(window._selectedPluginIndex);
+		};
+		
+		function addPlugin(input) {
+			if (!input || !input.value)
+				return;
+			
+			const pluginName = $.Drag.VisualEvent.getInputValue(input);
+			input.value = "";
+			if (!pluginName)
+				return;
+			
+			if (window._plugins.find(plugin => plugin.filename === `${pluginName}.js`))
+				return;
+			
+			window._addPluginName = pluginName;
+			
+			const pluginData = $.Drag.VisualEvent.getLocalizedPluginData(pluginName);
+			if (pluginData)
+				registerPlugin(pluginData);
+			else
+				$.Drag.VisualEvent.fetchPluginCommands(pluginName, registerPlugin);	
+		};
+		
+		function registerPlugin() {
+			const pluginData = $.Drag.VisualEvent.getLocalizedPluginData(window._addPluginName);
+			console.log(pluginData, window._addPluginName);
+			if (!window._addPluginName || !pluginData)
+				return;
+			
+			window._plugins.push({
+				id: window._plugins.length,
+				name: window._addPluginName,
+				filename: `${window._addPluginName}.js`,
+				enabled: true,
+				description: pluginData.description || "",
+				author: pluginData.author || "",
+				version: pluginData.version || "",
+				help: pluginData.help || "",
+				parameters: pluginData.params || {},
+				commands: pluginData.commands || {},
+				structs: pluginData.structs || {},
+				warnings: []
+			});
+			
+			window._selectedPluginIndex = window._plugins.length - 1;
+			window._pluginManagerDirty = true;
+			window._addPluginName = null;
+			
+			refreshPluginList();
+			refreshPluginDetails();
+		};
+		
+		function removeSelectedPlugin() {
+			const plugin = window._plugins[window._selectedPluginIndex];
+			if (!plugin)
+				return;
+			
+			if (!confirm(`Remove ${plugin.name} from the plugin list ?`))
+				return;
+			
+			window._plugins.splice(window._selectedPluginIndex, 1);
+			if (window._selectedPluginIndex >= window._plugins.length)
+				window._selectedPluginIndex = window._plugins.length - 1;
+			
+			window._pluginManagerDirty = true;
+			
+			refreshPluginList();
+			refreshPluginDetails();
+			refreshAvailablePluginSelect();
+		};
+		
+		function togglePluginFromRow(event, toggle) {
+			event.preventDefault();
+			event.stopPropagation();
+			
+			const row = toggle.closest('.plugin-row');
+			if (!row)
+				return;
+			
+			const index = parseInt(row.getAttribute('data-index'));
+			const plugin = window._plugins[index];
+			if (!plugin)
+				return;
+			
+			plugin.enabled = !plugin.enabled;
+			window._pluginManagerDirty = true;
+			window._grabbedPluginRow = null;
+			
+			refreshPluginList();
+			refreshPluginDetails();
+		};
+		
+		function isPluginFiltered(plugin, filter) {
+			switch (filter) {
+				case "enabled":
+					return !plugin.enabled;
+				case "disabled":
+					return plugin.enabled;
+				case "commands":
+					return getPluginCommandCount(plugin) <= 0;
+				case "parameters":
+					return getPluginParamsCount(plugin) <= 0;
+				case "notetags":
+					return getPluginNotetagsCount(plugin) <= 0;
+				case "warnings":
+					return !plugin.warnings || plugin.warnings.length <= 0;
+				default:
+					return false;
+			}
+		};
+		
+		function startGrabPluginRow(event, row) {
+			if (!row || event.button !== 0)
+				return;
+			
+			if (isPluginListFiltered()) {
+				console.warn("Plugin reorder is disabled while the list is filtered.");
+				return;
+			}
+			
+			window._grabbedPluginRow = row;
+			window._grabbedPluginRow.classList.add('grabbing');
+			
+			event.preventDefault();
+			event.stopPropagation();
+		};
+		
+		function isPluginListFiltered() {
+			const search = document.querySelector('#plugin-search').value.trim();
+			const filter = document.querySelector('#plugin-filter').value;
+			
+			return search !== "" || filter !== "all";
+		};
+		
+		window.addEventListener("mousemove", moveGrabbedPluginRow);
+		function moveGrabbedPluginRow(event) {
+			const row = window._grabbedPluginRow;
+			if (!row)
+				return;
+			
+			const list = document.querySelector('#plugin-list');
+			const rows = Array.from(list.querySelectorAll('.plugin-row'));
+			
+			const target = rows.find(pluginRow => {
+				if (pluginRow === row)
+					return false;
+
+				const rect = pluginRow.getBoundingClientRect();
+				return event.clientY >= rect.top && event.clientY <= rect.bottom;
+			});
+			
+			if (!target)
+				return;
+			
+			const rect = target.getBoundingClientRect();
+			const insertBefore = event.clientY < rect.top + rect.height / 2;
+			if (insertBefore)
+				list.insertBefore(row, target);
+			else
+				list.insertBefore(row, target.nextElementSibling);
+		};
+		
+		window.addEventListener("mouseup", stopGrabPluginRow);
+		function stopGrabPluginRow() {
+			const row = window._grabbedPluginRow;
+			if (!row)
+				return;
+			
+			row.classList.remove('grabbing');
+			window._grabbedPluginRow = null;
+			
+			const rows = Array.from(document.querySelectorAll('#plugin-list .plugin-row'));
+			const selectedPlugin = window._plugins[window._selectedPluginIndex];
+			window._plugins = rows.map(row => window._plugins[parseInt(row.getAttribute('data-index'))]).filter(plugin => plugin);
+			window._selectedPluginIndex = window._plugins.indexOf(selectedPlugin);
+
+			refreshPluginList();
+			refreshPluginDetails();
+			window._pluginManagerDirty = true;
+		};
+		
+		function selectPluginRow(event, row) {
+			if (event.which !== 1)
+				return;
+			
+			const index = parseInt(row.getAttribute('data-index'));
+			selectPlugin(index);
+		};
+		
+		function selectPlugin(index) {
+			if (isNaN(index) || !window._plugins[index])
+				return;
+			
+			if (window._selectedPluginTab === "parameters")
+				tempApplyPluginParameters();
+			
+			window._selectedPluginIndex = index;
+			
+			for (const row of document.querySelectorAll('.plugin-row'))
+				row.classList.toggle('selected', parseInt(row.getAttribute('data-index')) === index);
+			
+			refreshPluginDetails();
+		};
+		
+		function selectPluginTab(elem) {
+			if (window._selectedPluginTab === "parameters")
+				tempApplyPluginParameters();
+			
+			window._selectedPluginTab = elem.getAttribute('data-tab');
+			for (const tab of document.querySelectorAll('.tab.selected'))
+				tab.classList.remove('selected');
+			elem.classList.add('selected');
+			
+			refreshPluginDetails();
+		};
+		
+		function refreshPluginDetails() {
+			const plugin = window._plugins[window._selectedPluginIndex];
+			const content = document.querySelector('#plugin-content');
+			
+			if (!plugin) {
+				content.innerHTML = `<div style="margin-top: 2em; color: grey; text-align: center;">No plugin selected.</div>`;
+				return;
+			}
+			
+			if (getPluginParamsCount(plugin) === 0)
+				document.querySelector('.tab[data-tab="parameters"]').classList.add('disabled');
+			else
+				document.querySelector('.tab[data-tab="parameters"]').classList.remove('disabled');
+			
+			if (getPluginCommandCount(plugin) === 0)
+				document.querySelector('.tab[data-tab="commands"]').classList.add('disabled');
+			else
+				document.querySelector('.tab[data-tab="commands"]').classList.remove('disabled');
+			
+			if (getPluginNotetagsCount(plugin) === 0)
+				document.querySelector('.tab[data-tab="notetags"]').classList.add('disabled');
+			else
+				document.querySelector('.tab[data-tab="notetags"]').classList.remove('disabled');
+			
+			if (getPluginWarningsCount(plugin) === 0)
+				document.querySelector('.tab[data-tab="warnings"]').classList.add('disabled');
+			else
+				document.querySelector('.tab[data-tab="warnings"]').classList.remove('disabled');
+			
+			switch (window._selectedPluginTab) {
+				case "parameters":
+					content.innerHTML = getSearchParametersInput() + getPluginParametersContent(plugin);
+					break;
+				case "commands":
+					content.innerHTML = getPluginCommandsContent(plugin);
+					break;
+				case "notetags":
+					content.innerHTML = getPluginNotetagsContent(plugin);
+					break;
+				case "warnings":
+					content.innerHTML = getPluginWarningsContent(plugin);
+					break;
+				default:
+					content.innerHTML = getPluginInfoContent(plugin);
+					break;
+			}
+		};
+		
+		function getSearchParametersInput() {
+			return `
+				<div id="search-parameter-container">
+					<input type="text" placeholder="Search parameters..." oninput="searchPluginParameters(this);">
+				</div>
+			`;
+		};
+		
+		function getPluginInfoContent(plugin) {
+			return `
+				<div id="info">
+					<div>Name</div>
+					<div>${$.Drag.VisualEvent.escapeHTML(plugin.name)}</div>
+					<div>Filename</div>
+					<div>${$.Drag.VisualEvent.escapeHTML(plugin.filename)}</div>
+					<div>Status</div>
+					<div>
+						${plugin.enabled ? '<button class="plugin-enabled" onclick="togglePlugin();">Enabled</button>' : '<button class="plugin-disabled" onclick="togglePlugin();">Disabled</button>'}
+						<button onclick="removeSelectedPlugin();" class="plugin-remove">Remove</button>
+					</div>
+					${plugin.version ? `
+						<div>Version</div>
+						<div>${$.Drag.VisualEvent.escapeHTML(plugin.version || "Unknown")}</div>`
+					: ``}
+					<div>Author</div>
+					<div>${$.Drag.VisualEvent.escapeHTML(plugin.author || "Unknown")}</div>
+					<div>Description</div>
+					<div>${$.Drag.VisualEvent.escapeHTML(plugin.description || "No description.")}</div>
+					<div>URL</div>
+					<div>${plugin.url ? `<span class="url" onclick="$.Drag.VisualEvent.openUrl('${$.Drag.VisualEvent.escapeHTML(plugin.url)}')">${$.Drag.VisualEvent.escapeHTML(plugin.url)}</span>` : "No URL"}</div>
+					<div>Help</div>
+					<div>${$.Drag.VisualEvent.escapeHTML(plugin.help || "No help text available.")}</div>
+				</div>
+			`;
+		};
+		
+		function togglePlugin() {
+			const plugin = window._plugins[window._selectedPluginIndex];
+			if (!plugin)
+				return;
+			
+			plugin.enabled = !plugin.enabled;
+			window._pluginManagerDirty = true;
+			
+			refreshPluginList();
+			refreshPluginDetails();
+		};
+		
+		function getPluginParametersContent(plugin) {
+			const params = plugin.parameters || {};
+			const structs = plugin.structs || {};
+			
+			if (!Object.keys(params).length)
+				return `<div style="margin-top: 2em; color: grey; text-align: center;">This plugin has no parameters.</div>`;
+			
+			const paramsTree = {};
+			const rootParams = [];
+			
+			for (const name in params) {
+				const param = params[name];
+				const parent = param.parent;
+				
+				if (parent && params[parent]) {
+					paramsTree[parent] = paramsTree[parent] || [];
+					paramsTree[parent].push(name);
+				} else
+					rootParams.push(name);
+			}
+			
+			return rootParams.map(name => getPluginParameterContent(name, params, paramsTree, 0, plugin, structs)).join("");
+		};
+		
+		function getPluginParameterContent(name, params, paramsTree, depth = 0, plugin = null, structs = {}, sourceStructName = null) {
+			const param = $.Drag.VisualEvent.deepCopyJSON(params[name]);
+			if (param.isList)
+				return getPluginParameterListContent(name, params, paramsTree, depth, plugin, structs, sourceStructName);
+			
+			const children = paramsTree[name] || [];
+			const isStruct = param.type === "struct";
+			const structName = param.structName || param.struct || param.name;
+			const structData = isStruct ? structs[structName] : null;
+			const hasStructChildren = !!(structData && Array.isArray(structData.params));
+			const hasChildren = children.length > 0 || hasStructChildren;
+			const searchText = `${param.name || ""} ${param.text || ""} ${param.desc || ""} ${param.type || ""}`.toLowerCase();
+			
+			sanitizePluginParameter(param);
+			
+			let html = `
+				<div class="plugin-param" 
+					${hasChildren ? 'data-has-children="true"' : ''} data-param-name="${$.Drag.VisualEvent.escapeHTML(name)}" data-param-type="${param.type || "text"}" data-search="${$.Drag.VisualEvent.escapeHTML(searchText)}"
+					style="margin-left: ${depth * 1.25}em;"
+				>
+					<div id="param-header" class="${hasChildren ? 'collapsible' : ''}" ${hasChildren ? 'onclick="togglePluginParameterGroup(this);"' : ''}>
+						<div>
+							${hasChildren ? '<span id="collapse-arrow">▾</span>' : ''}
+							<b>${$.Drag.VisualEvent.escapeHTML(param.text || param.name || name || "Parameter")}</b>
+						</div>
+						<div>
+							<span id="param-type">${$.Drag.VisualEvent.escapeHTML(param.type || "text")}</span>
+							<button onclick="restorePluginParameterDefaultValue(event, this);" title="Reset to default">↺</button>
+						</div>
+					</div>
+					<span>${$.Drag.VisualEvent.escapeHTML(param.desc || "")}</span>
+					<div id="input-param-container" class="${isStruct ? 'hidden' : ''}">
+						${$.Drag.VisualEvent.getInputField(param)}
+					</div>
+				</div>
+			`;
+			
+			let childrenHtml = "";
+			if (hasStructChildren)
+				childrenHtml += getPluginStructParametersContent($.Drag.VisualEvent.deepCopyJSON(params[name]), structData, plugin, structs, depth + 1);
+			
+			if (children.length > 0)
+				childrenHtml += children.map(childName => getPluginParameterContent(childName, params, paramsTree, depth + 1, plugin, structs)).join("");
+			
+			if (childrenHtml)
+				html += `
+					<div class="plugin-param-children">
+						${childrenHtml}
+					</div>
+				`;
+			
+			return html;
+		};
+		
+		function sanitizePluginParameter(param) {
+			switch (param.type) {
+				case "boolean":
+				case "radio":
+					param.value = (param.hasOwnProperty('value') ? String(param.value) : param.hasOwnProperty('default') ? String(param.default) : 'true') || 'true';
+					param.values = ["true", "false"];
+					param.options = [param.on ? param.on : "On", param.off ? param.off : "Off"];
+					break;
+				case "color":
+					param.type = "integer";
+					param.value = param.hasOwnProperty('value') ? param.value : param.hasOwnProperty('default') ? param.default : 0;
+					break;
+				case "location":
+					if (!param.hasOwnProperty('value') || Array.isArray(param.value)) {
+						if (param.hasOwnProperty('default') && typeof param.default === 'string') {
+							try {
+								const value = JSON.parse(param.default);
+								param.value = [value.mapId, value.x, value.y];
+							} catch (error) {
+								param.value = [0, 0, 0];
+							}
+						}
+					}
+					
+					if (!Array.isArray(param.value))
+						param.value = [0, 0, 0];
+					else
+						for (const value of param.value)
+							param.value = !isNaN(param.value) ? param.value : 0;
+					
+					break;
+			}
+				
+			if (param.value === null || param.value === undefined) {
+				if (param.hasOwnProperty('default'))
+					param.value = param.default;
+				else
+					param.value = "";
+			}			
+		};
+		
+		function getPluginStructParametersContent(parentParam, structData, plugin, structs, depth = 0) {
+			const params = structData.params || [];
+			const structParams = {};
+			
+			for (const param of params) {
+				if (!param || !param.name)
+					continue;
+				
+				structParams[param.name] = Object.assign({}, param);
+				if (parentParam.value)
+					structParams[param.name].value = parentParam.value[param.name];
+			}
+			
+			const paramsTree = {};
+			const rootParams = [];
+			
+			for (const name in structParams) {
+				const param = structParams[name];
+				const parent = param.parent;
+				
+				if (parent && structParams[parent]) {
+					paramsTree[parent] = paramsTree[parent] || [];
+					paramsTree[parent].push(name);
+				} else
+					rootParams.push(name);
+			}
+			
+			return rootParams.map(name => getPluginParameterContent(name, structParams, paramsTree, depth, plugin, structs, structData.name)).join("");
+		};
+		
+		function restorePluginParameterDefaultValue(event, button) {
+			event.stopPropagation();
+			event.preventDefault();
+			
+			const param = button.closest('.plugin-param');
+			if (!param)
+				return;
+			
+			const inputs = Array.from(param.querySelectorAll('input, select, textarea')).filter(input => input.hasAttribute('data-defaultValue'));
+			for (const input of inputs)
+				restoreInputDefaultValue(input);
+		};
+
+		function restoreInputDefaultValue(input) {
+			const defaultValue = input.getAttribute('data-defaultValue');
+			
+			if (input.type === "checkbox")
+				input.checked = defaultValue === "true" || defaultValue === "on" || defaultValue === "1";
+			else if (input.type === "radio")
+				input.checked = input.value == defaultValue || input.getAttribute('data-value') == defaultValue;
+			else {
+				input.value = defaultValue || "";
+				
+				if (input.hasAttribute('data-value'))
+					input.setAttribute('data-value', defaultValue || "");
+			}
+			
+			input.dispatchEvent(new Event('change', {bubbles: true}));
+		};
+		
+		function togglePluginParameterGroup(header) {
+			const param = header.closest('.plugin-param');
+			if (!param)
+				return;
+			
+			const children = param.nextElementSibling;
+			if (!children || !children.classList.contains('plugin-param-children'))
+				return;
+			
+			const collapsed = param.getAttribute('data-collapsed') === "true";
+			param.setAttribute('data-collapsed', !collapsed);
+			children.classList.toggle('hidden', !collapsed);
+		};
+		
+		function searchPluginParameters(input) {
+			const value = input.value.toLowerCase().trim();
+			const content = document.querySelector('#plugin-content');
+			
+			if (!value) {
+				for (const elem of content.querySelectorAll('.search-hidden'))
+					elem.classList.remove('search-hidden');
+				
+				return;
+			}
+			
+			for (const param of content.querySelectorAll('.plugin-param, .plugin-param-children'))
+				param.classList.add('search-hidden');
+			
+			for (const param of content.querySelectorAll('.plugin-param')) {
+				const searchText = param.getAttribute('data-search') || param.textContent.toLowerCase();
+				if (searchText.includes(value)) {
+					showPluginParam(param);
+					showPluginParamChildren(param);
+				}
+			}
+		};
+		
+		function showPluginParam(param) {
+			param.classList.remove('search-hidden');
+			
+			let parent = param.parentElement;
+			while (parent && parent.classList.contains('plugin-param-children')) {
+				parent.classList.remove('search-hidden');
+				
+				const parentParam = parent.previousElementSibling;
+				if (!parentParam || !parentParam.classList.contains('plugin-param'))
+					break;
+				
+				parentParam.classList.remove('search-hidden');
+				parent = parentParam.parentElement;
+			}
+		};
+		
+		function showPluginParamChildren(param) {
+			const children = param.nextElementSibling;
+			if (children && children.classList.contains('plugin-param-children')) {
+				children.classList.remove('search-hidden');
+				for (const hidden of children.querySelectorAll('.search-hidden'))
+					hidden.classList.remove('search-hidden');
+			}
+		};
+		
+		function getPluginParameterListContent(name, params, paramsTree, depth = 0, plugin = null, structs = {}, sourceStructName = null) {
+			const param = params[name];
+			sanitizePluginParamList(param);
+			
+			const searchText = `${param.name || ""} ${param.text || ""} ${param.desc || ""} ${param.type || ""}`.toLowerCase();
+			let html = `
+				<div class="plugin-param plugin-param-list-root" data-has-children="true" style="margin-left: ${depth * 1.25}em;"
+					data-param-name="${$.Drag.VisualEvent.escapeHTML(name)}" data-param-type="${param.type || "text"}" data-search="${$.Drag.VisualEvent.escapeHTML(searchText)}" data-list-param="true"
+				>
+					<div id="param-header" class="collapsible" onclick="togglePluginParameterGroup(this);">
+						<div>
+							<span id="collapse-arrow">▾</span>
+							<b>${$.Drag.VisualEvent.escapeHTML(param.text || param.name || name || "Parameter")}</b>
+						</div>
+						<div>
+							<span id="param-type">${$.Drag.VisualEvent.escapeHTML(param.type || "text")} <i>[list]</i></span>
+							<button onclick="restorePluginParameterDefaultValue(event, this);" title="Reset to default">↺</button>
+						</div>
+					</div>
+				</div>
+				<div class="plugin-param-children plugin-param-list" data-list-name="${$.Drag.VisualEvent.escapeHTML(name)}" data-depth="${depth + 1}" data-source-struct="${$.Drag.VisualEvent.escapeHTML(sourceStructName || "")}">
+			`;
+			
+			for (const value of param.value)
+				html += getPluginParameterListItem(param, value, depth + 1, plugin, structs);
+			
+			html += `
+					<div id="add-list">
+						<button type="button" onclick="addPluginParameterListItem(event, this);">+</button>
+					</div>
+				</div>
+			`;
+			
+			return html;
+		};
+		
+		function sanitizePluginParamList(param) {
+			if (!Array.isArray(param.value)) {
+				if (param.hasOwnProperty('default') && typeof param.default === 'string')
+					try {
+						param.value = JSON.parse(param.default);
+					} catch (error) {
+						param.value = [];
+					}
+				
+				if (!Array.isArray(param.value))
+					param.value = [param.value];
+			}
+			
+			// if (result.length === 0)
+				// result.push(param.default !== undefined ? param.default : "");
+		};
+		
+		function getPluginParameterListItem(param, value = "", depth = 0, plugin = null, structs = {}) {
+			const copiedParam = $.Drag.VisualEvent.deepCopyJSON(param);
+			copiedParam.isList = false;
+			copiedParam.value = value;
+			delete copiedParam.default;
+			
+			const params = {};
+			params[copiedParam.name] = copiedParam;
+			
+			const html = getPluginParameterContent(copiedParam.name, params, {}, depth, plugin, structs);
+			return `
+				<div class="plugin-param-list-item">
+					${html}
+					<div id="buttons-list">
+						<button type="button" onclick="addPluginParameterListItem(event, this);">+</button>
+						<button type="button" onclick="removePluginParameterListItem(event, this);">−</button>
+					</div>
+				</div>
+			`;
+		};
+		
+		function addPluginParameterListItem(event, button) {
+			event.stopPropagation();
+			event.preventDefault();
+			
+			const list = button.closest('.plugin-param-list');
+			if (!list)
+				return;
+			
+			const plugin = window._plugins[window._selectedPluginIndex];
+			const param = getPluginParameterByName(plugin, list.getAttribute('data-list-name'), list.getAttribute('data-source-struct') || null);
+			if (!param)
+				return;
+			
+			const container = list.querySelector(':scope > #add-list');
+			const depth = parseInt(list.getAttribute('data-depth')) || 0;
+			
+			const html = getPluginParameterListItem(param, "", depth, plugin, plugin.structs || {});
+			container.insertAdjacentHTML('beforebegin', html);
+			
+			$.Drag.VisualEvent.triggerAllOnReadyOnChange(document);
+		};
+		
+		function removePluginParameterListItem(event, button) {
+			event.stopPropagation();
+			event.preventDefault();
+			
+			const item = button.closest('.plugin-param-list-item');
+			if (!item)
+				return;
+			
+			// const list = item.parentElement;
+			// const count = list.querySelectorAll(':scope > .plugin-param-list-item').length;
+			// if (count <= 1) {
+				// const input = item.querySelector('input, select, textarea');
+				// if (input)
+					// restoreInputDefaultValue(input);
+				// return;
+			// }
+			
+			item.remove();
+		};
+		
+		function getPluginParameterByName(plugin, name, sourceStructName = null) {
+			if (!plugin || !name)
+				return null;
+			
+			if (sourceStructName && plugin.structs && plugin.structs[sourceStructName]) {
+				const structParams = plugin.structs[sourceStructName].params || [];
+				return structParams.find(param => param && param.name === name) || null;
+			}
+			
+			if (plugin.parameters && plugin.parameters[name])
+				return plugin.parameters[name];
+			
+			if (plugin.structs) {
+				for (const structName in plugin.structs) {
+					const structParams = plugin.structs[structName].params || [];
+					const param = structParams.find(param => param && param.name === name);
+					if (param)
+						return param;
+				}
+			}
+			
+			return null;
+		};
+		
+		function getPluginCommandsContent(plugin) {
+			const commands = plugin.commands || {};
+			const commandNames = Object.keys(commands);
+			if (!commandNames.length)
+				return `<div style="margin-top: 2em; color: grey; text-align: center;">This plugin has no plugin commands.</div>`;
+			
+			let html = "";
+			for (const commandName of commandNames) {
+				const command = commands[commandName] || {};
+				html += `
+					<div style="margin-bottom: 1em; padding: 0.75em 1em !important; border-left: 0.25em solid rebeccapurple;">
+						<b>${$.Drag.VisualEvent.escapeHTML(command.text || commandName)}</b>
+						<div style="opacity: 0.6; margin-top: 0.25em;">${$.Drag.VisualEvent.escapeHTML(command.desc || command.description || "")}</div>
+					</div>
+				`;
+			}
+			
+			return html;
+		};
+		
+		function getPluginNotetagsContent(plugin) {
+			const notetags = plugin.notetags || {};
+			const notetagsNames = Object.keys(notetags);
+			
+			if (!notetagsNames.length)
+				return `<div style="margin-top: 2em; color: grey; text-align: center;">This plugin has no registered notetag.</div>`;
+			
+			let html = "";
+			for (const notetagName of notetagsNames) {
+				const command = notetags[notetagName] || {};
+				html += `
+					<div style="margin-bottom: 1em; padding: 0.75em 1em !important; border-left: 0.25em solid rebeccapurple;">
+						<b>${$.Drag.VisualEvent.escapeHTML(notetagName)}</b>
+						<div style="opacity: 0.6; margin-top: 0.25em;">${$.Drag.VisualEvent.escapeHTML(command.context || "")}</div>
+					</div>
+				`;
+			}
+			
+			return html;
+		};
+		
+		function getPluginWarningsContent(plugin) {
+			const warnings = plugin.warnings || [];
+			
+			if (!warnings.length)
+				return `<div style="margin-top: 2em; color: grey; text-align: center;">No warnings detected for this plugin.</div>`;
+			
+			return warnings.map(warning => `
+				<div style="margin-bottom: 0.75em; padding: 0.75em 1em; border-left: 0.25em solid #dca83a; background: rgb(160 100 20 / 15%); color: #ffd88a;">${$.Drag.VisualEvent.escapeHTML(warning)}</div>
+			`).join("");
+		};
+		
+		function getPluginCommandCount(plugin) {
+			return plugin && plugin.commands ? Object.keys(plugin.commands).length : 0;
+		};
+		
+		function getPluginParamsCount(plugin) {
+			return plugin && plugin.parameters ? Object.keys(plugin.parameters).length : 0;
+		};
+		
+		function getPluginNotetagsCount(plugin) {
+			return plugin && plugin.notetags ? Object.keys(plugin.notetags).length : 0;
+		};
+		
+		function getPluginWarningsCount(plugin) {
+			return plugin && plugin.warnings ? Object.keys(plugin.warnings).length : 0;
+		};
+		
+		function gatherPluginParameters() {
+			const content = document.querySelector('#plugin-content');			
+			if (!content)
+				return {};
+			
+			const values = {};
+			for (const param of getPluginParamChildrens(content))
+				gatherPluginParameter(param, values);
+			
+			return values;
+		};
+		
+		function getPluginParamChildrens(container) {
+			return Array.from(container.children).filter(child => child.classList && child.classList.contains('plugin-param'));
+		};
+		
+		function gatherPluginParameter(param, values) {
+			if (!param)
+				return;
+			
+			const name = param.getAttribute('data-param-name');
+			if (!name)
+				return;
+			
+			const isList = param.getAttribute('data-list-param') === "true";			
+			if (isList) {
+				values[name] = gatherPluginParamList(param);
+				return;
+			}
+			
+			const isStruct = isPluginParamStruct(param);
+			if (isStruct) {
+				values[name] = gatherPluginStruct(param);
+				return;
+			}
+			
+			const input = getPluginParamInput(param);
+			values[name] = input ? $.Drag.VisualEvent.getPluginCommandInputValue(input) : "";
+			
+			const children = getPluginParamChildrenContainer(param);
+			if (!children || children.classList.contains('plugin-param-list'))
+				return;
+			
+			for (const childParam of getPluginParamChildrens(children))
+				gatherPluginParameter(childParam, values);
+		};
+		
+		function gatherPluginStruct(param) {
+			const children = getPluginParamChildrenContainer(param);
+			if (!children)
+				return {};
+			
+			const values = {};
+			for (const childParam of getPluginParamChildrens(children))
+				gatherPluginParameter(childParam, values);
+			
+			return values;
+		};
+		
+		function gatherPluginParamList(param) {
+			const list = getPluginParamChildrenContainer(param);
+			if (!list || !list.classList.contains('plugin-param-list'))
+				return [];
+			
+			const values = [];
+			for (const item of Array.from(list.children).filter(child => child.classList.contains('plugin-param-list-item'))) {
+				const childParam = item.querySelector(':scope > .plugin-param');
+				if (!childParam)
+					continue;
+				
+				if (isPluginParamStruct(childParam))
+					values.push(gatherPluginStruct(childParam));
+				else {
+					const input = getPluginParamInput(childParam);
+					values.push(input ? $.Drag.VisualEvent.getPluginCommandInputValue(input) : "");
+				}
+			}
+			
+			return values;
+		};
+		
+		function getPluginParamChildrenContainer(param) {
+			const sibling = param.nextElementSibling;
+			if (sibling && sibling.classList.contains('plugin-param-children'))
+				return sibling;
+			
+			return null;
+		};
+		
+		function getPluginParamInput(param) {
+			const inputContainer = param.querySelector(':scope > #input-param-container');
+			if (!inputContainer)
+				return null;
+			
+			let input = inputContainer.querySelector('input[data-iscommandparameter="true"], textarea[data-iscommandparameter="true"], select[data-iscommandparameter="true"]');
+			if (input.type === "radio" && !input.checked) {
+				input = inputContainer.querySelector(`#${input.id}[type="radio"][data-iscommandparameter="true"]:checked`);
+				if (!input)
+					input = inputContainer.querySelector('input[data-iscommandparameter="true"]');
+			}
+			
+			return input;
+		};
+		
+		function isPluginParamStruct(param) {
+			if (!param)
+				return false;
+			
+			const type = param.getAttribute('data-param-type');
+			return type && type === 'struct';
+		};
+		
+		function tempApplyPluginParameters() {
+			if (window._selectedPluginTab !== "parameters")
+				return;
+			
+			const plugin = window._plugins[window._selectedPluginIndex];
+			if (!plugin)
+				return;
+			
+			const values = gatherPluginParameters();
+			applyParameterValues(plugin.parameters, values);
+			
+			window._pluginManagerDirty = true;
+		};
+		
+		function getPluginParameters(plugin, stringify = true) {
+			const result = {};
+			
+			for (const name in plugin.parameters) {
+				const param = plugin.parameters[name];
+				if (!param)
+					continue;
+				
+				result[name] = stringify ? stringifyPluginParameterValue(param.value) : param.value;
+			}
+			
+			return result;
+		};
+		
+		function stringifyPluginParameterValue(value) {
+			if (value === undefined || value === null)
+				return "";
+			
+			if (Array.isArray(value))
+				return JSON.stringify(value.map(stringifyPluginParameterValue));
+			
+			if (value && typeof value === "object")
+				return JSON.stringify(stringifyPluginStruct(value));
+			
+			return String(value);
+		};
+		
+		function stringifyPluginStruct(obj) {
+			const result = {};
+			
+			for (const key in obj)
+				result[key] = stringifyPluginParameterValue(obj[key]);
+			
+			return result;
+		};
+		
+		function apply() {
+			tempApplyPluginParameters();
+			
+			const fs = require('fs');
+			const path = require('path');
+			const pluginsPath = path.join(process.cwd(), 'js/plugins.js');
+			$.Drag.VisualEvent.backupFile('js/plugins.js', "js/backup/");
+			
+			const data = window._plugins.map(plugin => ({
+				name: plugin.name,
+				status: !!plugin.enabled,
+				description: plugin.description || "",
+				parameters: getPluginParameters(plugin),
+			}));
+			const content = `// Generated by RPG Maker.\n// Do not edit this file directly.\nvar $plugins =\n${JSON.stringify(data, null, 4)};`;
+			fs.writeFileSync(pluginsPath, content, 'utf8');
+			
+			$.$plugins = window._plugins.map(plugin => ({
+				name: plugin.name,
+				status: !!plugin.enabled,
+				description: plugin.description || "",
+				parameters: getPluginParameters(plugin, false),
+			}));
+			
+			console.log(content);
+			window._pluginManagerDirty = false;
+		};
+		
+		function ok() {
+			apply();
+			quit();
+		};
+		
+		function quit() {
+			window.close();
+		};
+		
+		main();
+		$.Drag.VisualEvent.triggerAllOnReadyOnChange(document);
+	</script>
+</body>
+</html>
