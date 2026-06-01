@@ -895,15 +895,17 @@ function makeInputsFromPluginCommand(pluginName, commandName, commandText, comma
 		if (!input.value)
 			input.value = commandValues[input.name] !== undefined ? commandValues[input.name] : input.default !== undefined ? input.default : "";
 
-		if (input.isList)
+		if (input.isList) {
 			try { 
 				input.value = typeof input.value === "string" && input.value[0] === "[" ? JSON.parse(input.value) : [input.value]; 
 				if (!Array.isArray(input.value))
 					input.value = [input.value];
+				if (input.value.length === 0)
+					input.value.push("")
 			} catch(err) { 
 				input.value = [""] 
 			}
-		else
+		} else
 			input.value = [input.value];
 		
 		for (const [i, value] of input.value.entries()) {
