@@ -18,213 +18,69 @@
 				margin: 0;
 			}
 			
-			#content > div > div {
-				font-size: 0.85em;
-			}
-			
 			#inputsContainer {
 				display: flex;
 				flex-direction: column;
-				padding: 1em 1.25em 4.375em 1.25em;
-				box-sizing: border-box;
-			}
-
-			.struct-param {
-				margin-bottom: 0.85em;
-				margin-top: 0.85em;
-				padding: 0.65em 0.75em;
-				border: 0.0625em solid rgb(255 255 255 / 0.1);
-				background: rgb(255 255 255 / 0.04);
-				box-sizing: border-box;
-			}
-
-			.struct-param.has-children {
-				background: linear-gradient(180deg, rgb(255 255 255 / 0.15), rgb(255 255 255 / 0.01));
-			}
-
-			.struct-param-header {
-				display: flex;
-				align-items: center;
-				justify-content: space-between;
-				margin-bottom: 0.35em;
-			}
-
-			.struct-param-header.collapsible {
-				cursor: pointer;
-				padding: 0.35em 0.5em;
-				margin: -0.35em -0.5em 0.35em -0.5em;
-				border: 0.0625em solid transparent;
-			}
-
-			.struct-param-header.collapsible:hover {
-				background: rgb(255 255 255 / 0.075);
-				border-color: rgb(255 255 255 / 0.1);
-			}
-
-			.struct-param-title {
-				display: flex;
-				align-items: center;
-				min-width: 0;
-				font-weight: 700;
-			}
-
-			.struct-param-collapse-arrow {
-				font-size: 1.25em;
-				font-weight: bold;
-				color: #8070d4;
-				display: inline-flex;
-				align-items: center;
-				justify-content: center;
-				width: 1.25em;
-				margin-right: 0.25em;
-				transition: transform 0.25s ease;
-			}
-
-			.struct-param[data-collapsed="true"] .struct-param-collapse-arrow {
-				transform: rotate(-90deg);
-			}
-
-			.struct-param-actions {
-				display: flex;
-				align-items: center;
-				margin-left: 0.75em;
+				padding: 1em 1em 4.375em 1em;
 			}
 			
-			.struct-param-actions > * {
-				margin-right: 0.45em;
-			}
-
-			.struct-param-actions > *:last-child {
-				margin-right: 0;
-			}
-
-			.struct-param-type {
-				font-size: 0.7em;
-				opacity: 0.5;
-				text-transform: uppercase;
-			}
-
-			.struct-param-reset {
-				cursor: pointer;
-				width: 1.75em;
-				height: 1.75em;
-				padding: 0;
-				display: inline-flex;
-				align-items: center;
-				justify-content: center;
-				border: 0.0625em solid rgb(255 255 255 / 0.2);
-				color: rgb(255 255 255 / 0.75);
-				font-size: 0.9em;
-				line-height: 1;
-			}
-
-			.struct-param-reset:hover {
-				border: 0.0625em solid rgb(255 255 255 / 0.2);
-				background: rgb(255 255 255 / 20%);
-				color: white;
-			}
-
-			.struct-param-reset:active {
-				transform: scale(0.9);
-			}
-
-			.struct-param-desc {
-				display: block;
-				margin-bottom: 0.5em;
-				margin-top: 0.15em;
-				overflow: hidden;
-				text-overflow: ellipsis;
-				white-space: nowrap;
-				font-size: 0.85em;
-				color: rgb(255 255 255 / 0.75);
-			}
-			
-			.struct-input-wrapper {
-				display: flex;
-				align-items: center;
-				max-width: 100%;
-			}
-
-			.struct-param-input {
-				display: flex;
-				flex-direction: column;
-				align-items: flex-start;
-			}
-
-			.struct-param-input > div {
-				max-width: 100%;
-			}
-			
-			.struct-param-input > * {
-				margin-bottom: 0.35em;
-			}
-			
-			.struct-param-input > *:last-child {
-				margin-bottom: 0;
-			}
-
-			.struct-param-children {
-				margin-left: 1.25em;
-				padding-left: 0.85em;
-				border-left: 0.125em solid #8070D8;
-			}
-			
-			.struct-param-children > .struct-list-item {
-				margin-left: 0;
-			}
-
-			.hidden-by-collapse {
-				display: none !important;
-			}
-			
-			.struct-list-item {
-				position: relative;
-				margin-bottom: 0.75em;
-				padding-right: 3.5em;
-			}
-
-			.struct-list-controls {
-				position: absolute;
-				top: 0.45em;
-				right: -1.25em;
-				display: flex;
-			}
-
-			.struct-list-controls > *:first-child {
-				margin-right: 0.25em;
-			}
-
-			.struct-list-controls button,
-			.struct-list-add button {
-				cursor: pointer;
-				min-width: 1.8em;
-				height: 1.8em;
-				border-radius: 0.3em;
-				border: 0.0625em solid rgb(255 255 255 / 0.2);
-			}
-
-			.struct-list-controls button:active,
-			.struct-list-add button:active {
-				transform: scale(0.95);
-			}
-
-			.struct-list-add {
-				margin-top: 0.5em;
+			#inputsContainer > * {
+				margin-right: 1em;
 				margin-bottom: 1em;
 			}
-
+			
+			.inputContainer {
+				display: flex;
+				flex-direction: column;
+			}
+			
+			.inputDesc {
+				text-align: center;
+				font-size: 0.8125em;
+			}
+			
+			.inputWrapper {
+				display: flex; 
+				align-items: center; 
+				justify-content: center; 
+			}
+			
+			.inputWrapper > * {
+				margin-right: 0.3125em;
+				margin-bottom: 0.3125em;
+			}
+			
+			.structWrapper {
+				display: grid; 
+				grid-template-columns: 500fr 1fr 1fr; 
+				align-items: center; 
+				justify-content: center; 
+				gap: 0.3125em; 
+				max-width: fit-content;
+			}
+			
+			.structWrapper > * {
+				margin-right: 0.3125em;
+				margin-bottom: 0.3125em;
+			}
+			
+			.structWrapper > *:last-child {
+				margin-right: 0em;
+				margin-bottom: 0em;
+			}
+			
 			#bottom-container {
 				position: fixed;
 				bottom: 0;
 				left: 0;
 				right: 0;
-				padding: 0.5em;
-				max-height: 3.125em;
+				padding: 1em;
+				padding-right: 4em;
 				border-top: 0.125em solid rebeccapurple;
 				background-color: var(--background-color);
 				display: flex;
 				justify-content: flex-end;
-				box-sizing: border-box;
+				z-index: 10;
 			}
 			
 			#bottom-container > * {
@@ -244,37 +100,16 @@
 				cursor: pointer;
 			}
 			
-			.gap5 {
-				display: flex;
-				flex-direction: column;
-				gap: 0.35em;
-			}
-
 			.gap5 > * {
-				margin: 0;
+				margin-right: 0.3125em;
+				margin-bottom: 0.3125em;
 			}
 			
 			hr {
-				display: none;
-			}
-			
-			#add-list-input-button, #remove-list-input-button {
-				display: hidden;
-			}
-			
-			button {
-				border: 0.0625em solid rgb(255 255 255 / 0.1);
-				padding: 0.5em 0.85em;
-				font-weight: 600;
-				letter-spacing: 0.02em;
-				box-sizing: border-box;
-				border-radius: 0em;
-				background: #1f1f27;
-			}
-			
-			button:hover {
-				border: 0.0625em solid rgb(255 255 255 / 0.2);
-				background: rgb(255 255 255 / 0.2);
+				width: 100%;
+				border-color: transparent;
+				height: 1px;
+				background: -webkit-linear-gradient(left, rgb(102 51 153 / 0%) 0%,rgb(102 51 153 / 0%) 10%,rgb(102 51 153 / 65%) 50%,rgb(102 51 153 / 0%) 90%,rgb(102 51 153 / 0%) 100%);
 			}
 		</style>
     </head>
@@ -282,7 +117,6 @@
 		<div id="content">
 			<div id="inputsContainer"></div>
 			<div id="bottom-container">
-				<button onclick="apply()">Apply</button>
 				<button onclick="ok()">OK</button>
 				<button onclick="quit();">Cancel</button>
 			</div>
@@ -300,410 +134,128 @@
 				$ = window.opener;
 			};		
 			
-			function showStructInputsFields(structValue, structName, nodeTarget, depth = 0) {
+			function showStructInputsFields(structValue, structName, nodeTarget) {
 				const pluginName = data.pluginName;
-				const structData = $.Drag.VisualEvent.getLocalizedStruct
-					? $.Drag.VisualEvent.getLocalizedStruct(pluginName, structName)
-					: ($.Drag.VisualEvent.getLocalizedPluginData(pluginName).structs || {})[structName];
-				
+				const pluginData = $.Drag.VisualEvent.getLocalizedPluginData(pluginName);
+				const structData = pluginData && pluginData.structs && pluginData.structs[structName];
+
 				if (!structData || !Array.isArray(structData.params)) {
-					nodeTarget.innerHTML = `<span style="color: red;">Unknown structure: ${$.Drag.VisualEvent.escapeHTML(structName)}</span>`;
+					nodeTarget.innerHTML = `<span style="color:red;">Unknown structure: ${$.Drag.VisualEvent.escapeHTML(structName)}</span>`;
 					return;
 				}
-				
-				const params = $.Drag.VisualEvent.deepCopyJSON(structData.params);
-				const paramsTree = {};
-				const rootParams = [];
 
-				for (const param of params) {
-					if (!param || !param.name)
-						continue;
-
-					if (param.parent && params.some(p => p && p.name === param.parent)) {
-						paramsTree[param.parent] = paramsTree[param.parent] || [];
-						paramsTree[param.parent].push(param.name);
-					} else {
-						rootParams.push(param.name);
+				const inputs = $.Drag.VisualEvent.deepCopyJSON(structData.params);
+				let content = "";
+				for (const [i, input] of inputs.entries()) {
+					content += `
+						${i > 0 ? '<hr>' : ''}
+						<span class="inputContainer ${input.type === "empty" ? 'hidden' : ''}">
+							<span><b>${input.text}</b>, ${input.name}:${input.type || "text"}${input.isList ? ' <i>[list]</i>' : ''}</span>
+							${input.desc ? '<span class="inputDesc">' + input.desc + '</span>' : '<br>'}
+							<div class="gap5" style="display: flex; flex-direction: column;">
+					`;
+					
+					input.isPluginParameter = true;
+					input.pluginName = pluginName;
+					
+					if (!input.value)
+						input.value = structValue[input.name] !== undefined ? structValue[input.name] : input.default !== undefined ? input.default : "";
+						
+					if (input.isList)
+						try { 
+							input.value = typeof input.value === "string" && input.value[0] === "[" ? JSON.parse(input.value) : [input.value]; 
+							if (!Array.isArray(input.value))
+								input.value = [input.value];
+							if (input.value.length === 0)
+								input.value.push("");
+						} catch(err) { 
+							input.value = [""];
+						}
+					else
+						input.value = [input.value];
+					
+					for (const [i, value] of input.value.entries()) {
+						if (input.type === "boolean") {
+							input.values = ["true", "false"];
+							input.options = [input.on ? input.on : "On", input.off ? input.off : "Off"];
+						}
+						
+						if (input.type === "location") {
+							let defaultValue;
+							try { 
+								defaultValue = JSON.parse(input.default); 
+							} catch(err) { 
+								defaultValue = {mapId: 0, x: 0, y: 0}
+							}
+							
+							let loc = defaultValue;
+							try {
+								loc = typeof value === "string" ? JSON.parse(value) : value || defaultValue;
+							} catch (err) {
+								loc = defaultValue;
+							}
+							
+							input.value[i] = [parseInt(loc.mapId) || 0, parseInt(loc.x) || 0, parseInt(loc.y) || 0];
+							
+							input.data = input.data || "";
+							input.data += ` data-allowSearch="true" data-allowMapChange="true"`;
+						}
+						
+						if (input.type === "struct")
+							if (input.value[i] !== "")
+								try { 
+									input.value[i] = JSON.parse(input.value[i]); 
+								} catch(err) { 
+									try {
+										input.value[i] = JSON.parse($.Drag.VisualEvent.unescapeQuotes(input.value[i], true));
+									} catch(err2) {
+										input.value[i] = {};
+									}
+								}
+							else
+								input.value[i] = {};
 					}
+					
+					if (!input.isList)
+						input.value = input.value[0];
+					else
+						input.minList = 1;
+					
+					input.data = input.data || "";
+					input.data += ` data-inputName="${$.Drag.VisualEvent.escapeHTML(input.name)}"`;
+					input.noAutofitCheckbox = true;
+					
+					const values = input.isList ? Array.isArray(input.value) ? input.value : [input.value] : [input.value]; 
+					for (const [j, value] of values.entries()) {
+						input.value = value;
+						content += `
+							<div class="firstChildWidth100 ${input.type === 'struct' ? 'structWrapper' : 'inputWrapper'}">
+								${$.Drag.VisualEvent.getInputField(input)}
+							</div>
+						`;
+					}
+					
+					content += `			
+							</div>
+						</span>
+					`;
 				}
-
-				const paramsByName = {};
-				for (const param of params) {
-					if (param && param.name)
-						paramsByName[param.name] = param;
-				}
-
-				nodeTarget.innerHTML = rootParams
-					.map(name => getStructParamContent(name, paramsByName, paramsTree, structValue || {}, depth))
-					.join("");
+				nodeTarget.innerHTML = content;
 				
-				$.Drag.VisualEvent.triggerAllOnReadyOnChange(document);
+				for (const node of nodeTarget.querySelectorAll('[data-inputType="struct"]')) {
+					node.style.opacity = 0;
+					
+					const structContainer = document.createElement('div');
+					structContainer.setAttribute('id', 'structContainer');
+					structContainer.style.marginLeft = '20%';
+					node.parentElement.appendChild(structContainer);
+					
+					node.value = "Structure Parameters"; 
+					node.setAttribute("onclick", "this.blur();");
+					
+					addStructInputsFields(node);
+				}
 			};
-			
-			function getStructParamContent(name, params, paramsTree, structValue = {}, depth = 0) {
-				const param = $.Drag.VisualEvent.deepCopyJSON(params[name]);
-
-				if (!param || !param.name || param.type === "empty")
-					return "";
-
-				prepareStructParamValue(param, structValue);
-
-				const children = paramsTree[name] || [];
-
-				const isStruct = param.type === "struct";
-				const isList = param.isList === true;
-				const hasChildren = isStruct || children.length > 0;
-
-				const typeText = `${param.type || "text"}${isList ? " [list]" : ""}`;
-				const values = isList ? normalizeStructListValue(param.value) : [param.value];
-
-				let html = `
-					<div class="struct-param ${hasChildren ? 'has-children' : ''}"
-						data-input-name="${$.Drag.VisualEvent.escapeHTML(param.name)}"
-						data-input-type="${$.Drag.VisualEvent.escapeHTML(param.type || "text")}"
-						data-is-list="${isList ? "true" : "false"}"
-						data-struct-name="${$.Drag.VisualEvent.escapeHTML(param.structName || param.struct || param.name)}"
-						style="margin-left: ${depth * 1.25}em;"
-					>
-						<div class="struct-param-header ${hasChildren ? 'collapsible' : ''}" ${hasChildren ? 'onclick="toggleStructParamGroup(this);"' : ''}>
-							<div class="struct-param-title">
-								${hasChildren ? '<span class="struct-param-collapse-arrow">▾</span>' : ''}
-								<b>${$.Drag.VisualEvent.escapeHTML(param.text || param.name)}</b>
-							</div>
-							<div class="struct-param-actions">
-								<span class="struct-param-type">${$.Drag.VisualEvent.escapeHTML(typeText)}</span>
-								<button class="struct-param-reset" onclick="restoreStructParamDefaultValue(event, this);" title="Reset to default">↺</button>
-							</div>
-						</div>
-						${param.desc ? `<span class="struct-param-desc">${$.Drag.VisualEvent.escapeHTML(param.desc)}</span>` : ""}
-						<div class="struct-param-input ${isStruct ? 'hidden' : ''}">
-				`;
-
-				if (!isStruct) {
-					if (isList) {
-						for (const value of values) {
-							html += `
-								<div class="struct-list-item">
-									${getStructParamInputContent(param, value)}
-									<div class="struct-list-controls">
-										<button type="button" onclick="addStructListItem(event, this);">+</button>
-										<button type="button" onclick="removeStructListItem(event, this);">−</button>
-									</div>
-								</div>
-							`;
-						}
-
-						html += `
-							<div class="struct-list-add">
-								<button type="button" onclick="addStructListItem(event, this);">+ Add Item</button>
-							</div>
-						`;
-					} else {
-						html += getStructParamInputContent(param, values[0]);
-					}
-				}
-
-				html += `
-						</div>
-					</div>
-				`;
-
-				let childrenHtml = "";
-
-				if (isStruct) {
-					for (const value of values) {
-						if (isList) {
-							childrenHtml += `
-								<div class="struct-list-item">
-									${getNestedStructContent(param, value, depth + 1)}
-									<div class="struct-list-controls">
-										<button type="button" onclick="addStructListItem(event, this);">+</button>
-										<button type="button" onclick="removeStructListItem(event, this);">−</button>
-									</div>
-								</div>
-							`;
-						} else {
-							childrenHtml += getNestedStructContent(param, values[0], depth + 1);
-						}
-					}
-
-					if (isList) {
-						childrenHtml += `
-							<div class="struct-list-add">
-								<button type="button" onclick="addStructListItem(event, this);">+ Add Item</button>
-							</div>
-						`;
-					}
-				}
-
-				if (children.length > 0) {
-					childrenHtml += children
-						.map(childName => getStructParamContent(childName, params, paramsTree, structValue, depth + 1))
-						.join("");
-				}
-
-				if (childrenHtml) {
-					html += `
-						<div class="struct-param-children">
-							${childrenHtml}
-						</div>
-					`;
-				}
-
-				return html;
-			}
-			
-			function getStructParamInputContent(param, value) {
-				const input = $.Drag.VisualEvent.deepCopyJSON(param);
-
-				input.value = value;
-				input.isPluginParameter = true;
-				input.pluginName = data.pluginName;
-				input.noAutofitCheckbox = true;
-
-				input.data = input.data || "";
-				input.data += ` data-inputName="${$.Drag.VisualEvent.escapeHTML(input.name)}"`;
-				input.data += ` data-isList="${input.isList ? "true" : "false"}"`;
-
-				if (input.type === "boolean") {
-					input.values = ["true", "false"];
-					input.options = [input.on ? input.on : "On", input.off ? input.off : "Off"];
-				}
-
-				if (input.type === "location")
-					prepareLocationInput(input);
-				
-				input.isList = false;
-
-				return `
-					<div class="struct-input-wrapper">
-						${$.Drag.VisualEvent.getInputField(input)}
-					</div>
-				`;
-			}
-			
-			function getNestedStructContent(param, value, depth) {
-				const structName = param.structName || param.struct || param.name;
-				value = normalizeStructValue(value);
-
-				const pluginData = $.Drag.VisualEvent.getLocalizedPluginData(data.pluginName);
-				const structData = pluginData && pluginData.structs ? pluginData.structs[structName] : null;
-
-				if (!structData || !Array.isArray(structData.params))
-					return `<span style="color: red;">Unknown structure: ${$.Drag.VisualEvent.escapeHTML(structName)}</span>`;
-
-				const params = $.Drag.VisualEvent.deepCopyJSON(structData.params);
-				const paramsByName = {};
-				const paramsTree = {};
-				const rootParams = [];
-
-				for (const childParam of params) {
-					if (!childParam || !childParam.name)
-						continue;
-
-					paramsByName[childParam.name] = childParam;
-
-					if (childParam.parent && params.some(p => p && p.name === childParam.parent)) {
-						paramsTree[childParam.parent] = paramsTree[childParam.parent] || [];
-						paramsTree[childParam.parent].push(childParam.name);
-					} else {
-						rootParams.push(childParam.name);
-					}
-				}
-
-				return rootParams
-					.map(name => getStructParamContent(name, paramsByName, paramsTree, value, depth))
-					.join("");
-			}
-			
-			function prepareStructParamValue(param, structValue) {
-				let value = structValue[param.name];
-
-				if (value === undefined || value === null)
-					value = param.default !== undefined ? param.default : "";
-
-				param.value = value;
-			}
-
-			function normalizeStructListValue(value) {
-				let result = value;
-
-				if (typeof result === "string") {
-					try {
-						if (result.trim()[0] === "[")
-							result = JSON.parse(result);
-						else
-							result = [result];
-					} catch (e) {
-						result = [result];
-					}
-				}
-
-				if (!Array.isArray(result))
-					result = [result];
-
-				if (result.length === 0)
-					result.push("");
-
-				return result;
-			}
-
-			function normalizeStructValue(value) {
-				if (!value)
-					return {};
-
-				if (typeof value === "object")
-					return value;
-
-				try {
-					return JSON.parse(value);
-				} catch (e) {
-					try {
-						return JSON.parse($.Drag.VisualEvent.unescapeQuotes(value, true));
-					} catch (e2) {
-						return {};
-					}
-				}
-			}
-
-			function prepareLocationInput(input) {
-				let loc = normalizeStructValue(input.value);
-
-				input.value = [
-					parseInt(loc.mapId) || 0,
-					parseInt(loc.x) || 0,
-					parseInt(loc.y) || 0
-				];
-
-				input.data = input.data || "";
-				input.data += ` data-allowSearch="true" data-allowMapChange="true"`;
-			}
-			
-			function toggleStructParamGroup(header) {
-				const param = header.closest('.struct-param');
-				if (!param)
-					return;
-
-				const children = param.nextElementSibling;
-				if (!children || !children.classList.contains('struct-param-children'))
-					return;
-
-				const collapsed = param.getAttribute('data-collapsed') === "true";
-				param.setAttribute('data-collapsed', collapsed ? "false" : "true");
-				children.classList.toggle('hidden-by-collapse', !collapsed);
-			}
-			
-			function addStructListItem(event, button) {
-				event.stopPropagation();
-				event.preventDefault();
-
-				const listContainer = button.closest('.struct-param-input, .struct-param-children');
-				if (!listContainer)
-					return;
-
-				const paramElem = listContainer.previousElementSibling && listContainer.previousElementSibling.classList.contains('struct-param')
-					? listContainer.previousElementSibling
-					: button.closest('.struct-param');
-
-				if (!paramElem)
-					return;
-
-				const inputName = paramElem.getAttribute('data-input-name');
-				const structName = paramElem.getAttribute('data-struct-name');
-				const param = getStructParamByName(inputName);
-
-				if (!param)
-					return;
-
-				const depth = getStructParamDepth(paramElem) + 1;
-				const html = param.type === "struct"
-					? `
-						<div class="struct-list-item">
-							${getNestedStructContent(param, {}, depth)}
-							<div class="struct-list-controls">
-								<button type="button" onclick="addStructListItem(event, this);">+</button>
-								<button type="button" onclick="removeStructListItem(event, this);">−</button>
-							</div>
-						</div>
-					`
-					: `
-						<div class="struct-list-item">
-							${getStructParamInputContent(param, param.default !== undefined ? param.default : "")}
-							<div class="struct-list-controls">
-								<button type="button" onclick="addStructListItem(event, this);">+</button>
-								<button type="button" onclick="removeStructListItem(event, this);">−</button>
-							</div>
-						</div>
-					`;
-
-				const addButton = listContainer.querySelector(':scope > .struct-list-add');
-				if (addButton)
-					addButton.insertAdjacentHTML('beforebegin', html);
-				else
-					button.closest('.struct-list-item').insertAdjacentHTML('afterend', html);
-
-				$.Drag.VisualEvent.triggerAllOnReadyOnChange(document);
-			}
-
-			function removeStructListItem(event, button) {
-				event.stopPropagation();
-				event.preventDefault();
-
-				const item = button.closest('.struct-list-item');
-				if (item)
-					item.remove();
-			}
-			
-			function restoreStructParamDefaultValue(event, button) {
-				event.stopPropagation();
-				event.preventDefault();
-
-				const param = button.closest('.struct-param');
-				if (!param)
-					return;
-
-				const inputs = Array.from(param.querySelectorAll('input, select, textarea'))
-					.filter(input => input.hasAttribute('data-defaultValue'));
-
-				for (const input of inputs)
-					restoreStructInputDefaultValue(input);
-			}
-
-			function restoreStructInputDefaultValue(input) {
-				const defaultValue = input.getAttribute('data-defaultValue');
-
-				if (input.type === "checkbox") {
-					input.checked = defaultValue === "true" || defaultValue === "on" || defaultValue === "1";
-				} else if (input.type === "radio") {
-					input.checked = input.value == defaultValue || input.getAttribute('data-value') == defaultValue;
-				} else {
-					input.value = defaultValue || "";
-
-					if (input.hasAttribute('data-value'))
-						input.setAttribute('data-value', defaultValue || "");
-				}
-
-				input.dispatchEvent(new Event('change', {bubbles: true}));
-			}
-			
-			function getStructParamDepth(paramElem) {
-				const margin = paramElem.style.marginLeft || "0";
-				return Math.round((parseFloat(margin) || 0) / 1.25);
-			}
-			
-			function getStructParamByName(name) {
-				const pluginData = $.Drag.VisualEvent.getLocalizedPluginData(data.pluginName);
-
-				for (const structName in pluginData.structs) {
-					const params = pluginData.structs[structName].params || [];
-					const found = params.find(param => param && param.name === name);
-
-					if (found)
-						return $.Drag.VisualEvent.deepCopyJSON(found);
-				}
-
-				return null;
-			}
 			
 			function addStructInputsFields(input) {
 				const structContainer = input.parentElement.querySelector('#structContainer');
@@ -754,12 +306,8 @@
 				
 				return val;
 			};
-			
-			function apply() {
-				ok(false);
-			};
 
-			function ok(shouldQuit = true) {
+			function ok() {
 				try {
 					const val = gatherStructureValues();
 					data.input.setAttribute('data-structValue', JSON.stringify(val));
@@ -770,8 +318,7 @@
 						editor.console.error(`Couldn't parse struct ${pluginName}:${structName} :`, error);
 				}
 				
-				if (shouldQuit)
-					quit();
+				quit();
 			};
 
 			function quit() {
