@@ -154,7 +154,6 @@ function pasteNodes(useNodeListPosition = false) {
 			
 			eventCache.nodes[nodeCache.nodeId] = nodeCache;
 		}
-		// console.log(nodeCache);
 		
 		refreshNodeCull(node);
 	}

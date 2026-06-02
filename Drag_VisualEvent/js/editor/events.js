@@ -87,6 +87,9 @@ function setupGraphEditorListeners() {
 		if (document.querySelector("#editor-option-menu:not(.hidden)") && !event.path.map(element => element.id).includes('editor-option-menu') && !event.path.map(element => element.id).includes('editor-option-button'))
 			toggleEditorOptionsMenu();
 		
+		if (document.querySelector("#editor-addons-menu:not(.hidden)") && !event.path.map(element => element.id).includes('editor-addons-menu') && !event.path.map(element => element.id).includes('editor-addons-button'))
+			toggleEditorAddonsMenu();
+		
 		//onmouseupnode
 		if (event.which === 1 && window.nodeMouseDown) {
 			//reset movenode mouse position

@@ -23,6 +23,7 @@ function init() {
 	window.graphCamera = document.querySelector('#graph-camera');
 	
 	$.Drag.VisualEvent.getHTTP($.Drag.VisualEvent.pluginVersionUrl, checkNewVersionAvailable);
+	verifyInstalledAddons();
 	
 	window._isGraphNode = true;
 	if (window.data && window.data.targetId)
@@ -74,6 +75,25 @@ function init() {
 			window._saveCacheOnExit = true;
 		}
 	}, 10);
+};
+
+function verifyInstalledAddons() {
+	const addons = ["expandedEventCommands"];
+	const customNodes = $.Drag.VisualEvent.getFileList('./Drag_VisualEvent/js/custom_nodes');
+	
+	for (const addon of addons) {
+		switch (addon) {
+			case "expandedEventCommands":
+				const installed = customNodes.includes('node_expandedEventCommands.js');
+				const elem = document.querySelector(`#editor-addons-menu *[data-addon="${addon}"]`);
+				if (elem) {
+					elem.innerHTML = installed ? "Installed" : "Not Installed";
+					elem.style.color = installed ? "forestgreen" : "darkgrey";
+				}
+				break;
+		}
+		
+	}
 };
 
 function checkNewVersionAvailable(data) {
@@ -282,6 +302,10 @@ function openDevTools() {
 	nw.Window.get().showDevTools();
 };
 
+function openExpandedEventCommandsLink() {
+	$.Drag.VisualEvent.openUrl($.Drag.VisualEvent.expandedEventCommandsUrl);
+};
+
 function toggleEditorOptionsMenu() {
 	const eOptions = document.querySelector('#editor-option-menu');
 	const button = document.querySelector('#editor-option-button');
@@ -297,6 +321,16 @@ function toggleEditorOptionsMenu() {
 			</svg>
 		`;
 	}
+};
+
+function toggleEditorAddonsMenu(elem) {
+	const rect = elem ? elem.getBoundingClientRect() : null;
+	const eAddons = document.querySelector('#editor-addons-menu');
+	eAddons.style.left = `${rect ? rect.left : 0}px`;
+	if (eAddons.classList.contains('hidden'))
+		eAddons.classList.remove('hidden');
+	else
+		eAddons.classList.add('hidden');
 };
 
 function loadEvent(eventId, eventType, pageId, mapId) {
@@ -900,7 +934,7 @@ function makeInputsFromPluginCommand(pluginName, commandName, commandText, comma
 				input.value = typeof input.value === "string" && input.value[0] === "[" ? JSON.parse(input.value) : [input.value]; 
 				if (!Array.isArray(input.value))
 					input.value = [input.value];
-				if (input.value.length === 0)
+				if (input.value.length === 0) //initialize list with empty string value so input isn't empty without buttons to add/remove item
 					input.value.push("")
 			} catch(err) { 
 				input.value = [""] 
