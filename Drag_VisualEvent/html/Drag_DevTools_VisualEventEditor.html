@@ -125,6 +125,7 @@
 					<path style="stroke-width: 1px; stroke: white; fill: white;" d="M10 20h5l-2.5 2.574zm2.5-18.574L10 4h5zM2 6h9v5H2zm1 4h7V7H3zm11-4h9v5h-9zm1 4h7V7h-7zm-1 3h9v5h-9zm1 4h7v-3h-7zm-4 1H2v-5h9zm-1-4H3v3h7z"></path>
 				</svg>
 			</span>
+			<span onclick="toggleEditorAddonsMenu(this);">Add-Ons</span>
 			<span onclick="$.Drag.VisualEvent.openPluginManager(this);">Plugin Manager</span>
 			<span data-type="switch" onclick="$.Drag.VisualEvent.openSwitchVariableMenu(this);">Switches</span>
 			<span data-type="variable" onclick="$.Drag.VisualEvent.openSwitchVariableMenu(this);">Variables</span>
@@ -134,6 +135,10 @@
 					<path d="M14 12C14 13.1046 13.1046 14 12 14C10.8954 14 10 13.1046 10 12C10 10.8954 10.8954 10 12 10C13.1046 10 14 10.8954 14 12Z" stroke="#000000" stroke-width="1.5"></path>
 				</svg>
 			</span>
+		</div>
+		<div id="editor-addons-menu" class="hidden">
+			<p onclick="openExpandedEventCommandsLink();">Expanded Event Commands</p>
+			<span data-addon="expandedEventCommands">Not installed</span>
 		</div>
 		<div id="editor-option-menu" class="hidden">
 			<h3>Options</h3>
