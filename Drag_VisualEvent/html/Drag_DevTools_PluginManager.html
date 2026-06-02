@@ -243,7 +243,12 @@
 			pointer-events: none;
 		}
 
-		#plugin-content {
+		#plugin-content[data-tab="parameters"] {
+			overflow: hidden;
+			padding: 0;
+		}
+		
+		#plugin-content:not([data-tab="parameters"]) {
 			flex: 1 1 auto;
 			min-height: 0;
 			overflow-y: auto;
@@ -295,6 +300,46 @@
 			margin-right: 0em;
 			border-color: darkred;
 		}
+		
+		#plugin-parameters {
+			display: grid;
+			grid-template-columns: 1fr 14em;
+			height: 100%;
+		}
+
+		#parameters-container {
+			overflow-y: auto;
+			padding: 1em 0.5em;
+			overflow-x: hidden;
+		}
+
+		#parameters-tree {
+			overflow-y: auto;
+			padding: 0.75em 0.5em;
+			border-left: 0.0625em solid rebeccapurple;
+			background: var(--background-color2);
+		}
+
+		.parameters-tree-child {
+			cursor: pointer;
+			padding: 0.25em 0.4em;
+			margin-bottom: 0.15em;
+			font-size: 0.75em;
+			color: lightgrey;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		.parameters-tree-child:hover {
+			color: white;
+			background: rgb(255 255 255 / 0.1);
+		}
+
+		.parameters-tree-child.selected {
+			color: white;
+			background: rgb(30 144 255 / 40%);
+		}
 
 		#search-parameter-container {
 			position: sticky;
@@ -305,7 +350,7 @@
 			background: var(--background-color);
 		}
 
-		#search-parameter-container > div {
+		#search-parameter-container > input {
 			width: 100%;
 			padding: 0.6em 0.8em;
 			box-sizing: border-box;
@@ -396,12 +441,10 @@
 			transform: scale(0.9);
 		}
 		
-		#plugin-param > span {
+		.plugin-param > span {
 			margin-top: 0.15em;
-			margin-bottom: 0.5em;
 			color: lightgrey;
-			font-size: 0.85em;
-			opacity: 0.85;
+			font-size: 0.9em;
 			max-width: 100%;
 		}
 
@@ -423,13 +466,13 @@
 		.plugin-param-list-item {
 			position: relative;
 			margin-bottom: 0.75em;
-			padding-right: 3.5em;
+			padding-right: 4.5em;
 		}
 
 		#buttons-list {
 			position: absolute;
 			top: 0.45em;
-			right: -1.25em;
+			right: -0.25em;
 			display: flex;
 		}
 
@@ -495,6 +538,16 @@
 		#autofit-textarea-checkbox {
 			opacity: 0;
 		}
+		
+		#autofit-textarea-checkbox:not(:checked) ~ span > svg > path {
+			fill: grey !important;
+			stroke: grey !important;
+		}
+		
+		#autofit-textarea-checkbox:checked ~ span > svg > path {
+			fill: white ! important;
+			stroke: white !important;
+		}
 
 		textarea {
 			max-width: 100%;
@@ -519,7 +572,7 @@
 			transform: scale(0.985);
 		}
 		
-		.search-hidden {
+		.search-hidden, .collapsed {
 			display: none !important;
 		}
 
@@ -665,8 +718,6 @@
 		};
 		
 		function loadPlugins() {
-			// const plugins = $.Drag.VisualEvent.readFile('js/plugins.js');
-			// console.log($plugins);
 			if ($.Drag.VisualEvent.pluginJSDocData && $.$plugins) { //fetch directly js/plugins.js instead of $.plugins ?
 				return $.$plugins.filter(plugin => plugin && plugin.name).map((plugin, index) => {
 					const pluginName = plugin.name;
@@ -696,14 +747,12 @@
 		};
 		
 		function applyParameterValues(params, values) {
-			console.log(params, values);
 			for (const name in params) {
 				if (!Object.prototype.hasOwnProperty.call(values, name))
 					continue;
 				
 				params[name].value = $.Drag.VisualEvent.deepCopyJSON(values[name]);
 			}
-			console.log(params);
 			return params;
 		};
 		
@@ -972,7 +1021,6 @@
 		
 		function registerPlugin() {
 			const pluginData = $.Drag.VisualEvent.getLocalizedPluginData(window._addPluginName);
-			console.log(pluginData, window._addPluginName);
 			if (!window._addPluginName || !pluginData)
 				return;
 			
@@ -1156,6 +1204,7 @@
 				tempApplyPluginParameters();
 			
 			window._selectedPluginTab = elem.getAttribute('data-tab');
+			document.querySelector('#plugin-content').setAttribute('data-tab', elem.getAttribute('data-tab'));
 			for (const tab of document.querySelectorAll('.tab.selected'))
 				tab.classList.remove('selected');
 			elem.classList.add('selected');
@@ -1194,7 +1243,21 @@
 			
 			switch (window._selectedPluginTab) {
 				case "parameters":
-					content.innerHTML = getSearchParametersInput() + getPluginParametersContent(plugin);
+					content.innerHTML = `
+						<div id="plugin-parameters">
+							<div id="parameters-container">
+								${getSearchParametersInput()}
+								${getPluginParametersContent(plugin)}
+							</div>
+							<div id="parameters-tree"></div>
+						</div>
+					`;
+					
+					refreshParametersTree();
+					const container = document.querySelector('#parameters-container');
+					if (container)
+						container.addEventListener('scroll', updateHighlightedParameterTree);
+					
 					break;
 				case "commands":
 					content.innerHTML = getPluginCommandsContent(plugin);
@@ -1449,7 +1512,7 @@
 			
 			const collapsed = param.getAttribute('data-collapsed') === "true";
 			param.setAttribute('data-collapsed', !collapsed);
-			children.classList.toggle('hidden', !collapsed);
+			children.classList.toggle('collapsed', !collapsed);
 		};
 		
 		function searchPluginParameters(input) {
@@ -1594,6 +1657,7 @@
 			container.insertAdjacentHTML('beforebegin', html);
 			
 			$.Drag.VisualEvent.triggerAllOnReadyOnChange(document);
+			refreshParametersTree();
 		};
 		
 		function removePluginParameterListItem(event, button) {
@@ -1614,6 +1678,7 @@
 			// }
 			
 			item.remove();
+			refreshParametersTree();
 		};
 		
 		function getPluginParameterByName(plugin, name, sourceStructName = null) {
@@ -1706,6 +1771,87 @@
 		
 		function getPluginWarningsCount(plugin) {
 			return plugin && plugin.warnings ? Object.keys(plugin.warnings).length : 0;
+		};
+		
+		function refreshParametersTree() {
+			const tree = document.querySelector('#parameters-tree');
+			const container = document.querySelector('#parameters-container'); 
+			
+			if (!tree || !container)
+				return;
+			
+			let html = "";
+			for (const [i, param] of Array.from(container.querySelectorAll('.plugin-param')).entries()) {
+				const title = param.querySelector('#param-header > div:first-child b');
+				if (!title)
+					continue;
+				
+				const depth = Math.round((parseFloat(param.style.marginLeft) || 0) / 1.25);
+				html += `
+					<div class="parameters-tree-child" style="padding-left: ${depth * 1.1}em;" data-index=${i} onclick="scrollToParameter(this);">
+						${$.Drag.VisualEvent.escapeHTML(title.textContent)}
+					</div>
+				`;
+			}
+			
+			tree.innerHTML = html;
+			updateHighlightedParameterTree();
+		};
+		
+		function scrollToParameter(elem) {
+			const container = document.querySelector('#parameters-container');
+			const index = parseInt(elem.getAttribute('data-index'));
+			const param = document.querySelectorAll('.plugin-param')[index];
+			if (!container || !param)
+				return;
+			
+			const offsetTop = $.Drag.VisualEvent.getRelativeOffsetTop(param, container);
+			container.scrollTop = offsetTop - container.offsetTop - 50;
+		};
+		
+		function getParameterElementByName(paramName) {
+			const container = document.querySelector('#parameters-container');
+			return container.querySelector('.plugin-param[data-param-name="tiledId"') || null;
+		};
+		
+		function updateHighlightedParameterTree() {
+			const container = document.querySelector('#parameters-container');
+			const tree = document.querySelector('#parameters-tree');
+			if (!container || !tree)
+				return;
+			
+			let index = -1;
+			const params = Array.from(container.querySelectorAll('.plugin-param'));
+			for (const [i, param] of params.entries()) {
+				const offsetTop = $.Drag.VisualEvent.getRelativeOffsetTop(param, container);
+				if (offsetTop - container.scrollTop <= container.offsetTop + 80)
+					index = i;
+				else
+					break;
+			}
+			
+			if (index === -1)
+				return;
+			
+			const treeChild = tree.querySelector(`*[data-index="${index}"]`);
+			if (!treeChild)
+				return;
+			
+			for (const selected of tree.querySelectorAll('.selected'))
+				selected.classList.remove('selected');
+			
+			treeChild.classList.add('selected');
+			scrollToTreeChild(tree, treeChild);
+		};
+		
+		function scrollToTreeChild(tree, treeChild) {
+			const top = treeChild.offsetTop - tree.offsetTop;
+			const bottom = top + treeChild.offsetHeight;
+			
+			if (top < tree.scrollTop)
+				tree.scrollTop = top - 8;
+			else if (bottom > tree.scrollTop + tree.clientHeight)
+				tree.scrollTop = bottom - tree.clientHeight + 8;
 		};
 		
 		function gatherPluginParameters() {
@@ -1894,7 +2040,6 @@
 				parameters: getPluginParameters(plugin, false),
 			}));
 			
-			console.log(content);
 			window._pluginManagerDirty = false;
 		};
 		
