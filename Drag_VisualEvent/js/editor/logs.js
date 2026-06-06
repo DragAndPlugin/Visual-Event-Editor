@@ -204,17 +204,17 @@ function updateLogsIcon(level, args) {
 				counter.innerHTML = `${window._logErrors.length}`;
 		}
 	} else if (level === "warn") {
-		if (!window._logs)
-			window._logs = [];
+		if (!window._logWarnings)
+			window._logWarnings = [];
 
-		window._logs.push(message);
+		window._logWarnings.push(message);
 
 		const log = document.querySelector("#log");
 		if (log) {
 			log.style.display = "flex";
 			const counter = log.querySelector("span");
 			if (counter)
-				counter.innerHTML = `${window._logs.length}`;
+				counter.innerHTML = `${window._logWarnings.length}`;
 		}
 	}
 };
