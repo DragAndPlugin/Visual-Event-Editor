@@ -1093,7 +1093,7 @@ Drag.VisualEvent.version = "0.1.144";
 		const val = JSON.parse(Drag.VisualEvent.unescapeQuotes(input.getAttribute('data-structValue')));
 		Drag.VisualEvent.openWindow(
 			'Drag_DevTools_StructureManager.html', 'Structure Manager', 
-			window.screen.width * 0.3, window.screen.height * 0.7, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
+			window.screen.width * 0.4, window.screen.height * 0.8, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
 			{input: input, pluginName: pluginName, structName: structName, value: val}
 		);
 	};
@@ -2488,6 +2488,24 @@ Drag.VisualEvent.version = "0.1.144";
 			console.warn("Couldn't get folder list: ", path, error);
 			return [];
 		}
+	};
+	
+	Drag.VisualEvent.revealInFolder = function(path) {
+		const nwGui = require('nw.gui');
+		const resolvedPath = Drag.VisualEvent.modules.path.resolve(path);
+		if (!fs.existsSync(resolvedPath))
+			return;
+		
+		nwGui.Shell.showItemInFolder(resolvedPath);
+	};
+	
+	Drag.VisualEvent.openFolder = function(path) {
+		const nwGui = require('nw.gui');
+		const resolvedPath = Drag.VisualEvent.modules.path.resolve(path);
+		if (!fs.existsSync(resolvedPath))
+			return;
+		
+		nwGui.Shell.openItem(resolvedPath);
 	};
 	
 	Drag.VisualEvent.getFileList = function(path = '', types = '*') {
