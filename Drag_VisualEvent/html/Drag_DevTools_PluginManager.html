@@ -333,7 +333,7 @@
 
 		.parameters-tree-child:hover {
 			color: white;
-			background: rgb(255 255 255 / 0.1);
+			background: rgb(255 255 255 / 10%);
 		}
 
 		.parameters-tree-child.selected {
@@ -360,7 +360,6 @@
 		.plugin-param {
 			margin-bottom: 0.85em;
 			padding: 0.65em 0.75em;
-			overflow: hidden;
 			text-overflow: ellipsis;
 			background: rgb(255 255 255 / 5%);
 		}
@@ -744,16 +743,6 @@
 			}
 			
 			return [];
-		};
-		
-		function applyParameterValues(params, values) {
-			for (const name in params) {
-				if (!Object.prototype.hasOwnProperty.call(values, name))
-					continue;
-				
-				params[name].value = $.Drag.VisualEvent.deepCopyJSON(values[name]);
-			}
-			return params;
 		};
 		
 		function makePluginWarnings(pluginData) {
@@ -1405,6 +1394,8 @@
 				case "boolean":
 				case "radio":
 					param.value = (param.hasOwnProperty('value') ? String(param.value) : param.hasOwnProperty('default') ? String(param.default) : 'true') || 'true';
+					if (param.value !== 'true' && param.value !== 'false')
+							param.value = 'true';
 					param.values = ["true", "false"];
 					param.options = [param.on ? param.on : "On", param.off ? param.off : "Off"];
 					break;
@@ -1427,8 +1418,7 @@
 					if (!Array.isArray(param.value))
 						param.value = [0, 0, 0];
 					else
-						for (const value of param.value)
-							param.value = !isNaN(param.value) ? param.value : 0;
+						param.value = param.value.map(value => !isNaN(value) ? value : 0);
 					
 					break;
 			}
@@ -1486,17 +1476,18 @@
 
 		function restoreInputDefaultValue(input) {
 			const defaultValue = input.getAttribute('data-defaultValue');
-			
+				
 			if (input.type === "checkbox")
 				input.checked = defaultValue === "true" || defaultValue === "on" || defaultValue === "1";
 			else if (input.type === "radio")
 				input.checked = input.value == defaultValue || input.getAttribute('data-value') == defaultValue;
-			else {
+			else if (input.type === "number")
+				input.value = defaultValue || 0;
+			else
 				input.value = defaultValue || "";
-				
-				if (input.hasAttribute('data-value'))
-					input.setAttribute('data-value', defaultValue || "");
-			}
+			
+			if (input.hasAttribute('data-value'))
+				input.setAttribute('data-value', input.value);
 			
 			input.dispatchEvent(new Event('change', {bubbles: true}));
 		};
@@ -1652,7 +1643,6 @@
 			
 			const container = list.querySelector(':scope > #add-list');
 			const depth = parseInt(list.getAttribute('data-depth')) || 0;
-			
 			const html = getPluginParameterListItem(param, "", depth, plugin, plugin.structs || {});
 			container.insertAdjacentHTML('beforebegin', html);
 			
@@ -1698,7 +1688,7 @@
 					const structParams = plugin.structs[structName].params || [];
 					const param = structParams.find(param => param && param.name === name);
 					if (param)
-						return param;
+						return $.Drag.VisualEvent.deepCopyJSON(param);
 				}
 			}
 			
@@ -1809,11 +1799,6 @@
 			container.scrollTop = offsetTop - container.offsetTop - 50;
 		};
 		
-		function getParameterElementByName(paramName) {
-			const container = document.querySelector('#parameters-container');
-			return container.querySelector('.plugin-param[data-param-name="tiledId"') || null;
-		};
-		
 		function updateHighlightedParameterTree() {
 			const container = document.querySelector('#parameters-container');
 			const tree = document.querySelector('#parameters-tree');
@@ -1855,7 +1840,7 @@
 		};
 		
 		function gatherPluginParameters() {
-			const content = document.querySelector('#plugin-content');			
+			const content = document.querySelector('#parameters-container');			
 			if (!content)
 				return {};
 			
@@ -1976,13 +1961,25 @@
 			
 			const values = gatherPluginParameters();
 			applyParameterValues(plugin.parameters, values);
-			
 			window._pluginManagerDirty = true;
+		};
+		
+		function applyParameterValues(params, values) {
+			if (!params || !values)
+				return params;
+			
+			for (const name in params) {
+				if (!values.hasOwnProperty(name))
+					continue;
+				
+				params[name].value = $.Drag.VisualEvent.deepCopyJSON(values[name]);
+			}
+			
+			return params;
 		};
 		
 		function getPluginParameters(plugin, stringify = true) {
 			const result = {};
-			
 			for (const name in plugin.parameters) {
 				const param = plugin.parameters[name];
 				if (!param)
@@ -2040,6 +2037,15 @@
 				parameters: getPluginParameters(plugin, false),
 			}));
 			
+			if (window._pluginManagerDirty) {
+				if (confirm('Applying changes may require reloading editor. Reload now ?'))
+					$.Drag.VisualEvent.reload();
+				else {
+					const editor = $.Drag.VisualEvent.getEditor();
+					if (editor)
+						editor.console.warn('Project plugins have been modified. Some changes may require reloading editor & playtest (F5).');
+				}
+			}
 			window._pluginManagerDirty = false;
 		};
 		
