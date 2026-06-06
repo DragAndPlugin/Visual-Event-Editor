@@ -51,6 +51,7 @@ Drag.VisualEvent.version = "0.1.144";
 		Drag.VisualEvent.modules = {};
 		Drag.VisualEvent.modules.fs = require('fs');
 		Drag.VisualEvent.modules.path = require('path');
+		Drag.VisualEvent.modules.nwGui = require('nw.gui');
 	}
 	
 	Drag.VisualEvent.pluginName = "Drag_VisualEvent";
@@ -2491,21 +2492,19 @@ Drag.VisualEvent.version = "0.1.144";
 	};
 	
 	Drag.VisualEvent.revealInFolder = function(path) {
-		const nwGui = require('nw.gui');
 		const resolvedPath = Drag.VisualEvent.modules.path.resolve(path);
-		if (!fs.existsSync(resolvedPath))
+		if (!Drag.VisualEvent.modules.fs.existsSync(resolvedPath))
 			return;
 		
-		nwGui.Shell.showItemInFolder(resolvedPath);
+		Drag.VisualEvent.modules.nwGui.Shell.showItemInFolder(resolvedPath);
 	};
 	
 	Drag.VisualEvent.openFolder = function(path) {
-		const nwGui = require('nw.gui');
 		const resolvedPath = Drag.VisualEvent.modules.path.resolve(path);
-		if (!fs.existsSync(resolvedPath))
+		if (!Drag.VisualEvent.modules.fs.existsSync(resolvedPath))
 			return;
 		
-		nwGui.Shell.openItem(resolvedPath);
+		Drag.VisualEvent.modules.nwGui.Shell.openItem(resolvedPath);
 	};
 	
 	Drag.VisualEvent.getFileList = function(path = '', types = '*') {
