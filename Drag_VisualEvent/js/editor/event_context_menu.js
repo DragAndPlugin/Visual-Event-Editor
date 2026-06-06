@@ -84,6 +84,9 @@ function deleteCommonEventCache() {
 	if (!eventId)
 		return;
 	
+	if (!confirm(`Are you sure you want to clear this event's cache?\n\nThe editor will discard all cached data and rebuild the graph from the original RPG Maker event.\n\nWarning:\n• Unconnected nodes will be lost\n• Custom page names will be removed\n• Non-linear layouts will be rebuilt as linear flows\n• Some custom nodes may not be restored perfectly\n\nThis operation cannot be undone.`))
+		return;
+	
 	$.Drag.VisualEvent.loadDataFile("CommonEvents", (data) => {
 		const commonEvent = data[eventId] ? $.Drag.VisualEvent.deepCopyJSON(data[eventId]) : $.Drag.VisualEvent.getDefaultCommonEvent();
 		saveEventDataInCache(commonEvent, "Common Event", 0, eventId);
@@ -108,6 +111,9 @@ function discardCommonEventChanges() {
 	
 	const eventId = parseInt(contextmenu.getAttribute('data-eventId'));
 	if (!eventId)
+		return;
+	
+	if (!confirm(`Are you sure you want to discard your changes?\n\nAll unsaved modifications to this event will be lost and the event will be reloaded from its last saved state.`))
 		return;
 	
 	const commonEvent = window.data.$dataCommonEvents[eventId] ? $.Drag.VisualEvent.deepCopyJSON(window.data.$dataCommonEvents[eventId]) : $.Drag.VisualEvent.getDefaultCommonEvent();
@@ -155,6 +161,9 @@ function clearCommonEvent(eventId = null) {
 	}
 	
 	if (!eventId)
+		return;
+	
+	if (!confirm(`Are you sure you want to clear this event?\n\nThis will remove all event commands and reset the event to its default empty state.\n\n`));
 		return;
 	
 	setAsUnsaved("Common Event", eventId);
@@ -292,6 +301,9 @@ function deleteTroopEventCache() {
 	if (!eventId)
 		return;
 	
+	if (!confirm(`Are you sure you want to clear this event's cache?\n\nThe editor will discard all cached data and rebuild the graph from the original RPG Maker event.\n\nWarning:\n• Unconnected nodes will be lost\n• Custom page names will be removed\n• Non-linear layouts will be rebuilt as linear flows\n• Some custom nodes may not be restored perfectly\n\nThis operation cannot be undone.`))
+		return;
+	
 	$.Drag.VisualEvent.loadDataFile("Troops", (data) => {
 		const troopEvent = data[eventId] ? $.Drag.VisualEvent.deepCopyJSON(data[eventId]) : $.Drag.VisualEvent.getDefaultTroopEvent();
 		saveEventDataInCache(troopEvent, "Troop Event", 0, eventId);
@@ -318,6 +330,9 @@ function discardTroopEventChanges() {
 	
 	const eventId = parseInt(contextmenu.getAttribute('data-eventId'));
 	if (!eventId)
+		return;
+	
+	if (!confirm(`Are you sure you want to discard your changes?\n\nAll unsaved modifications to this event will be lost and the event will be reloaded from its last saved state.`))
 		return;
 	
 	const reset = getEventCacheItem("_resetOnDiscard", "Troop Event", 0, eventId);
@@ -420,6 +435,8 @@ function clearTroopEvent(eventId = null) {
 	
 	if (!eventId)
 		return;
+	
+	if (!confirm(`Are you sure you want to clear this event?\n\nThis will remove all event commands and reset the event to its default empty state.\n\nCustom event page names will also be removed.\n\n`));
 	
 	setAsUnsaved("Troop Event", eventId);
 	setAsUnsaved("Troop Event", eventId, 0, 0);
@@ -544,6 +561,9 @@ function deleteMapEventCache() {
 	if (!eventId || !window.data.mapTargetId)
 		return;
 	
+	if (!confirm(`Are you sure you want to clear this event's cache?\n\nThe editor will discard all cached data and rebuild the graph from the original RPG Maker event.\n\nWarning:\n• Unconnected nodes will be lost\n• Custom page names will be removed\n• Non-linear layouts will be rebuilt as linear flows\n• Some custom nodes may not be restored perfectly\n\nThis operation cannot be undone.`))
+		return;
+	
 	$.Drag.VisualEvent.loadDataFile($.Drag.VisualEvent.getMapFileName(window.data.mapTargetId), (data) => {
 		const mapEvent = data.events[eventId] ? $.Drag.VisualEvent.deepCopyJSON(data.events[eventId]) : $.Drag.VisualEvent.getDefaultMapEvent();
 		clearEventNodesCache("Map Event", window.data.mapTargetId, eventId);
@@ -571,6 +591,9 @@ function discardMapEventChanges() {
 	if (!eventId)
 		return;
 	
+	if (!confirm(`Are you sure you want to discard your changes?\n\nAll unsaved modifications to this event will be lost and the event will be reloaded from its last saved state.`))
+		return;
+	
 	const reset = getEventCacheItem("_resetOnDiscard", "Map Event", window.data.mapTargetId, eventId);
 	const mapEvent = window.data.loadedMap.events[eventId] ? $.Drag.VisualEvent.deepCopyJSON(window.data.loadedMap.events[eventId]) : $.Drag.VisualEvent.getDefaultMapEvent();
 	saveEventDataInCache(mapEvent, "Map Event", window.data.mapTargetId, eventId);
@@ -594,6 +617,36 @@ function discardMapEventChanges() {
 	
 	if (eventId === window.data.targetId && window.data.targetType === "Map Event")
 		reloadGraphEditor(window.data.targetId, window.data.targetType, 0);
+};
+
+function clearMapEvent(eventId = null) {
+	if (eventId === null) {
+		const contextmenu = document.querySelector('#map-event-contextmenu');
+		if (!contextmenu)
+			return;
+		eventId = parseInt(contextmenu.getAttribute('data-eventId'));
+	}
+	
+	if (!eventId)
+		return;
+	
+	if (!confirm(`Are you sure you want to clear this event?\n\nThis will remove all event commands and reset the event to its default empty state.\n\nCustom event page names will also be removed.\n\n`));
+	
+	setAsUnsaved("Map Event", eventId);
+	setAsUnsaved("Map Event", eventId, window.data.mapTargetId, 0);
+	
+	const defaultMapEvent = $.Drag.VisualEvent.getDefaultMapEvent();
+	defaultMapEvent.id = eventId;
+
+	removeEventPagesFromCache("Map Event", window.data.mapTargetId, eventId, 1);
+	clearEventNodesCache("Map Event", window.data.mapTargetId, eventId);
+	saveEventDataInCache(defaultMapEvent, "Map Event", window.data.mapTargetId, eventId);
+	
+	updateMapEventListName(eventId, "");
+	hideMapEventContextMenu();
+	
+	if (eventId === window.data.targetId && window.data.targetType === "Map Event")
+		reloadGraphEditor(window.data.targetId, window.data.targetType, 0);	
 };
 
 function createMapEvent(button) {
@@ -682,6 +735,9 @@ function deleteMapEvent() {
 	
 	const eventId = parseInt(contextmenu.getAttribute('data-eventId'));
 	if (!eventId)
+		return;
+	
+	if (!confirm(`Are you sure you want to delete this map event?\n\nThis will remove the entire event from the current map, including all pages, commands and settings.\n\nThis operation cannot be undone.`))
 		return;
 	
 	deleteEventCache("Map Event", window.data.mapTargetId, eventId);
