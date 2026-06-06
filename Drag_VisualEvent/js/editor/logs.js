@@ -192,30 +192,36 @@ function updateLogsIcon(level, args) {
 
 	if (level === "error") {
 		if (!window._logErrors)
-			window._logErrors = [];
-
-		window._logErrors.push(message);
+			window._logErrors = 0;
+		window._logErrors++;
 
 		const logError = document.querySelector("#log-error");
 		if (logError) {
 			logError.style.display = "flex";
 			const counter = logError.querySelector("span");
 			if (counter)
-				counter.innerHTML = `${window._logErrors.length}`;
+				counter.innerHTML = `${window._logErrors}`;
 		}
+		
+		const logMenu = document.querySelector('#editor-logs-menu');
+		if (logMenu)
+			logMenu.insertAdjacentHTML('beforeend', `<div class="error">${message}</div>`);
 	} else if (level === "warn") {
 		if (!window._logWarnings)
-			window._logWarnings = [];
-
-		window._logWarnings.push(message);
+			window._logWarnings = 0;
+		window._logWarnings++;
 
 		const log = document.querySelector("#log");
 		if (log) {
 			log.style.display = "flex";
 			const counter = log.querySelector("span");
 			if (counter)
-				counter.innerHTML = `${window._logWarnings.length}`;
+				counter.innerHTML = `${window._logWarnings}`;
 		}
+		
+		const logMenu = document.querySelector('#editor-logs-menu');
+		if (logMenu)
+			logMenu.insertAdjacentHTML('beforeend', `<div class="warning">${message}</div>`);
 	}
 };
 
@@ -246,3 +252,7 @@ window.addEventListener("error", function(event) {
 window.addEventListener("unhandledrejection", function(event) {
 	handleLogs("error", ["unhandledrejection", event.reason || ""]);
 });
+
+function openLogsFolder() {
+	$.Drag.VisualEvent.openFolder(getLogsDirectory());
+};
