@@ -141,6 +141,13 @@
 			<p onclick="openExpandedEventCommandsLink();">Expanded Event Commands</p>
 			<span data-addon="expandedEventCommands">Not installed</span>
 		</div>
+		<div id="editor-logs-menu" class="hidden">
+			<h3>Logs</h3>
+			<div>
+				<button onclick="openLogsFolder();">Open Logs Folder</button>
+				<button onclick="openDevTools();">Open Console</button>
+				</div>
+		</div>
 		<div id="editor-option-menu" class="hidden">
 			<h3>Options</h3>
 			<div class="flex">
@@ -259,7 +266,7 @@
 			<path style="stroke-width: 1; fill: white; stroke: white;" d="M2,3 C2.55228,3 3,3.44772 3,4 L3,12 C3,12.5523 2.55229,13 2,13 C1.44772,13 1,12.5523 1,12 L1,4 C1,3.44772 1.44772,3 2,3 Z M7.29289,4.29289 C7.68342,3.90237 8.31658,3.90237 8.7071,4.29289 C9.09763,4.68342 9.09763,5.31658 8.7071,5.70711 L7.41421,7 L14,7 C14.5523,7 15,7.44772 15,8 C15,8.55228 14.5523,9 14,9 L7.41421,9 L8.7071,10.2929 C9.09763,10.6834 9.09763,11.3166 8.7071,11.7071 C8.31658,12.0976 7.68342,12.0976 7.29289,11.7071 L3.58578,8 L7.29289,4.29289 Z"></path>
 		</svg>
 		<div id="topPanel"></div>
-		<div id="log-container" onclick="openDevTools();">
+		<div id="log-container" onclick="toggleEditorLogsMenu(this);">
 			<span id="log-error" style="margin-right: 0.75em;">
 				<svg width="24px" height="24px" viewBox="0 0 512 512" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 					<path style="fill: red;" d="M213.333333,3.55271368e-14 C331.136,3.55271368e-14 426.666667,95.5306667 426.666667,213.333333 C426.666667,331.136 331.136,426.666667 213.333333,426.666667 C95.5306667,426.666667 3.55271368e-14,331.136 3.55271368e-14,213.333333 C3.55271368e-14,95.5306667 95.5306667,3.55271368e-14 213.333333,3.55271368e-14 Z M262.250667,134.250667 L213.333333,183.168 L164.416,134.250667 L134.250667,164.416 L183.168,213.333333 L134.250667,262.250667 L164.416,292.416 L213.333333,243.498667 L262.250667,292.416 L292.416,262.250667 L243.498667,213.333333 L292.416,164.416 L262.250667,134.250667 Z"></path>
