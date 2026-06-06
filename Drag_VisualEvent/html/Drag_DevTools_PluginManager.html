@@ -937,11 +937,7 @@
 			if (!plugin)
 				return;
 			
-			const path = require('path');
-			const nwGui = require('nw.gui');
-			const pluginPath = path.resolve(`js/plugins/${plugin.filename || plugin.name + ".js"}`);
-			
-			nwGui.Shell.showItemInFolder(pluginPath);
+			$.Drag.VisualEvent.revealInFolder(`js/plugins/${plugin.filename || plugin.name + ".js"}`);
 			closePluginContextmenu();
 		};
 		
