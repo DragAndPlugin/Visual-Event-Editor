@@ -333,6 +333,14 @@ function toggleEditorAddonsMenu(elem) {
 		eAddons.classList.add('hidden');
 };
 
+function toggleEditorLogsMenu(elem) {
+	const eLogs = document.querySelector('#editor-logs-menu');
+	if (eLogs.classList.contains('hidden'))
+		eLogs.classList.remove('hidden');
+	else
+		eLogs.classList.add('hidden');
+};
+
 function loadEvent(eventId, eventType, pageId, mapId) {
 	saveEventInCache();				
 	
