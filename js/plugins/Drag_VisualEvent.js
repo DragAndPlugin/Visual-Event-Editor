@@ -3,7 +3,7 @@
 //=============================================================================
 
 /*:
- * @target MZ
+ * @target MV MZ
  * @plugindesc A node-based eventing tool for RPG Maker MV & MZ
  * @author DragAndPlugin
  * @version 0.2.195
