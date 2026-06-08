@@ -44,6 +44,7 @@ Designed for both beginners and advanced users, it brings modern visual scriptin
 -  **Event page naming**
 -  **Unlimited common, map and troop events**
 -  **Unlimited switches and variables**
+-  **Custom Plugin Manager** with many improvements
 
 ---
 
@@ -112,7 +113,6 @@ Visual Event Editor by DragAndPlugin
 
 ## Roadmap
 
-- Plugin Manager
 - Database Manager
 - Support for some of my other tools (debugger & database sharer)
 - Editor add-ons and custom nodes framework improvements
