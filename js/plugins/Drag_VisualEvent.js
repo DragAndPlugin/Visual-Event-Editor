@@ -6,7 +6,7 @@
  * @target MZ
  * @plugindesc A node-based eventing tool for RPG Maker MV & MZ
  * @author DragAndPlugin
- * @version 0.1.144
+ * @version 0.2.195
  * @url https://drag-and-plug-in.itch.io/visual-event-editor
  *
  * @help 
@@ -41,7 +41,7 @@ Imported.Drag_VisualEvent = true;
 var Drag = Drag || {};
 Drag.VisualEvent = {};
 Drag.VisualEvent.alias = {};
-Drag.VisualEvent.version = "0.1.144";
+Drag.VisualEvent.version = "0.2.195";
 
 // (function() {
 	
@@ -494,6 +494,7 @@ Drag.VisualEvent.version = "0.1.144";
 	
 	Drag.VisualEvent.fetchAndParsePluginText = function(name, options, callback) {		
 		name = name.replace('.js', '').trim();
+		
 		fetch(`js/plugins/${name}.js`).then(res => {
 			return res.text();
 		}).then(text => {
@@ -579,8 +580,6 @@ Drag.VisualEvent.version = "0.1.144";
 	};
 	
 	Drag.VisualEvent.extractJSDocBlocks = function(text) {
-		// const regex = /\/\*(:([a-zA-Z-]*)?|~struct~\w+:)\s*([\s\S]*?)\*\//g;
-		// const regex = /\/*(:([a-zA-Z-]*)?|~struct~[^ \n*]+)\s*([\s\S]*?)\*/g;
 		const regex = /\/\*(:([a-zA-Z-]*)?|~struct~[^ \n*]+)\s*([\s\S]*?)\*\//g;
 		const blocks = [];
 		let match;
@@ -711,6 +710,7 @@ Drag.VisualEvent.version = "0.1.144";
 		}
 
 		pluginData.meta.help = Drag.VisualEvent.fetchMultilineJSDocTag(text, "help");
+		pluginData.meta.plugindesc = Drag.VisualEvent.fetchMultilineJSDocTag(text, "plugindesc");
 		return pluginData;
 	};
 	
@@ -760,6 +760,9 @@ Drag.VisualEvent.version = "0.1.144";
 				obj["values"][obj["values"].length - 1] = val;
 		}
 		
+		if (tag === "type" && val === "color")
+			obj[tag] = "systemColor";
+		
 		if (tag === "type" && val.match(structTypeRegex)) {
 			obj["structName"] = Drag.VisualEvent.getStructName(val);
 			obj["type"] = "struct";
@@ -771,7 +774,6 @@ Drag.VisualEvent.version = "0.1.144";
 	};
 	
 	Drag.VisualEvent.fetchMultilineJSDocTag = function(text, tagName) {
-		// const regex = new RegExp(`@${tagName}\\s*([\\s\\S]*?)(?=\\n\\s*\\*\\s*@\\w+|\\n\\s*\\*\\/|$)`, "i");
 		const regex = new RegExp(`@${tagName}\\s*([\\s\\S]*?)(?=\\n\\s*(?:\\*\\s*)?@\\w+|\\n\\s*\\*\\/|$)`, "i");
 		const match = text.match(regex);
 		
@@ -1004,7 +1006,6 @@ Drag.VisualEvent.version = "0.1.144";
 			return;
 		
 		const rect = contextmenu.getBoundingClientRect();
-		
 		let left = x;
 		if (left + rect.width > win.innerWidth - margin)
 			left = win.innerWidth - rect.width - margin;
@@ -1102,7 +1103,6 @@ Drag.VisualEvent.version = "0.1.144";
 	Drag.VisualEvent.openSwitchVariableMenu = function(input) {
 		const rect = input.getBoundingClientRect();
 		const type = input.getAttribute('data-inputType') || input.getAttribute('data-type');
-		console.log(rect, input.ownerDocument.defaultView.screenTop, input.ownerDocument.defaultView.screenLeft)
 		Drag.VisualEvent.openWindow(
 			'Drag_DevTools_SwitchVariableMenu.html', 'Switch & Variable Menu', 
 			window.screen.width * 0.4, window.screen.height * 0.75, rect.y + input.ownerDocument.defaultView.screenTop, rect.x + input.ownerDocument.defaultView.screenLeft, 
@@ -1247,11 +1247,11 @@ Drag.VisualEvent.version = "0.1.144";
 	//---------------------------------------------------------------------------------------------------------
 	// Scene Boot
 	
-	Drag.VisualEvent.alias._Scene_Boot_start = Scene_Boot.prototype.start;
-	Scene_Boot.prototype.start = function() {
-		Drag.VisualEvent.alias._Scene_Boot_start.call(this);
-		Drag.VisualEvent.openEditor();
-	};
+	// Drag.VisualEvent.alias._Scene_Boot_start = Scene_Boot.prototype.start;
+	// Scene_Boot.prototype.start = function() {
+		// Drag.VisualEvent.alias._Scene_Boot_start.call(this);
+		// Drag.VisualEvent.openEditor();
+	// };
 	
 	//---------------------------------------------------------------------------------------------------------
 	// Game Switches
@@ -1919,7 +1919,7 @@ Drag.VisualEvent.version = "0.1.144";
 		let path;
 
 		do {
-			path = path.join(dir, `${base}_${index}${ext}`);
+			path = Drag.VisualEvent.modules.path.join(dir, `${base}_${index}${ext}`);
 			index++;
 		} while (Drag.VisualEvent.modules.fs.existsSync(path));
 
@@ -2118,6 +2118,24 @@ Drag.VisualEvent.version = "0.1.144";
 	//-----------------------------------------------------------------------------------------------------------
 	// Input Fields
 	
+	Drag.VisualEvent.fixOldChromiumScrollJump = function(element) {
+		element.addEventListener('mousedown', function(e) {
+			e.stopImmediatePropagation();
+			if (typeof element.scrollIntoViewIfNeeded === "function")
+				element.scrollIntoViewIfNeeded();
+		});
+		element.addEventListener('focus', function(e) {
+			e.stopImmediatePropagation();
+			if (typeof element.scrollIntoViewIfNeeded === "function")
+				element.scrollIntoViewIfNeeded();
+		});
+		element.addEventListener('blur', function(e) {
+			e.stopImmediatePropagation();
+			if (typeof element.scrollIntoViewIfNeeded === "function")
+				element.scrollIntoViewIfNeeded();
+		});
+	};
+	
 	Drag.VisualEvent.getRelativeOffsetTop = function(element, relative) {
 		if (!element || !relative)
 			return;
@@ -2229,36 +2247,47 @@ Drag.VisualEvent.version = "0.1.144";
 				formattedValues.push(values[i]);
 		return formattedValues;
 	};
-	
+
 	Drag.VisualEvent.sanitizeInput = function(input) {
-		if (input.type === "number" || input.type === "text") {
-			const lastCharIsDot = input.value.slice(-1) === "." || input.value.slice(-1) === ",";
-			const isInteger = input.getAttribute('data-inputType') === "integer" || input.getAttribute('data-isInputInteger') === "true";
-			const hasFocus = input.ownerDocument.activeElement === input;
-			let value = input.value;
-			
-			if (hasFocus && value === "")
-				return;
-			
-			
-			value = value.replace(/[^\d-]+/g, '');
-			
-			const decimals = parseInt(input.getAttribute('data-decimals'));
-			value = Drag.VisualEvent.toFixedNoRounding(value, decimals);
-			
-			if (!hasFocus && input.max !== "")
-				value = Math.min(value, input.max);
-			if (!hasFocus && input.min !== "")
-				value = Math.max(value, input.min);
-			
-			if (lastCharIsDot && !isInteger)
-				value = value + ".";
-			else if (isInteger)
-				value = parseInt(value);
-			
-			input.value = value;
-			input.setAttribute('value', value);
-		}
+		if (!input || input.type !== "number" && input.type !== "text")
+			return;
+		
+		const hasFocus = input.ownerDocument.activeElement === input;
+		const isInteger = input.getAttribute('data-inputType') === "integer" || input.getAttribute('data-isInputInteger') === "true";
+		const decimals = parseInt(input.getAttribute('data-decimals'));
+		
+		let value = String(input.value || "").replace(",", ".");
+		if (hasFocus && value === "")
+			return;
+		
+		value = value.replace(/[^\d.-]/g, "");
+		value = value.replace(/(?!^)-/g, "");
+		
+		const firstDot = value.indexOf(".");
+		if (firstDot >= 0)
+			value = value.slice(0, firstDot + 1) + value.slice(firstDot + 1).replace(/\./g, "");
+		
+		if (hasFocus && (value === "-" || value === "." || value === "-."))
+			return input.value = value;
+		
+		if (isInteger) {
+			value = parseInt(value || 0);
+		} else if (!isNaN(decimals)) {
+			const endsWithDot = value.slice(-1) === ".";
+			value = Drag.VisualEvent.toFixedNoRounding(value || 0, decimals);
+			if (hasFocus && endsWithDot && decimals > 0)
+				value += ".";
+		} else
+			value = parseFloat(value || 0);
+		
+		if (!hasFocus && input.max !== "")
+			value = Math.min(Number(value), Number(input.max));
+		
+		if (!hasFocus && input.min !== "")
+			value = Math.max(Number(value), Number(input.min));
+		
+		input.value = value;
+		input.setAttribute("value", value);
 	};
 	
 	//thanks to @Gumbo on Stackoverflow for the regex
@@ -3139,7 +3168,7 @@ Drag.VisualEvent.version = "0.1.144";
 			<div class="relative">
 				<input type="number" id="${params.id ? params.id : ''}" class="${params.class || ''}"
 					value="${value}" ${params.max !== undefined ? `max="${params.max}"` : ''} ${params.min !== undefined ? `min="${params.min}"` : ''} placeholder="${params.placeholder || ''}" 
-					onchange="$.Drag.VisualEvent.sanitizeInput(this); ${params.onchange || ''}" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"
+					onchange="${params.onchange || ''}" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();" onblur="$.Drag.VisualEvent.sanitizeInput(this);"
 					data-decimals="${params.decimals ? params.decimals : "0"}" ${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} ${params.disabled ? 'disabled' : ''} />
 				${params.tooltip ? `<span class="input-tooltip" data-tooltip="${params.tooltip}"></span>` : ''}
 			</div>	
@@ -3155,7 +3184,7 @@ Drag.VisualEvent.version = "0.1.144";
 			<div class="relative">
 				<input type="number" id="${params.id ? params.id : ''}" class="${params.class || ''}" 
 					value="${value}" ${params.max !== undefined ? `max="${params.max}"` : ''} ${params.min !== undefined ? `min="${params.min}"` : ''} placeholder="${params.placeholder || ''}" 
-					onchange="$.Drag.VisualEvent.sanitizeInput(this); ${params.onchange || ''}" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"
+					onchange="${params.onchange || ''}" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();" onblur="$.Drag.VisualEvent.sanitizeInput(this);"
 					data-isInputInteger="true" ${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} ${params.disabled ? 'disabled' : ''} 
 				/>
 				${params.tooltip ? `<span class="input-tooltip" data-tooltip="${params.tooltip}"></span>` : ''}
@@ -3203,6 +3232,90 @@ Drag.VisualEvent.version = "0.1.144";
 				<span class="focus"></span>
 			</div>
 		`;	
+	};
+	
+	Drag.VisualEvent.getMapInputField = function(params, index, controller = null) {	
+		params.options = Drag.VisualEvent.getMapList().map(filename => {
+			const mapId = Drag.VisualEvent.extractMapId(filename);
+			return [mapId, `Map${String(mapId).padStart(3, '0')}: ${Drag.VisualEvent.getMapName(mapId)}`];
+		}); 
+		const defaultId = params.default !== undefined ? params.default : 0;
+		const literalsOptions = params.options.map(option => `<option ${option[0] === defaultId ? 'selected' : ''} value="${option[0]}">${option[1] || ''}</option>`);
+		
+		if (params.onchange)
+			params.onchange = params.onchange.replace('$.Drag.VisualEvent.onInputChange(this);', '').replace('handleInteractiveInput(this, this.parentElement.parentElement);', '').trim();
+		
+		const id = params.value !== undefined ? parseInt(params.value) || 0 : defaultId;
+		let literalValue = `Map${String(id).padStart(3, '0')}: ${Drag.VisualEvent.getMapName(id)}`;
+		
+		return `
+			<div class="relative flex" style="align-items: center">
+				<input
+					type="text" class="${params.class ? params.class : ''}" id="${params.id ? params.id : ''}" value="${literalValue}" placeholder="${params.placeholder || ''}"
+					${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} data-value="${id}"
+					onchange="$.Drag.VisualEvent.onInputComboChange(this); ${params.isInteractiveController ? 'handleInteractiveInput(this, this.parentElement.parentElement);' : ''}" 
+					oninput="this.onchange();" onfocus="$.Drag.VisualEvent.onInputComboFocus(this);"
+					onblur="$.Drag.VisualEvent.onInputComboBlur(this);" ${params.onchange ? `data-onchange="${params.onchange}"` : ''}
+					${params.disabled ? 'disabled' : ''} style="min-width: 12.5em;"
+				>
+				<select 
+					onmouseover="$.Drag.VisualEvent.onSelectMouseOver(this);" onmouseout="$.Drag.VisualEvent.onSelectMouseOut(this);"
+					onchange="$.Drag.VisualEvent.onSelectComboChange(this);" onclick="this.onchange();" onblur="$.Drag.VisualEvent.hideSelect(this);"
+					class="hidden" style="display: list-item; position: absolute; top: calc(100% - 2px); padding-top: 0px; padding-bottom: 0px; padding-left: 7px; overflow-y: scroll; background-color: var(--background-color); border: 1px solid var(--color); z-index: 2;"
+				>
+					${literalsOptions.join("")}			
+				</select>
+			</div>`;
+	};
+	
+	Drag.VisualEvent.getCommandInputField = function(params, index, controller = null) {
+		if (!params.addOptions || !Array.isArray(params.addOptions))
+			params.addOptions = [];
+		
+		const commandOptions = Drag.VisualEvent.flattenArray(Object.values(Drag.VisualEvent.commandsCategories)).map(command => [parseInt(command.replace('command', '')), Drag.VisualEvent.replaceAll(Drag.VisualEvent.replaceAll(Drag.VisualEvent.getCommandName(command), '&#8620;', ''), '&#10100;', '')]);		
+		params.options = commandOptions;
+		
+		const defaultId = 101; //show text	
+		const literalsOptions = params.options.map(option => `<option ${option[0] === defaultId ? 'selected' : ''} value="${option[0]}">${option[1] || ''}</option>`);
+		
+		for (const plugin in Drag.VisualEvent.pluginJSDocData) {
+			const pluginData = Drag.VisualEvent.pluginJSDocData[plugin];
+			if (pluginData.commands && Object.keys(pluginData.commands).length > 0)
+				for (const pluginCommand in pluginData.commands) {
+					const pluginCommandData = pluginData.commands[pluginCommand];
+					literalsOptions.push(`<option data-pluginCommand="true" data-plugin="${plugin}" value="${pluginCommand}">${plugin}: ${pluginCommandData.text || pluginCommandData.name || ''}</option>`);
+				}
+		};
+		
+		const editor = Drag.VisualEvent.getEditor();
+		if (editor)
+			for (const customNode in editor._customNodes) 
+				literalsOptions.push(`<option data-customNode="true" value="${customNode}">${editor._customNodes[customNode].name || ''}</option>`);	
+		
+		if (params.isInteractiveController === true)
+			params.data = `data-behavior="${JSON.stringify([-1].concat(params.options.map((option, index) => index)))}" ${params.data || ''}`;
+		
+		if (params.onchange)
+			params.onchange = params.onchange.replace('$.Drag.VisualEvent.onInputChange(this);', '').replace('handleInteractiveInput(this, this.parentElement.parentElement);', '').trim();
+		
+		return `
+			<div class="relative flex" style="align-items: center">
+				<input
+					type="text" class="${params.class ? params.class : ''}" id="${params.id ? params.id : ''}" value="Show Text" placeholder="${params.placeholder || ''}"
+					${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} data-value="${defaultId}"
+					onchange="$.Drag.VisualEvent.onInputComboChange(this); ${params.isInteractiveController ? 'handleInteractiveInput(this, this.parentElement.parentElement);' : ''}" 
+					oninput="this.onchange();" onfocus="$.Drag.VisualEvent.onInputComboFocus(this);"
+					onblur="$.Drag.VisualEvent.onInputComboBlur(this);" ${params.onchange ? `data-onchange="${params.onchange}"` : ''}
+					${params.disabled ? 'disabled' : ''} style="min-width: 12.5em;"
+				>
+				<select 
+					onmouseover="$.Drag.VisualEvent.onSelectMouseOver(this);" onmouseout="$.Drag.VisualEvent.onSelectMouseOut(this);"
+					onchange="$.Drag.VisualEvent.onSelectComboChange(this);" onclick="this.onchange();" onblur="$.Drag.VisualEvent.hideSelect(this);"
+					class="hidden" style="display: list-item; position: absolute; top: calc(100% - 2px); padding-top: 0px; padding-bottom: 0px; padding-left: 7px; overflow-y: scroll; background-color: var(--background-color); border: 1px solid var(--color); z-index: 2;"
+				>
+					${literalsOptions.join("")}			
+				</select>
+			</div>`;
 	};
 	
 	Drag.VisualEvent.getDatabaseInputField = function(params, index, controller = null) {
@@ -3293,56 +3406,6 @@ Drag.VisualEvent.version = "0.1.144";
 	Drag.VisualEvent.scrollToSelectedOption = function(select, selectedOption = null) {
 		const pos = select.selectedIndex * select.options[0].scrollHeight;
 		select.scrollTop = pos;
-	};
-	
-	Drag.VisualEvent.getCommandInputField = function(params, index, controller = null) {
-		if (!params.addOptions || !Array.isArray(params.addOptions))
-			params.addOptions = [];
-		
-		const commandOptions = Drag.VisualEvent.flattenArray(Object.values(Drag.VisualEvent.commandsCategories)).map(command => [parseInt(command.replace('command', '')), Drag.VisualEvent.getCommandName(command).replaceAll('&#8620;', '').replaceAll('&#10100;', '')]);		
-		params.options = commandOptions;
-		
-		const defaultId = 101; //show text	
-		const literalsOptions = params.options.map(option => `<option ${option[0] === defaultId ? 'selected' : ''} value="${option[0]}">${option[1] || ''}</option>`);
-		
-		for (const plugin in Drag.VisualEvent.pluginJSDocData) {
-			const pluginData = Drag.VisualEvent.pluginJSDocData[plugin];
-			if (pluginData.commands && Object.keys(pluginData.commands).length > 0)
-				for (const pluginCommand in pluginData.commands) {
-					const pluginCommandData = pluginData.commands[pluginCommand];
-					literalsOptions.push(`<option data-pluginCommand="true" data-plugin="${plugin}" value="${pluginCommand}">${plugin}: ${pluginCommandData.text || pluginCommandData.name || ''}</option>`);
-				}
-		};
-		
-		const editor = Drag.VisualEvent.getEditor();
-		if (editor)
-			for (const customNode in editor._customNodes) 
-				literalsOptions.push(`<option data-customNode="true" value="${customNode}">${editor._customNodes[customNode].name || ''}</option>`);	
-		
-		if (params.isInteractiveController === true)
-			params.data = `data-behavior="${JSON.stringify([-1].concat(params.options.map((option, index) => index)))}" ${params.data || ''}`;
-		
-		if (params.onchange)
-			params.onchange = params.onchange.replace('$.Drag.VisualEvent.onInputChange(this);', '').replace('handleInteractiveInput(this, this.parentElement.parentElement);', '').trim();
-		
-		return `
-			<div class="relative flex" style="align-items: center">
-				<input
-					type="text" class="${params.class ? params.class : ''}" id="${params.id ? params.id : ''}" value="Show Text" placeholder="${params.placeholder || ''}"
-					${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} data-value="${defaultId}"
-					onchange="$.Drag.VisualEvent.onInputComboChange(this); ${params.isInteractiveController ? 'handleInteractiveInput(this, this.parentElement.parentElement);' : ''}" 
-					oninput="this.onchange();" onfocus="$.Drag.VisualEvent.onInputComboFocus(this);"
-					onblur="$.Drag.VisualEvent.onInputComboBlur(this);" ${params.onchange ? `data-onchange="${params.onchange}"` : ''}
-					${params.disabled ? 'disabled' : ''} style="min-width: 12.5em;"
-				>
-				<select 
-					onmouseover="$.Drag.VisualEvent.onSelectMouseOver(this);" onmouseout="$.Drag.VisualEvent.onSelectMouseOut(this);"
-					onchange="$.Drag.VisualEvent.onSelectComboChange(this);" onclick="this.onchange();" onblur="$.Drag.VisualEvent.hideSelect(this);"
-					class="hidden" style="display: list-item; position: absolute; top: calc(100% - 2px); padding-top: 0px; padding-bottom: 0px; padding-left: 7px; overflow-y: scroll; background-color: var(--background-color); border: 1px solid var(--color); z-index: 2;"
-				>
-					${literalsOptions.join("")}			
-				</select>
-			</div>`;
 	};
 	
 	Drag.VisualEvent.refreshDatabaseInputOptions = function(input) {
@@ -3770,6 +3833,145 @@ Drag.VisualEvent.version = "0.1.144";
 		return rgb.map(value => Drag.VisualEvent.lerp(-255, 255, (value * 2) / 510));
 	};
 	
+	Drag.VisualEvent.getIconInputField = function(params, index) {
+		return `
+			<div style="position: relative">
+				<input type="number" class="${params.class || ''}"
+					style="cursor: pointer;" 
+					onclick="$.Drag.VisualEvent.openIconPicker(this);" onchange="${params.onchange || ''}" onfocus="this.blur()"
+					${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} value="${params.value || ''}"
+				/>
+			</div>`;
+	};
+	
+	Drag.VisualEvent.openIconPicker = function(input) {
+		input.blur();
+		Drag.VisualEvent.closePickers(input.ownerDocument);
+		Drag.VisualEvent.onOpenPickers(input.ownerDocument);
+		
+		const picker = document.createElement("div");
+		picker.className = "inline-picker icon-picker";
+		
+		const iconset = new Image();
+		iconset.src = "../../img/system/IconSet.png";
+		
+		iconset.onload = function() {
+			const iconWidth = 32;
+			const iconHeight = 32;
+			const cols = Math.floor(iconset.width / iconWidth);
+			const rows = Math.floor(iconset.height / iconHeight);
+			
+			let html = "";
+			for (let i = 0; i < cols * rows; i++) {
+				const x = (i % cols) * iconWidth;
+				const y = Math.floor(i / cols) * iconHeight;
+				html += `
+					<div class="icon-picker-cell" style="background-image: url('../../img/system/IconSet.png'); background-position: -${x}px -${y}px;"
+						title="Icon ${i}" onclick="$.Drag.VisualEvent.selectIconPickerValue(this, ${i});"
+					></div>
+				`;
+			}
+			
+			picker.innerHTML = html;
+			input.parentElement.appendChild(picker);
+		};
+	};
+	
+	Drag.VisualEvent.selectIconPickerValue = function(cell, value) {
+		const picker = cell.closest('.inline-picker');
+		const input = picker.parentElement.querySelector('input');
+		
+		input.value = value;
+		input.setAttribute("value", value);
+		input.dispatchEvent(new Event("change", {bubbles: true}));
+		
+		Drag.VisualEvent.closePickers(input.ownerDocument);
+	};
+	
+	Drag.VisualEvent.getSystemColorInputField = function(params, index) {
+		return `
+			<div style="position: relative">
+				<input type="number" class="${params.class || ''}"
+					style="cursor: pointer;" 
+					onclick="$.Drag.VisualEvent.openColorPicker(this);" onchange="${params.onchange || ''}" onfocus="this.blur()"
+					${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} value="${params.value || ''}"
+				/>
+			</div>`;
+	};
+	
+	Drag.VisualEvent.openColorPicker = function(input) {
+		input.blur();
+		Drag.VisualEvent.closePickers(input.ownerDocument);
+		Drag.VisualEvent.onOpenPickers(input.ownerDocument);
+		
+		const picker = document.createElement("div");
+		picker.className = "inline-picker color-picker";
+		
+		const image = new Image();
+		image.src = "../../img/system/Window.png";
+		
+		image.onload = function() {
+			const canvas = document.createElement("canvas");
+			canvas.width = image.width;
+			canvas.height = image.height;
+			
+			const ctx = canvas.getContext("2d");
+			ctx.drawImage(image, 0, 0);
+			
+			let html = "";
+			for (let i = 0; i < 32; i++) {
+				const color = Drag.VisualEvent.sampleRpgMakerTextColor(ctx, i);
+				html += `
+					<div class="color-picker-cell" title="Color ${i}" style="background: ${color};"
+						onclick="$.Drag.VisualEvent.selectColorPickerValue(this, ${i});"
+					></div>
+				`;
+			}
+			
+			picker.innerHTML = html;
+			input.parentElement.appendChild(picker);
+		};
+	};
+	
+	Drag.VisualEvent.sampleRpgMakerTextColor = function(ctx, index) {
+		const px = 96 + (index % 8) * 12 + 6;
+		const py = 144 + Math.floor(index / 8) * 12 + 6;
+		const data = ctx.getImageData(px, py, 1, 1).data;
+		
+		return `rgb(${data[0]}, ${data[1]}, ${data[2]})`;
+	};
+	
+	Drag.VisualEvent.selectColorPickerValue = function(cell, value) {
+		const picker = cell.closest('.inline-picker');
+		const input = picker.parentElement.querySelector('input');
+		
+		input.value = value;
+		input.setAttribute("value", value);
+		input.dispatchEvent(new Event("change", {bubbles: true}));
+		
+		Drag.VisualEvent.closePickers(input.ownerDocument);
+	};
+	
+	Drag.VisualEvent.onOpenPickers = function(doc = document) {
+		setTimeout(() => {
+			const win = doc.defaultView;
+			win.addEventListener('click', Drag.VisualEvent.onClickOnPickersOpened);
+		}, 0);
+	};
+	
+	Drag.VisualEvent.onClickOnPickersOpened = function(ev) {
+		if (!ev.path.find(elem => elem && elem.classList && elem.classList.contains('inline-picker')))
+			Drag.VisualEvent.closePickers(ev.target.ownerDocument);
+	};
+	
+	Drag.VisualEvent.closePickers = function(doc = document) {
+		for (const picker of doc.querySelectorAll('.inline-picker'))
+			picker.remove();
+		
+		const win = doc.defaultView;
+		win.removeEventListener('click', Drag.VisualEvent.onClickOnPickersOpened);
+	};
+	
 	Drag.VisualEvent.getFileInputField = function(params, index, controller = null) {
 		const dirs = params.dir ? params.dir.split("/") : [""];
 		const dataType = dirs[dirs.length - 2];
@@ -4084,3 +4286,12 @@ Drag.VisualEvent.version = "0.1.144";
 	};
 	
 // })();
+
+Drag.VisualEvent._openEditorInterval = window.setInterval(() => {
+	if (!SceneManager || !SceneManager._scene || SceneManager._scene.constructor.name === "Scene_Boot")
+		return;
+	
+	clearInterval(Drag.VisualEvent._openEditorInterval);
+	delete Drag.VisualEvent._openEditorInterval;
+	Drag.VisualEvent.openEditor();
+}, 100);
