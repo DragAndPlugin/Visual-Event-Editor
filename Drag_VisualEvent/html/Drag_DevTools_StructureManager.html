@@ -88,17 +88,18 @@
 				transform: rotate(-90deg);
 			}
 
-			#param-header:last-child {
+			#param-header > div:last-child {
 				display: flex;
 				align-items: center;
 				margin-left: 0.75em;
+				min-height: 1.75em;
 			}
 			
-			#param-header:last-child > * {
+			#param-header > div:last-child > * {
 				margin-right: 0.45em;
 			}
 
-			#param-header:last-child > *:last-child {
+			#param-header > div:last-child > *:last-child {
 				margin-right: 0;
 			}
 
@@ -474,7 +475,7 @@
 							</div>
 							<div>
 								<span id="param-type">${$.Drag.VisualEvent.escapeHTML(`${param.type || "text"}${isList ? " [list]" : ""}`)}</span>
-								<button onclick="restoreParamDefaultValue(event, this);" title="Reset to default">↺</button>
+								${!isStruct ? `<button onclick="restoreParamDefaultValue(event, this);" title="Reset to default" ${isDefaultValue(param.value, param.default) ? 'class="hidden"' : ''}>↺</button>` : ""}
 							</div>
 						</div>
 						${param.desc ? `<span class="struct-param-desc">${$.Drag.VisualEvent.escapeHTML(param.desc)}</span>` : ""}
@@ -546,7 +547,6 @@
 					else
 						param.value = "";
 				}
-				console.log(param.value);
 			};
 			
 			function getParamListContent(name, params, paramsTree, structValue = {}, depth = 0, sourceStructName = "") {
@@ -570,7 +570,7 @@
 							</div>
 							<div>
 								<span id="param-type">${$.Drag.VisualEvent.escapeHTML(`${param.type || "text"} [list]`)}</span>
-								<button onclick="restoreParamDefaultValue(event, this);" title="Reset to default">↺</button>
+								<!--<button onclick="restoreParamDefaultValue(event, this);" title="Reset to default">↺</button>-->
 							</div>
 						</div>
 						${param.desc ? `<span class="struct-param-desc">${$.Drag.VisualEvent.escapeHTML(param.desc)}</span>` : ""}
@@ -811,25 +811,63 @@
 				
 				const inputs = Array.from(param.querySelectorAll('input, select, textarea')).filter(input => input.hasAttribute('data-defaultValue'));
 				for (const input of inputs)
-					restoreStructInputDefaultValue(input);
+					restoreInputDefaultValue(input);
+				
+				button.classList.add('hidden');
 			};
 			
-			function restoreStructInputDefaultValue(input) {
+			function restoreInputDefaultValue(input) {
 				const defaultValue = input.getAttribute('data-defaultValue');
-				
-				if (input.type === "checkbox")
+					
+				if (input.getAttribute('data-inputType') === "location") {
+					try {
+						const defaultLoc = JSON.parse(defaultValue);
+						const mapId = defaultLoc.hasOwnProperty('mapId') ? parseInt(defaultLoc.mapId) || 0 : 0;
+						const x = defaultLoc.hasOwnProperty('x') ? parseInt(defaultLoc.x) || 0 : 0;
+						const y = defaultLoc.hasOwnProperty('y') ? parseInt(defaultLoc.y) || 0 : 0;
+						input.value = `Map${String(mapId).padStart(3, '0')}: x: ${x}, y: ${x}`;
+						input.setAttribute('data-value', `${mapId + ","}${x},${y}`);
+						input.setAttribute('data-x', x);
+						input.setAttribute('data-y', y);
+						input.setAttribute('data-mapId', mapId);
+					} catch (error) {
+						input.value = "Map000: x: 0, y: 0";
+						input.setAttribute('data-value', `0,0,0`);
+						input.setAttribute('data-x', 0);
+						input.setAttribute('data-y', 0);
+						input.setAttribute('data-mapId', 0);
+					}
+				} else if (input.type === "checkbox")
 					input.checked = defaultValue === "true" || defaultValue === "on" || defaultValue === "1";
 				else if (input.type === "radio")
-					input.checked = input.value == defaultValue || input.getAttribute('data-value') == defaultValue;
+					input.checked = ((defaultValue === "" || defaultValue === undefined || defaultValue === null) && input.value === "true") || (input.value == defaultValue || input.getAttribute('data-value') == defaultValue);
 				else if (input.type === "number")
-					input.value = defaultValue || 0;
+					input.value = parseFloat(defaultValue) || 0;
 				else
 					input.value = defaultValue || "";
-				
-				if (input.hasAttribute('data-value'))
-					input.setAttribute('data-value', input.value);
-				
+					
 				input.dispatchEvent(new Event('change', {bubbles: true}));
+			};
+			
+			function isDefaultValue(value, defaultValue) {
+				defaultValue = defaultValue !== undefined ? defaultValue : "";
+				value = value !== undefined ? value : "";
+				return JSON.stringify(value) === JSON.stringify(defaultValue);
+			};
+			
+			function onInputChange(input) {
+				const param = input.closest('.struct-param');
+				if (!param)
+					return;
+				
+				const button = param.querySelector('#param-header button');
+				if (!button)
+					return;
+				
+				if (isDefaultValue($.Drag.VisualEvent.getInputValue(input), input.getAttribute('data-defaultValue')))
+					button.classList.add('hidden');
+				else
+					button.classList.remove('hidden');
 			};
 			
 			function addStructInputsFields(input) {

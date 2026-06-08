@@ -246,6 +246,7 @@
 		#plugin-content[data-tab="parameters"] {
 			overflow: hidden;
 			padding: 0;
+			height: 100%;
 		}
 		
 		#plugin-content:not([data-tab="parameters"]) {
@@ -325,10 +326,11 @@
 			padding: 0.25em 0.4em;
 			margin-bottom: 0.15em;
 			font-size: 0.75em;
-			color: lightgrey;
+			color: grey;
 			white-space: nowrap;
 			overflow: hidden;
 			text-overflow: ellipsis;
+			transition: color 0.5s;
 		}
 
 		.parameters-tree-child:hover {
@@ -338,7 +340,6 @@
 
 		.parameters-tree-child.selected {
 			color: white;
-			background: rgb(30 144 255 / 40%);
 		}
 
 		#search-parameter-container {
@@ -409,6 +410,7 @@
 			display: flex;
 			align-items: center;
 			margin-left: 0.75em;
+			min-height: 1.75em;
 		}
 
 		#param-header > div:last-child > * {
@@ -487,6 +489,7 @@
 			cursor: pointer;
 			min-width: 1.8em;
 			height: 1.8em;
+			line-height: 0.65em;
 		}
 
 		#add-list {
@@ -710,6 +713,11 @@
 			window._selectedPluginIndex = 0;
 			window._selectedPluginTab = "info";
 			
+			if ($.Utils.RPGMAKER_NAME !== "MZ") {
+				document.querySelector('.tab[data-tab="commands"]').style.display = "none";
+				document.querySelector('#plugin-filter > option[value="commands"]').style.display = "none";
+			}
+			
 			refreshPluginList();
 			
 			if (window._plugins.length > 0)
@@ -717,16 +725,18 @@
 		};
 		
 		function loadPlugins() {
-			if ($.Drag.VisualEvent.pluginJSDocData && $.$plugins) { //fetch directly js/plugins.js instead of $.plugins ?
+			const plugins = $plugins.filter(plugin => plugin && plugin.name);
+			if ($.Drag.VisualEvent.pluginJSDocData && $.$plugins && plugins) {
 				return $.$plugins.filter(plugin => plugin && plugin.name).map((plugin, index) => {
-					const pluginName = plugin.name;
+					const pluginName = plugins[index].name;
 					const pluginData = $.Drag.VisualEvent.getLocalizedPluginData(pluginName) || {};
 					const params = $.Drag.VisualEvent.deepCopyJSON(pluginData.params || {});
 					
 					return {
 						id: index,
-						name: pluginName,
-						filename: `${pluginName}.js`,
+						name: plugin.name,
+						filename: `${plugin.name}.js`,
+						filepath: pluginName,
 						enabled: plugin.status,
 						description: pluginData.meta && pluginData.meta.plugindesc ? pluginData.meta.plugindesc : plugin.description || "",
 						author: pluginData.meta ? pluginData.meta.author || "" : "",
@@ -832,7 +842,7 @@
 		
 		window.addEventListener('blur', closePluginContextmenu);
 		window.addEventListener('resize', closePluginContextmenu);
-		window.addEventListener('scroll', closePluginContextmenu, true);
+		document.querySelector('#plugin-list').addEventListener('scroll', closePluginContextmenu, true);
 		function closePluginContextmenu() {
 			const contextmenu = document.querySelector('#plugin-contextmenu');
 			contextmenu.classList.add('hidden');
@@ -871,6 +881,9 @@
 		};
 		
 		function movePluginUp() {
+			if (isPluginListFiltered())
+				return;
+			
 			const index = getPluginContextmenuIndex();
 			if (index <= 0)
 				return;
@@ -881,6 +894,9 @@
 		};
 		
 		function movePluginDown() {
+			if (isPluginListFiltered())
+				return;
+			
 			const index = getPluginContextmenuIndex();
 			if (index < 0 || index >= window._plugins.length - 1)
 				return;
@@ -891,6 +907,9 @@
 		};
 		
 		function movePluginTop() {
+			if (isPluginListFiltered())
+				return;
+			
 			const index = getPluginContextmenuIndex();
 			if (index <= 0)
 				return;
@@ -901,6 +920,9 @@
 		};
 		
 		function movePluginBottom() {
+			if (isPluginListFiltered())
+				return;
+			
 			const index = getPluginContextmenuIndex();
 			if (index < 0 || index >= window._plugins.length - 1)
 				return;
@@ -992,13 +1014,13 @@
 			if (!pluginName)
 				return;
 			
-			if (window._plugins.find(plugin => plugin.filename === `${pluginName}.js`))
-				return;
+			// if (window._plugins.find(plugin => plugin.filename === `${pluginName}.js`))
+				// return;
 			
 			window._addPluginName = pluginName;
 			
 			const pluginData = $.Drag.VisualEvent.getLocalizedPluginData(pluginName);
-			if (pluginData)
+			if (pluginData && pluginData.name)
 				registerPlugin(pluginData);
 			else
 				$.Drag.VisualEvent.fetchPluginCommands(pluginName, registerPlugin);	
@@ -1013,6 +1035,7 @@
 				id: window._plugins.length,
 				name: window._addPluginName,
 				filename: `${window._addPluginName}.js`,
+				filepath: window._addPluginName,
 				enabled: true,
 				description: pluginData.description || "",
 				author: pluginData.author || "",
@@ -1048,7 +1071,6 @@
 			
 			refreshPluginList();
 			refreshPluginDetails();
-			refreshAvailablePluginSelect();
 		};
 		
 		function togglePluginFromRow(event, toggle) {
@@ -1095,10 +1117,8 @@
 			if (!row || event.button !== 0)
 				return;
 			
-			if (isPluginListFiltered()) {
-				console.warn("Plugin reorder is disabled while the list is filtered.");
+			if (isPluginListFiltered())
 				return;
-			}
 			
 			window._grabbedPluginRow = row;
 			window._grabbedPluginRow.classList.add('grabbing');
@@ -1228,13 +1248,14 @@
 			
 			switch (window._selectedPluginTab) {
 				case "parameters":
+					const hasParameters = getPluginParamsCount(plugin) > 0;
 					content.innerHTML = `
 						<div id="plugin-parameters">
 							<div id="parameters-container">
-								${getSearchParametersInput()}
+								${hasParameters ? getSearchParametersInput() : ''}
 								${getPluginParametersContent(plugin)}
 							</div>
-							<div id="parameters-tree"></div>
+							${hasParameters ? '<div id="parameters-tree"></div>' : ''}
 						</div>
 					`;
 					
@@ -1257,6 +1278,11 @@
 					content.innerHTML = getPluginInfoContent(plugin);
 					break;
 			}
+			
+			//fix for old chromium scroll bug when clicking on a select
+			if ($.Utils.RPGMAKER_NAME !== "MZ")
+				for (const select of document.querySelectorAll('#parameters-container select'))
+					$.Drag.VisualEvent.fixOldChromiumScrollJump(select);
 		};
 		
 		function getSearchParametersInput() {
@@ -1345,7 +1371,6 @@
 			const searchText = `${param.name || ""} ${param.text || ""} ${param.desc || ""} ${param.type || ""}`.toLowerCase();
 			
 			sanitizePluginParameter(param);
-			
 			let html = `
 				<div class="plugin-param" 
 					${hasChildren ? 'data-has-children="true"' : ''} data-param-name="${$.Drag.VisualEvent.escapeHTML(name)}" data-param-type="${param.type || "text"}" data-search="${$.Drag.VisualEvent.escapeHTML(searchText)}"
@@ -1358,7 +1383,7 @@
 						</div>
 						<div>
 							<span id="param-type">${$.Drag.VisualEvent.escapeHTML(param.type || "text")}</span>
-							<button onclick="restorePluginParameterDefaultValue(event, this);" title="Reset to default">↺</button>
+							${!isStruct ? `<button onclick="restorePluginParameterDefaultValue(event, this);" title="Reset to default" ${isDefaultValue(param.value, param.default) ? 'class="hidden"' : ''}>↺</button>` : ''}
 						</div>
 					</div>
 					<span>${$.Drag.VisualEvent.escapeHTML(param.desc || "")}</span>
@@ -1400,6 +1425,8 @@
 					param.value = param.hasOwnProperty('value') ? param.value : param.hasOwnProperty('default') ? param.default : 0;
 					break;
 				case "location":
+					param.data = param.data || "";
+					param.data += ' data-allowMapChange="true"';
 					if (!param.hasOwnProperty('value') || Array.isArray(param.value)) {
 						if (param.hasOwnProperty('default') && typeof param.default === 'string') {
 							try {
@@ -1425,6 +1452,12 @@
 				else
 					param.value = "";
 			}			
+		};
+		
+		function isDefaultValue(value, defaultValue) {
+			defaultValue = defaultValue !== undefined ? defaultValue : "";
+			value = value !== undefined ? value : "";
+			return JSON.stringify(value) === JSON.stringify(defaultValue);
 		};
 		
 		function getPluginStructParametersContent(parentParam, structData, plugin, structs, depth = 0) {
@@ -1468,24 +1501,58 @@
 			const inputs = Array.from(param.querySelectorAll('input, select, textarea')).filter(input => input.hasAttribute('data-defaultValue'));
 			for (const input of inputs)
 				restoreInputDefaultValue(input);
+			
+			button.classList.add('hidden');
 		};
 
 		function restoreInputDefaultValue(input) {
 			const defaultValue = input.getAttribute('data-defaultValue');
 				
-			if (input.type === "checkbox")
+			if (input.getAttribute('data-inputType') === "location") {
+				try {
+					const defaultLoc = JSON.parse(defaultValue);
+					const mapId = defaultLoc.hasOwnProperty('mapId') ? parseInt(defaultLoc.mapId) || 0 : 0;
+					const x = defaultLoc.hasOwnProperty('x') ? parseInt(defaultLoc.x) || 0 : 0;
+					const y = defaultLoc.hasOwnProperty('y') ? parseInt(defaultLoc.y) || 0 : 0;
+					input.value = `Map${String(mapId).padStart(3, '0')}: x: ${x}, y: ${x}`;
+					input.setAttribute('data-value', `${mapId + ","}${x},${y}`);
+					input.setAttribute('data-x', x);
+					input.setAttribute('data-y', y);
+					input.setAttribute('data-mapId', mapId);
+				} catch (error) {
+					input.value = "Map000: x: 0, y: 0";
+					input.setAttribute('data-value', `0,0,0`);
+					input.setAttribute('data-x', 0);
+					input.setAttribute('data-y', 0);
+					input.setAttribute('data-mapId', 0);
+				}
+			} else if (input.type === "checkbox")
 				input.checked = defaultValue === "true" || defaultValue === "on" || defaultValue === "1";
 			else if (input.type === "radio")
 				input.checked = input.value == defaultValue || input.getAttribute('data-value') == defaultValue;
 			else if (input.type === "number")
-				input.value = defaultValue || 0;
+				input.value = parseFloat(defaultValue) || 0;
 			else
 				input.value = defaultValue || "";
-			
-			if (input.hasAttribute('data-value'))
-				input.setAttribute('data-value', input.value);
-			
+				
 			input.dispatchEvent(new Event('change', {bubbles: true}));
+		};
+		
+		function onInputChange(input) {
+			window._pluginManagerDirty = true;
+			
+			const param = input.closest('.plugin-param');
+			if (!param)
+				return;
+			
+			const button = param.querySelector('#param-header button');
+			if (!button)
+				return;
+			
+			if (isDefaultValue($.Drag.VisualEvent.getInputValue(input), input.getAttribute('data-defaultValue')))
+				button.classList.add('hidden');
+			else
+				button.classList.remove('hidden');
 		};
 		
 		function togglePluginParameterGroup(header) {
@@ -1566,7 +1633,7 @@
 						</div>
 						<div>
 							<span id="param-type">${$.Drag.VisualEvent.escapeHTML(param.type || "text")} <i>[list]</i></span>
-							<button onclick="restorePluginParameterDefaultValue(event, this);" title="Reset to default">↺</button>
+							<!--<button onclick="restorePluginParameterDefaultValue(event, this);" title="Reset to default">↺</button>-->
 						</div>
 					</div>
 				</div>
@@ -1801,6 +1868,8 @@
 			if (!container || !tree)
 				return;
 			
+			const scrollTop = container.scrollTop;
+			
 			let index = -1;
 			const params = Array.from(container.querySelectorAll('.plugin-param'));
 			for (const [i, param] of params.entries()) {
@@ -1820,8 +1889,8 @@
 			
 			for (const selected of tree.querySelectorAll('.selected'))
 				selected.classList.remove('selected');
-			
 			treeChild.classList.add('selected');
+			
 			scrollToTreeChild(tree, treeChild);
 		};
 		
@@ -2018,7 +2087,7 @@
 			$.Drag.VisualEvent.backupFile('js/plugins.js', "js/backup/");
 			
 			const data = window._plugins.map(plugin => ({
-				name: plugin.name,
+				name: plugin.filepath,
 				status: !!plugin.enabled,
 				description: plugin.description || "",
 				parameters: getPluginParameters(plugin),
@@ -2027,7 +2096,7 @@
 			fs.writeFileSync(pluginsPath, content, 'utf8');
 			
 			$.$plugins = window._plugins.map(plugin => ({
-				name: plugin.name,
+				name: plugin.filepath,
 				status: !!plugin.enabled,
 				description: plugin.description || "",
 				parameters: getPluginParameters(plugin, false),
@@ -2056,6 +2125,33 @@
 		
 		main();
 		$.Drag.VisualEvent.triggerAllOnReadyOnChange(document);
+		
+		function fixOldChromiumSelectScrollJump(elem) {
+			const container = elem.closest('#parameters-container');
+			if (!container)
+				return;
+			
+			const scrollTop = container.scrollTop;
+			
+			setTimeout(function() {
+				container.scrollTop = scrollTop;
+			}, 0);
+			
+			setTimeout(function() {
+				container.scrollTop = scrollTop;
+			}, 50);
+			
+			setTimeout(function() {
+				container.scrollTop = scrollTop;
+			}, 100);
+		};
+		
+		nw.Window.get().on('close', function () {
+			if (window._pluginManagerDirty && confirm("Some modifications hasn't been saved. Save changes ?"))
+				apply();
+			
+			this.close(true);
+		});
 	</script>
 </body>
 </html>

@@ -359,7 +359,8 @@
 				element.classList.add('selected');
 				data.selectedFile[containerId] = src;
 				
-				if (data.previewType && (src || data.selectedFile.some(file => !!file)))
+				// if (data.previewType && (src || data.selectedFile.some(file => !!file)))
+				if (src || data.selectedFile.some(file => !!file))
 					showFilePreview();
 				else
 					hideFilePreview();
@@ -405,14 +406,28 @@
 				}
 			};
 			
+			function getPreviewType() {
+				if (!data.selectedFile || data.selectedFile.length === 0)
+					return null;
+				
+				const ext = $.Drag.VisualEvent.modules.path.extname(data.selectedFile[0]);
+				if (ext === ".png" || ext === ".jpg" || ext === ".jpeg")
+					return "image";
+				else if (ext === ".mp4")
+					return "video";
+			};
+			
 			function showFilePreview() {
 				const contentPreview = document.querySelector('#content-preview > div');
 				contentPreview.classList.remove('hidden');
 				
 				data._isTilesetPreview = false;
+				const previewType = getPreviewType();
+				if (!previewType)
+					return;
 				
 				for (const [id, directoryPath] of getSrc().entries()) {
-					if (data.previewType === "image") {
+					if (previewType === "image") {
 						let image = contentPreview.querySelector(`img[data-id='${id}']`);
 						
 						if (!data.selectedFile[id]) {
@@ -445,7 +460,7 @@
 						}
 					}
 					
-					if (data.previewType === "video") {
+					if (previewType === "video") {
 						const video = data.selectedFile[id] ? `
 							<video controls autoplay loop muted style="max-width: 100%; height: auto;">
 								<source src="../../${directoryPath}/${data.selectedFile[id]}" type="video/webm" />

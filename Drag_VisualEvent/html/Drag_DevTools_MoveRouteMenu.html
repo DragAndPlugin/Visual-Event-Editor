@@ -580,6 +580,11 @@
 					</span>
 				`;
 				
+				//fix for old chromium scroll bug when clicking on a select
+				if ($.Utils.RPGMAKER_NAME !== "MZ")
+					for (const select of moveRoute.querySelectorAll('#move-route-parameters-content select'))
+						$.Drag.VisualEvent.fixOldChromiumScrollJump(select);
+				
 				return moveRoute;
 			};
 			
