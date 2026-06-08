@@ -397,6 +397,55 @@ input[type="number"] + span.input-tooltip:after {
 	right: 1.875em;
 }
 
+.inline-picker {
+	position: absolute;
+	z-index: 1000;
+	margin-top: 0.25em;
+	padding: 0.5em;
+	background: var(--background-color2, #21222b);
+	border: 0.0625em solid rebeccapurple;
+	box-shadow: 0 0.5em 1em rgb(0 0 0 / 40%);
+}
+
+.icon-picker {
+	display: grid;
+	grid-template-columns: repeat(16, 32px);
+	max-height: 18em;
+	overflow-y: auto;
+}
+
+.icon-picker-cell {
+	width: 32px;
+	height: 32px;
+	cursor: pointer;
+	box-sizing: border-box;
+	border: 0.0625em solid transparent;
+	background-repeat: no-repeat;
+}
+
+.icon-picker-cell:hover {
+	border-color: white;
+	background-color: rgb(255 255 255 / 20%);
+}
+
+.color-picker {
+	display: grid;
+	grid-template-columns: repeat(8, 1.75em);
+}
+
+.color-picker-cell {
+	width: 1.75em;
+	height: 1.75em;
+	cursor: pointer;
+	box-sizing: border-box;
+	border: 0.0625em solid rgb(255 255 255 / 20%);
+}
+
+.color-picker-cell:hover {
+	border-color: white;
+	transform: scale(1.1);
+}
+
 body[data-RPGMAKER_NAME="MV"] input[type="number"] + span.input-tooltip:after {
 	right: 0.9375em;
 }
