@@ -65,7 +65,7 @@ Drag.VisualEvent.version = "0.2.195";
 	Drag.VisualEvent.nwVisualEventWindowPath = "./Drag_VisualEvent/html/Drag_DevTools_VisualEventEditor.html";
 	Drag.VisualEvent.nwVisualEventWindowName = "Drag's DevTools Graph Editor";
 	
-	Drag.VisualEvent.databaseTypes = ["actor", "animation", "armor", "class", "common_event", "enemy", "item", "skill", "state", "tileset", "troop", "weapon", "switch", "variable", "map_event", "equipment_type", "element_type"];
+	Drag.VisualEvent.databaseTypes = ["actor", "animation", "armor", "class", "common_event", "enemy", "item", "skill", "state", "tileset", "troop", "weapon", "switch", "variable", "map_event", "equipment_type", "element_type", "skill_type", "weapon_type", "armor_type"];
 	Drag.VisualEvent.dataFiles = ["Actors", "Animations", "Armors", "Classes", "CommonEvents", "Enemies", "Items", "MapInfos", "Skills", "States", "System", "Tilesets", "Troops", "Weapons"];
 	Drag.VisualEvent.pluginJSDocData = {};
 	
@@ -75,7 +75,7 @@ Drag.VisualEvent.version = "0.2.195";
 		if (!Drag.VisualEvent.inputs)
 			Drag.VisualEvent.inputs = {};
 		
-		const data = require(`./Drag_VisualEvent/js/data/${filename}`)(Utils.RPGMAKER_NAME);
+		const data = require(`./Drag_VisualEvent/js/data/${filename}`)(Utils.RPGMAKER_NAME, Drag, window);
 		for (const key in data)
 			if (!Drag.VisualEvent.inputs[key])
 				Drag.VisualEvent.inputs[key] = data[key];
@@ -1059,6 +1059,14 @@ Drag.VisualEvent.version = "0.2.195";
 		} catch(err) {
 			console.error(err);
 		}
+	};
+	
+	Drag.VisualEvent.openDatabaseEditor = function() {
+		Drag.VisualEvent.openWindow(
+			'Drag_DevTools_DatabaseEditor.html', 'Database Editor', 
+			window.screen.width * 0.75, window.screen.height * 0.75, 0, 0, 
+			{}
+		);
 	};
 	
 	Drag.VisualEvent.openPluginManager = function() {
@@ -2611,7 +2619,13 @@ Drag.VisualEvent.version = "0.2.195";
 			} else if (type === "equipment_type")
 				data = editorData.$dataSystem.equipTypes.filter((equipType, index) => !filter || index > 0).map((type, index) => ({name: type === "" ? `#${(index + (filter ? 1 : 0)).toString().padStart(2, "0")}` : type, id: index + (filter ? 1 : 0)}));
 			else if (type === "element_type")
-				data = editorData.$dataSystem.elements.filter((element, index) => !filter || index > 0).map((type, index) => ({name: type === "" ? `#${(index + (filter ? 1 : 0)).toString().padStart(2, "0")}` : type, id: index + (filter ? 1 : 0)}));
+				data = editorData.$dataSystem.elements.filter((type, index) => !filter || index > 0).map((type, index) => ({name: type === "" ? `#${(index + (filter ? 1 : 0)).toString().padStart(2, "0")}` : type, id: index + (filter ? 1 : 0)}));
+			else if (type === "skill_type")
+				data = editorData.$dataSystem.skillTypes.filter((type, index) => !filter || index > 0).map((type, index) => ({name: type === "" ? `#${(index + (filter ? 1 : 0)).toString().padStart(2, "0")}` : type, id: index + (filter ? 1 : 0)}));
+			else if (type === "weapon_type")
+				data = editorData.$dataSystem.weaponTypes.filter((type, index) => !filter || index > 0).map((type, index) => ({name: type === "" ? `#${(index + (filter ? 1 : 0)).toString().padStart(2, "0")}` : type, id: index + (filter ? 1 : 0)}));
+			else if (type === "armor_type")
+				data = editorData.$dataSystem.armorTypes.filter((type, index) => !filter || index > 0).map((type, index) => ({name: type === "" ? `#${(index + (filter ? 1 : 0)).toString().padStart(2, "0")}` : type, id: index + (filter ? 1 : 0)}));
 			else {
 				const dataType = Drag.VisualEvent.capitalizeAll(Drag.VisualEvent.replaceAll(Drag.VisualEvent.getDatabaseTypePlural(type), "_", " "), ""); 
 				data = editorData[`$data${dataType}`] ? editorData[`$data${dataType}`].filter(data => !filter || data) : [];
@@ -3077,6 +3091,161 @@ Drag.VisualEvent.version = "0.2.195";
 			${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} data-structValue="${value}" data-pluginName="${params.pluginName}" data-structName="${params.structName}" data-noReset="true"
 			onclick="this.blur(); $.Drag.VisualEvent.openStructureManager(this);" onchange="${params.onchange || ''}"
 		/>`;
+	};
+	
+	Drag.VisualEvent.getTableInputField = function(params) {		
+		let html = `
+			<div class="table-input" ${params.data || ""} data-input-name="${Drag.VisualEvent.escapeHTML(params.name || "")}" data-user-row-creation="${params.userRowCreation ? "true" : "false"}">
+				<div class="table-input-header">
+		`;
+		
+		for (const column of params.columns)
+			html += `<div>${column.name}</div>`;
+		
+		if (params.userRowCreation)
+			html += `<div></div>`;
+
+		html += `</div>`;
+		
+		let rows = Array.isArray(params.value) ? params.value : null;
+		if (typeof params.rowGenerator === "function")
+			rows = params.rowGenerator(params);
+		if (!rows)
+			rows = params.default || [];
+		
+		for (const [rowId, row] of rows.entries())
+			html += Drag.VisualEvent.getTableInputRow(params, row, rowId);
+		
+		if (params.userRowCreation) {
+			html += `
+				<div class="table-input-add">
+					<button type="button" onclick="$.Drag.VisualEvent.addTableInputRow(event, this);">+</button>
+				</div>
+			`;
+		}
+		
+		html += `</div>`;
+		return html;
+	};
+	
+	Drag.VisualEvent.getTableInputRow = function(params, row = {}, rowId = 0) {
+		let html = `<div class="table-input-row">`;
+
+		for (const column of params.columns) {
+			let inputParam;
+			
+			if (typeof column.getInputParameters === "function")
+				inputParam = column.getInputParameters(row, rowId, params);
+			else
+				inputParam = Drag.VisualEvent.getInputParameters(column.input);
+			
+			if (!inputParam)
+				continue;
+			
+			if (!Array.isArray(inputParam))
+				inputParam = [inputParam];
+			
+			html += `<div class="table-input-cell" data-column-key="${column.key}" ${inputParam.length > 1 ? `style="display: grid; grid-template-columns: repeat(${inputParam.length}, 1fr);"`: ''}>`;
+			for (const param of inputParam) {
+				if (column.onchange)
+					param.onchange = (param.onchange || "") + " " + column.onchange;
+				
+				param.value = row[column.key];
+
+				if (param.value === undefined)
+					param.value = param.default !== undefined ? param.default : "";
+
+				if (column.readOnly)
+					param.disabled = true;
+				
+				html += `
+					${Drag.VisualEvent.getInputField(param)}
+				`;
+			}
+			html += `</div>`;
+		}
+
+		if (params.userRowCreation) {
+			html += `
+				<div class="table-input-controls">
+					<button type="button" onclick="$.Drag.VisualEvent.addTableInputRow(event, this);">+</button>
+					<button type="button" onclick="$.Drag.VisualEvent.removeTableInputRow(event, this);">−</button>
+				</div>
+			`;
+		}
+
+		html += `</div>`;
+		return html;
+	};
+	
+	Drag.VisualEvent.addTableInputRow = function(event, button) {
+		event.preventDefault();
+		event.stopPropagation();
+		
+		const list = button.closest('.table-input');
+		if (!list)
+			return;
+		
+		const inputName = list.getAttribute('data-input-name');
+		const input = Drag.VisualEvent.getInputParameters(inputName);
+		if (!input)
+			return;
+		
+		const add = list.querySelector(':scope > .table-input-add');
+		const html = Drag.VisualEvent.getTableInputRow(input, {});
+		
+		if (add)
+			add.insertAdjacentHTML('beforebegin', html);
+		else
+			list.insertAdjacentHTML('beforeend', html);
+	}
+
+	Drag.VisualEvent.removeTableInputRow = function (event, button) {
+		event.preventDefault();
+		event.stopPropagation();
+		
+		const row = button.closest('.table-input-row');
+		if (row)
+			row.remove();
+	};
+	
+	Drag.VisualEvent.refreshTableRow = function(input) {
+		const row = input.closest('.table-input-row');
+		const table = input.closest('.table-input');
+		if (!row || !table)
+			return;
+		
+		const inputName = table.getAttribute('data-input-name');
+		const params = Drag.VisualEvent.getInputParameters(inputName);
+		if (!params)
+			return;
+		
+		const rowId = Array.from(table.querySelectorAll(':scope > .table-input-row')).indexOf(row);
+		const rowData = Drag.VisualEvent.getTableInputRowValue(row);
+		
+		const html = Drag.VisualEvent.getTableInputRow(params, rowData, rowId);
+		row.insertAdjacentHTML('afterend', html);
+		
+		const newRow = row.nextElementSibling;
+		row.remove();
+		
+		Drag.VisualEvent.triggerAllOnReadyOnChange(newRow || table);
+	};
+	
+	Drag.VisualEvent.getTableInputRowValue = function(row) {
+		const values = {};
+		
+		for (const cell of row.querySelectorAll(':scope > .table-input-cell')) {
+			const key = cell.getAttribute('data-column-key');
+			const input = cell.querySelector('input[data-iscommandparameter="true"], select[data-iscommandparameter="true"], textarea[data-iscommandparameter="true"]');
+			
+			if (!key || !input)
+				continue;
+			
+			values[key] = Drag.VisualEvent.getPluginCommandInputValue ? Drag.VisualEvent.getPluginCommandInputValue(input) : input.value;
+		}
+
+		return values;
 	};
 	
 	Drag.VisualEvent.getListInputField = function(params) {
