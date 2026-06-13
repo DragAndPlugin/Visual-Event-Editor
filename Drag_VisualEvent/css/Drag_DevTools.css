@@ -446,6 +446,93 @@ input[type="number"] + span.input-tooltip:after {
 	transform: scale(1.1);
 }
 
+.table-input {
+	width: 100%;
+	box-sizing: border-box;
+	border: 0.0625em solid rgb(255 255 255 / 12%);
+	background: rgb(0 0 0 / 15%);
+}
+
+.table-input-header, .table-input-row {
+	display: grid;
+	grid-template-columns: 10em 1fr 4.5em;
+	align-items: center;
+}
+
+.table-input-header {
+	padding: 0.45em 0.6em;
+	border-bottom: 0.0625em solid rgb(255 255 255 / 15%);
+	background: rgb(255 255 255 / 8%);
+	color: lightgrey;
+	font-size: 0.8em;
+	font-weight: bold;
+}
+
+.table-input-row {
+	padding: 0.45em 0.6em;
+	border-bottom: 0.0625em solid rgb(255 255 255 / 8%);
+}
+
+.table-input-row:nth-child(odd) {
+    background: rgb(255 255 255 / 10%);
+}
+
+.table-input-row:last-child {
+	border-bottom: none;
+}
+
+.table-input-cell {
+	box-sizing: border-box;
+	padding-right: 0.5em;
+}
+
+.table-input-cell > * {
+	margin-right: 0.5em;
+}
+
+.table-input-cell > *:last-child {
+	margin-right: 0;
+}
+
+.table-input-cell > input, .table-input-cell > select {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.table-input-cell input[type="text"], .table-input-cell input[type="number"], .table-input-cell select {
+	height: 100%;
+}
+
+.table-input-cell input[type="text"]:disabled, .table-input-cell input[type="number"]:disabled, .table-input-cell select:disabled {
+	text-indent: 0;
+    border: 0;
+    background: transparent;
+}
+
+.table-input-controls {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.table-input-controls > * {
+	margin-right: 0.25em;
+}
+
+.table-input-controls > *:last-child {
+	margin-right: 0;
+}
+
+.table-input-controls button, .table-input-add button {
+	cursor: pointer;
+	min-width: 1.8em;
+	height: 1.8em;
+	padding: 0;
+}
+
+.table-input-add {
+	padding: 0.5em 0.6em;
+}
+
 body[data-RPGMAKER_NAME="MV"] input[type="number"] + span.input-tooltip:after {
 	right: 0.9375em;
 }
