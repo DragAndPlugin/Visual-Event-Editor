@@ -2104,7 +2104,7 @@
 			
 			if (window._pluginManagerDirty) {
 				if (confirm('Applying changes may require reloading editor. Reload now ?'))
-					$.Drag.VisualEvent.reload();
+					$.Drag.VisualEvent.reloadGame();
 				else {
 					const editor = $.Drag.VisualEvent.getEditor();
 					if (editor)
@@ -2125,26 +2125,6 @@
 		
 		main();
 		$.Drag.VisualEvent.triggerAllOnReadyOnChange(document);
-		
-		function fixOldChromiumSelectScrollJump(elem) {
-			const container = elem.closest('#parameters-container');
-			if (!container)
-				return;
-			
-			const scrollTop = container.scrollTop;
-			
-			setTimeout(function() {
-				container.scrollTop = scrollTop;
-			}, 0);
-			
-			setTimeout(function() {
-				container.scrollTop = scrollTop;
-			}, 50);
-			
-			setTimeout(function() {
-				container.scrollTop = scrollTop;
-			}, 100);
-		};
 		
 		nw.Window.get().on('close', function () {
 			if (window._pluginManagerDirty && confirm("Some modifications hasn't been saved. Save changes ?"))
