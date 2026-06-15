@@ -75,7 +75,7 @@ Drag.VisualEvent.version = "0.2.195";
 		if (!Drag.VisualEvent.inputs)
 			Drag.VisualEvent.inputs = {};
 		
-		const data = require(`./Drag_VisualEvent/js/data/${filename}`)(Utils.RPGMAKER_NAME, Drag, window);
+		const data = require(`./Drag_VisualEvent/js/data/${filename}`)(Utils.RPGMAKER_NAME, Drag.VisualEvent, window);
 		for (const key in data)
 			if (!Drag.VisualEvent.inputs[key])
 				Drag.VisualEvent.inputs[key] = data[key];
@@ -106,14 +106,15 @@ Drag.VisualEvent.version = "0.2.195";
 
 	Drag.VisualEvent.getInputParameters = function(type, properties = {}) {
 		if (Drag.VisualEvent.inputs[type]) {
-			return {...{...Drag.VisualEvent.inputs[type]}, ...properties}; 
+			// return {...{...Drag.VisualEvent.inputs[type]}, ...properties}; 
+			return Drag.VisualEvent.deepCopyJSON(Drag.VisualEvent.inputs[type]);
 		} else
 			return {...{type: type}, ...properties}; 
 	};
 	
 	Drag.VisualEvent.getInteractiveInputParameters = function(type) {
 		if (Drag.VisualEvent.interactiveInputs[type])
-			return JSON.parse(JSON.stringify(Drag.VisualEvent.interactiveInputs[type])); //deep copy
+			return Drag.VisualEvent.deepCopyJSON(Drag.VisualEvent.interactiveInputs[type]);
 		else
 			return [];
 	};
@@ -3093,10 +3094,144 @@ Drag.VisualEvent.version = "0.2.195";
 		/>`;
 	};
 	
-	Drag.VisualEvent.getTableInputField = function(params) {		
+	Drag.VisualEvent.getCurvesInputField = function(params) {
+		const value = JSON.stringify(params.value || []);
+		return `
+			<div class="curves-input-container" data-curve-value="${Drag.VisualEvent.escapeHTML(value)}" onload="$.Drag.VisualEvent.getCurvesPreview(this);" onclick="$.Drag.VisualEvent.openClassParameterCurvesEditor(this);">
+				<canvas class="curves-input-canvas" width="420" height="180"></canvas>
+			</div>
+		`;
+	};
+	
+	Drag.VisualEvent.getCurvesPreview = function(elem) {
+		const canvas = elem.querySelector('canvas');
+		if (!canvas)
+			return;
+		
+		let params = [];
+		try {
+			params = JSON.parse(elem.getAttribute('data-curve-value') || "[]");
+		} catch (error) {
+			params = [];
+		}
+		
+		const ctx = canvas.getContext('2d');
+		const w = canvas.width;
+		const h = canvas.height;
+
+		ctx.clearRect(0, 0, w, h);
+		ctx.fillStyle = "rgba(255,255,255,0.04)";
+		ctx.fillRect(0, 0, w, h);
+
+		const labels = ["MHP", "MMP", "ATK", "DEF", "MAT", "MDF", "AGI", "LUK"];
+		const cols = 4;
+		const rows = 2;
+		const cellW = w / cols;
+		const cellH = h / rows;
+
+		for (let paramId = 0; paramId < 8; paramId++) {
+			const col = paramId % cols;
+			const row = Math.floor(paramId / cols);
+			const x = col * cellW;
+			const y = row * cellH;
+			const color = getClassParameterCurveColor(paramId);
+
+			drawSingleClassParameterPreview(ctx, params[paramId], labels[paramId], x, y, cellW, cellH, color);
+		}
+	};
+	
+	function drawSingleClassParameterPreview(ctx, curve, label, x, y, w, h, color) {
+		ctx.save();
+
+		ctx.strokeStyle = "rgba(255,255,255,0.15)";
+		ctx.lineWidth = 1;
+		ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+
+		ctx.fillStyle = "rgba(255,255,255,0.85)";
+		ctx.font = "10px sans-serif";
+		ctx.textBaseline = "top";
+		ctx.fillText(label, x + 6, y + 4);
+
+		if (!Array.isArray(curve)) {
+			ctx.restore();
+			return;
+		}
+
+		let maxValue = 0;
+		for (let level = 1; level < curve.length; level++)
+			maxValue = Math.max(maxValue, Number(curve[level]) || 0);
+
+		if (maxValue <= 0) {
+			ctx.restore();
+			return;
+		}
+
+		const minLevel = 1;
+		const maxLevel = Math.min(99, curve.length - 1);
+
+		const paddingLeft = 8;
+		const paddingRight = 8;
+		const paddingTop = 18;
+		const paddingBottom = 8;
+
+		const graphX = x + paddingLeft;
+		const graphY = y + paddingTop;
+		const graphW = w - paddingLeft - paddingRight;
+		const graphH = h - paddingTop - paddingBottom;
+
+		ctx.strokeStyle = "rgba(255,255,255,0.18)";
+		ctx.beginPath();
+		ctx.moveTo(graphX, graphY + graphH);
+		ctx.lineTo(graphX + graphW, graphY + graphH);
+		ctx.stroke();
+		ctx.strokeStyle = color;
+		ctx.lineWidth = 1.25;
+		ctx.beginPath();
+
+		let started = false;
+		for (let level = minLevel; level <= maxLevel; level++) {
+			const value = Number(curve[level]) || 0;
+			const px = graphX + ((level - minLevel) / (maxLevel - minLevel)) * graphW;
+			const py = graphY + graphH - (value / maxValue) * graphH;
+
+			if (!started) {
+				ctx.moveTo(px, py);
+				started = true;
+			} else {
+				ctx.lineTo(px, py);
+			}
+		}
+
+		ctx.stroke();
+		ctx.fillStyle = "rgba(255,255,255,0.55)";
+		ctx.font = "9px sans-serif";
+		ctx.fillText(String(maxValue), x + w - 34, y + 4);
+		ctx.restore();
+	};
+
+	function getClassParameterCurveColor(index) {
+		const colors = [
+			"#ff7070",
+			"#70a8ff",
+			"#ffaa50",
+			"#70ff90",
+			"#d070ff",
+			"#70ffff",
+			"#ffff70",
+			"#ffffff"
+		];
+
+		return colors[index % colors.length];
+	};
+	
+	Drag.VisualEvent.getTableInputField = function(params) {	
+		const columnWidths = params.columnWidths ? params.columnWidths : new Array(params.columns.length).fill('1fr');
+		if (params.userRowCreation)
+			columnWidths.push('auto');
+		
 		let html = `
 			<div class="table-input" ${params.data || ""} data-input-name="${Drag.VisualEvent.escapeHTML(params.name || "")}" data-user-row-creation="${params.userRowCreation ? "true" : "false"}">
-				<div class="table-input-header">
+				<div class="table-input-header" style="grid-template-columns: ${columnWidths.join(' ')};">
 		`;
 		
 		for (const column of params.columns)
@@ -3108,8 +3243,8 @@ Drag.VisualEvent.version = "0.2.195";
 		html += `</div>`;
 		
 		let rows = Array.isArray(params.value) ? params.value : null;
-		if (typeof params.rowGenerator === "function")
-			rows = params.rowGenerator(params);
+		if (typeof window[params.rowGenerator] === "function")
+			rows = window[params.rowGenerator](params);
 		if (!rows)
 			rows = params.default || [];
 		
@@ -3128,14 +3263,17 @@ Drag.VisualEvent.version = "0.2.195";
 		return html;
 	};
 	
-	Drag.VisualEvent.getTableInputRow = function(params, row = {}, rowId = 0) {
-		let html = `<div class="table-input-row">`;
-
+	Drag.VisualEvent.getTableInputRow = function(params, row = {}, rowId = 0) {		
+		const columnWidths = params.columnWidths ? params.columnWidths : new Array(params.columns.length).fill('1fr');
+		if (params.userRowCreation)
+			columnWidths.push('auto');
+		
+		let html = `<div class="table-input-row" style="grid-template-columns: ${columnWidths.join(' ')};">`;
 		for (const column of params.columns) {
 			let inputParam;
 			
-			if (typeof column.getInputParameters === "function")
-				inputParam = column.getInputParameters(row, rowId, params);
+			if (typeof window[column.getInputParameters] === "function")
+				inputParam = window[column.getInputParameters](row, rowId, params);
 			else
 				inputParam = Drag.VisualEvent.getInputParameters(column.input);
 			
@@ -3147,11 +3285,10 @@ Drag.VisualEvent.version = "0.2.195";
 			
 			html += `<div class="table-input-cell" data-column-key="${column.key}" ${inputParam.length > 1 ? `style="display: grid; grid-template-columns: repeat(${inputParam.length}, 1fr);"`: ''}>`;
 			for (const param of inputParam) {
-				if (column.onchange)
-					param.onchange = (param.onchange || "") + " " + column.onchange;
+				if (column.refreshRowOnChange)
+					param.onchange = (param.onchange || "") + " $.Drag.VisualEvent.refreshTableRow(this);";
 				
 				param.value = row[column.key];
-
 				if (param.value === undefined)
 					param.value = param.default !== undefined ? param.default : "";
 
@@ -3182,22 +3319,22 @@ Drag.VisualEvent.version = "0.2.195";
 		event.preventDefault();
 		event.stopPropagation();
 		
-		const list = button.closest('.table-input');
-		if (!list)
+		const table = button.closest('.table-input');
+		if (!table)
 			return;
 		
-		const inputName = list.getAttribute('data-input-name');
-		const input = Drag.VisualEvent.getInputParameters(inputName);
-		if (!input)
+		const tableName = table.getAttribute('data-input-name');
+		const tableParams = Drag.VisualEvent.getInputParameters(tableName);
+		if (!tableParams)
 			return;
 		
-		const add = list.querySelector(':scope > .table-input-add');
-		const html = Drag.VisualEvent.getTableInputRow(input, {});
+		const add = table.querySelector(':scope > .table-input-add');
+		const html = Drag.VisualEvent.getTableInputRow(tableParams);
 		
 		if (add)
 			add.insertAdjacentHTML('beforebegin', html);
 		else
-			list.insertAdjacentHTML('beforeend', html);
+			table.insertAdjacentHTML('beforeend', html);
 	}
 
 	Drag.VisualEvent.removeTableInputRow = function (event, button) {
@@ -3246,6 +3383,75 @@ Drag.VisualEvent.version = "0.2.195";
 		}
 
 		return values;
+	};
+	
+	function Drag_VisualEvent_getTableInitialEquipmentRow(params) {
+		const system = require("data/System.json");
+		const actor = params.context ? params.context : null;
+		const equips = actor && Array.isArray(actor.equips) ? actor.equips : [];
+		return system.equipTypes.map((name, index) => ({etypeId: index, equipId: equips[index - 1] || 0})).filter(row => row.etypeId > 0);
+	};
+	
+	function Drag_VisualEvent_getTableInitialEquipmentEquippableEquipements(row, rowId, params) {
+		const actor = params.context ? params.context : null;
+		const equipments = Drag.VisualEvent.getActorEquippableItemsByType(actor, row.etypeId) || [];
+		return {
+			type: "select",
+			name: "Equipment",
+			values: ["0"].concat(equipments.map(equipment => String(equipment.id))),
+			options: ["None"].concat(equipments.map(equipment => equipment.name))
+		};
+	};
+	
+	function Drag_VisualEvent_getTableTraitInputsFromRowCode(row) {
+		switch (parseInt(row.code)) {
+			case 11:
+				return [Drag.VisualEvent.getInputParameters("elementType"), Drag.VisualEvent.getInputParameters("rate")];
+			case 12:
+			case 21:
+				return [Drag.VisualEvent.getInputParameters("selectParameter"), Drag.VisualEvent.getInputParameters("rate")];
+			case 13:
+			case 32:
+				return [Drag.VisualEvent.getInputParameters("state"), Drag.VisualEvent.getInputParameters("rate")];
+			case 14:
+				return Drag.VisualEvent.getInputParameters("state");
+			case 22:
+				return [Drag.VisualEvent.getInputParameters("selectExParameter"), Drag.VisualEvent.getInputParameters("rate")];
+			case 23:
+				return [Drag.VisualEvent.getInputParameters("selectSpParameter"), Drag.VisualEvent.getInputParameters("rate")];
+			case 31:
+				return Drag.VisualEvent.getInputParameters("elementType");
+			case 33:
+			case 34:
+				return Drag.VisualEvent.getInputParameters("number");
+			case 35:
+				return Drag.VisualEvent.getInputParameters("skill");
+			case 41:
+			case 42:
+				return Drag.VisualEvent.getInputParameters("skillType");
+			case 43:
+			case 44:
+				return Drag.VisualEvent.getInputParameters("skill");
+			case 51:
+				return Drag.VisualEvent.getInputParameters("weaponType");
+			case 52:
+				return Drag.VisualEvent.getInputParameters("armorType");
+			case 53:
+			case 54:
+				return Drag.VisualEvent.getInputParameters("equipmentType");
+			case 55:
+				return Drag.VisualEvent.getInputParameters("selectSlotType");
+			case 61:
+				return Drag.VisualEvent.getInputParameters("rate");
+			case 62:
+				return Drag.VisualEvent.getInputParameters("selectSpecialFlag");
+			case 63:
+				return Drag.VisualEvent.getInputParameters("selectCollapseEffect");
+			case 64:
+				return Drag.VisualEvent.getInputParameters("selectPartyAbility");
+			default:
+				return Drag.VisualEvent.getInputParameters("empty");
+		}
 	};
 	
 	Drag.VisualEvent.getListInputField = function(params) {
@@ -4005,11 +4211,13 @@ Drag.VisualEvent.version = "0.2.195";
 	Drag.VisualEvent.getIconInputField = function(params, index) {
 		return `
 			<div style="position: relative">
-				<input type="number" class="${params.class || ''}"
-					style="cursor: pointer;" 
-					onclick="$.Drag.VisualEvent.openIconPicker(this);" onchange="${params.onchange || ''}" onfocus="this.blur()"
-					${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} value="${params.value || ''}"
-				/>
+				<div class="icon-input-container">
+					<div class="icon-input-preview" onload="$.Drag.VisualEvent.updateIconInputPreview(this);" onclick="this.nextElementSibling.onclick();"></div>
+					<input type="number" class="${params.class || ''}" 
+						onclick="$.Drag.VisualEvent.openIconPicker(this);" onchange="$.Drag.VisualEvent.updateIconInputPreview(this); ${params.onchange || ''}" oninput="$.Drag.VisualEvent.updateIconInputPreview(this);" onfocus="this.blur()"
+						${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} value="${params.value || ''}"
+					/>
+				</div>
 			</div>`;
 	};
 	
@@ -4023,7 +4231,6 @@ Drag.VisualEvent.version = "0.2.195";
 		
 		const iconset = new Image();
 		iconset.src = "../../img/system/IconSet.png";
-		
 		iconset.onload = function() {
 			const iconWidth = 32;
 			const iconHeight = 32;
@@ -4042,29 +4249,63 @@ Drag.VisualEvent.version = "0.2.195";
 			}
 			
 			picker.innerHTML = html;
-			input.parentElement.appendChild(picker);
+			
+			const rect = input.getBoundingClientRect();
+			picker.style.position = "fixed";
+			picker.style.left = rect.left + "px";
+			picker.style.top = (rect.bottom + 4) + "px";
+			picker.style.zIndex = 999999;
+			picker._input = input;
+			input.ownerDocument.body.appendChild(picker);
+			
+			Drag.VisualEvent.ensureContextMenuFitViewport(input.ownerDocument.defaultView, picker, rect.left, rect.bottom + 4);
 		};
 	};
 	
 	Drag.VisualEvent.selectIconPickerValue = function(cell, value) {
 		const picker = cell.closest('.inline-picker');
-		const input = picker.parentElement.querySelector('input');
+		const input = picker._input;
 		
 		input.value = value;
 		input.setAttribute("value", value);
 		input.dispatchEvent(new Event("change", {bubbles: true}));
 		
+		Drag.VisualEvent.updateIconInputPreview(input);
 		Drag.VisualEvent.closePickers(input.ownerDocument);
+	};
+	
+	Drag.VisualEvent.updateIconInputPreview = function(elem) {
+		const container = elem.closest('.icon-input-container');
+		if (!container)
+			return;
+		
+		const input = container.querySelector('input');
+		const preview = container.querySelector('.icon-input-preview');
+		if (!input || !preview)
+			return;
+		
+		const iconIndex = parseInt(input.value) || 0;
+		const iconWidth = 32;
+		const iconHeight = 32;
+		const cols = 16;
+		const x = (iconIndex % cols) * iconWidth;
+		const y = Math.floor(iconIndex / cols) * iconHeight;
+		
+		preview.style.backgroundImage = "url('../../img/system/IconSet.png')";
+		preview.style.backgroundPosition = `-${x}px -${y}px`;
 	};
 	
 	Drag.VisualEvent.getSystemColorInputField = function(params, index) {
 		return `
 			<div style="position: relative">
-				<input type="number" class="${params.class || ''}"
-					style="cursor: pointer;" 
-					onclick="$.Drag.VisualEvent.openColorPicker(this);" onchange="${params.onchange || ''}" onfocus="this.blur()"
-					${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} value="${params.value || ''}"
-				/>
+				<div class="color-input-container">
+					<div class="color-input-preview" onload="$.Drag.VisualEvent.updateColorInputPreview(this);" onclick="this.nextElementSibling.onclick();"></div>
+					<input type="number" class="${params.class || ''}"
+						style="cursor: pointer;" 
+						onclick="$.Drag.VisualEvent.openColorPicker(this);" onchange="$.Drag.VisualEvent.updateColorInputPreview(this); ${params.onchange || ''}" oninput="$.Drag.VisualEvent.updateColorInputPreview(this);" onfocus="this.blur()"
+						${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} value="${params.value || ''}"
+					/>
+				</div>
 			</div>`;
 	};
 	
@@ -4078,7 +4319,6 @@ Drag.VisualEvent.version = "0.2.195";
 		
 		const image = new Image();
 		image.src = "../../img/system/Window.png";
-		
 		image.onload = function() {
 			const canvas = document.createElement("canvas");
 			canvas.width = image.width;
@@ -4098,7 +4338,16 @@ Drag.VisualEvent.version = "0.2.195";
 			}
 			
 			picker.innerHTML = html;
-			input.parentElement.appendChild(picker);
+			
+			const rect = input.getBoundingClientRect();
+			picker.style.position = "fixed";
+			picker.style.left = rect.left + "px";
+			picker.style.top = (rect.bottom + 4) + "px";
+			picker.style.zIndex = 999999;
+			picker._input = input;
+			input.ownerDocument.body.appendChild(picker);
+			
+			Drag.VisualEvent.ensureContextMenuFitViewport(input.ownerDocument.defaultView, picker, rect.left, rect.bottom + 4);
 		};
 	};
 	
@@ -4112,13 +4361,39 @@ Drag.VisualEvent.version = "0.2.195";
 	
 	Drag.VisualEvent.selectColorPickerValue = function(cell, value) {
 		const picker = cell.closest('.inline-picker');
-		const input = picker.parentElement.querySelector('input');
+		const input = picker._input;
 		
 		input.value = value;
 		input.setAttribute("value", value);
 		input.dispatchEvent(new Event("change", {bubbles: true}));
 		
+		Drag.VisualEvent.updateColorInputPreview(input);
 		Drag.VisualEvent.closePickers(input.ownerDocument);
+	};
+	
+	Drag.VisualEvent.updateColorInputPreview = function(elem) {
+		const container = elem.closest('.color-input-container');
+		if (!container)
+			return;
+		
+		const input = container.querySelector('input');
+		const preview = container.querySelector('.color-input-preview');
+		if (!input || !preview)
+			return;
+		
+		const colorId = parseInt(input.value) || 0;
+		const image = new Image();
+		
+		image.src = "../../img/system/Window.png";
+		image.onload = function() {
+			const canvas = document.createElement("canvas");
+			canvas.width = image.width;
+			canvas.height = image.height;
+
+			const ctx = canvas.getContext("2d");
+			ctx.drawImage(image, 0, 0);
+			backgroundColor = Drag.VisualEvent.sampleRpgMakerTextColor(ctx, colorId);
+		};
 	};
 	
 	Drag.VisualEvent.onOpenPickers = function(doc = document) {
