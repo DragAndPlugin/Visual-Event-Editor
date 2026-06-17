@@ -1,4 +1,4 @@
-module.exports = function(RPGMAKER_NAME) {
+module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 	return {
 		//image
 		face: {type: "image", name: "Face", default: "", valueCount: 2, src: 'img/faces', data: `data-src='img/faces' data-previewType='image' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='png' data-subImageWidth='144' data-subImageHeight='144'`},
@@ -68,6 +68,9 @@ module.exports = function(RPGMAKER_NAME) {
 		animationNone: {type: "animation", default: 0, name: "Animation", addOptions: ["None"]},
 		equipmentType: {type: "equipment_type", default: 1, name: "Equipment Type"},
 		elementType: {type: "element_type", default: 1, name: "Element Type"},
+		skillType: {type: "skill_type", default: 1, name: "Skill Type"},
+		weaponType: {type: "weapon_type", default: 1, name: "Weapon Type"},
+		armorType: {type: "armor_type", default: 1, name: "Armor Type"},
 		
 		//command
 		command: {type: "command", default: 0, name: "Command"},
@@ -96,6 +99,7 @@ module.exports = function(RPGMAKER_NAME) {
 		sepiaTint: {type: "button", name: "", notParam: true, value: "Sepia", data: "data-preset='sepia'", onclick: "$.Drag.VisualEvent.setPresetTint(this);"},
 		sunsetTint: {type: "button", name: "", notParam: true, value: "Sunset", data: "data-preset='sunset'", onclick: "$.Drag.VisualEvent.setPresetTint(this);"},
 		nightTint: {type: "button", name: "", notParam: true, value: "Night", data: "data-preset='night'", onclick: "$.Drag.VisualEvent.setPresetTint(this);"},
+		pictureGridPlacement: {type: "button", name: "", notParam: true, value: "Grid Placement", onclick: "$.Drag.VisualEvent.onPictureGridPlacementClick(this);"},
 		
 		//radio
 		boolean: {type: "radio", options: ["ON", "OFF"], name: "", data: "data-dataType='number'", default: 0},
@@ -171,6 +175,16 @@ module.exports = function(RPGMAKER_NAME) {
 		selectAdvancedSearchItemType: {type: 'select', name: '', 
 			options: ["Integer", "Text", "Switch", "Variable", "Actor", "Animation", "Armor", "Class", "Common Event", "Enemy", "Item", "Skill", "State", "Tileset", "Troop", "Weapon", "Equipment Type", "Element Type", "Face", "Character Sheet", "Character", "SV Battler", "Parallax", "Picture", "Battlebacks", "Command"],
 			values: ["integer", "text", "switch", "variable", "actor", "animation", "armor", "class", "common_event", "enemy", "item", "skill", "state", "tileset", "troop", "weapon", "equipment_type", "elementType", "image", "image", "image", "image", "image", "image", "image", "command"]}, 
+		selectTraitType: {type: "select", name: "Trait Type",  
+			options: ["Element Rate", "Debuff Rate", "State Rate", "State Resist", "Parameter", "Ex-Parameter", "Sp-Parameter", "Attack Element", "Attack State", "Attack Speed", "Attack Times", "Attack Skill", "Skill Type Add", "Skill Type Seal", "Skill Add", "Skill Seal", "Equip Weapon", "Equip Armor", "Equip Lock", "Equip Seal", "Slot Type", "Action Times", "Special Flag", "Collapse Effect", "Party Ability"],
+			values: [11, 12, 13, 14, 21, 22, 23, 31, 32, 33, 34, 35, 41, 42, 43, 44, 51, 52, 53, 54, 55, 61, 62, 63, 64]},
+		selectExParameter: {type: "select", name: "Ex Parameter", data: "data-dataType='number'", default: 0, options: ["Hit Rate", "Evasion Rate", "Critical Rate", "Critical Evasion", "Magic Evasion", "Magic Reflection", "Counter Attack", "HP Regeneration", "MP Regeneration", "TP Regeneration"]},
+		selectSpParameter: {type: "select", name: "Sp Parameter", data: "data-dataType='number'", default: 0, options: ["Target Rate", "Guard Effect", "Recovery Effect", "Pharmacology", "MP Cost Rate", "TP Charge Rate", "Physical Damage Rate", "Magical Damage Rate", "Floor Damage Rate", "Experience Rate"]},
+		selectSpecialFlag: {type: "select", name: "Special Flag", data: "data-dataType='number'", default: 0, options: ["Auto Battle", "Guard", "Substitute", "Preserve TP"], values: [0, 1, 2, 3]},
+		selectSlotType: {type: "select", name: "Slot Type", data: "data-dataType='number'", default: 0, options: ["Normal", "Dual Wield"], values: [0, 1]},
+		selectCollapseEffect: {type: "select", name: "Collapse Effect", data: "data-dataType='number'", default: 0, options: ["Normal", "Boss", "Instant"], values: [0, 1, 2]},
+		selectPartyAbility: {
+			type: "select", name: "Party Ability", data: "data-dataType='number'", default: 0, options: ["Encounter Half", "Encounter None", "Cancel Surprise", "Raise Preemptive", "Gold Double", "Drop Item Double"], values: [0, 1, 2, 3, 4, 5]},
 		
 		//outputs
 		outputList: {type: "empty", name: "", isOutput: true, notParam: true, isList: true},
@@ -230,6 +244,8 @@ module.exports = function(RPGMAKER_NAME) {
 		percentage: {type: "integer", name: "", tooltip: "%", default: 50, min: 0, max: 100},
 		rate: {type: "integer", name: "Rate", tooltip: "%", default: 100, min: 0, max: 100},
 		valueInt: {type: "integer", default: 0, name: "Value"},
+		initialLevel: {type: "integer", default: 1, min: 0, name: "Initial Level"},
+		maxLevel: {type: "integer", default: 99, min: 0, name: "Max Level"},
 		intList: {type: "integer", name: "", default: 1, isList: true},
 		
 		//string & textareas
@@ -241,9 +257,72 @@ module.exports = function(RPGMAKER_NAME) {
 		script: {type: "text", name: "Script", default: ""},
 		notetagName: {type: "string", name: "Notetag", default: ""},
 		value: {type: "text", name: "Value", default: ""},
+		profile: {type: "text", name: "Profile", default: ""},
 		
+		//lists
 		stringIntList: {type: "list", name: "Values / Weights", inputs: ["value", "weight"]},
 		
+		//curves
+		classParameterCurves: {type: "curves", name: "Parameter Curves", default: []},
+		
+		//tables 
+		initialEquipments: {
+			type: "table", name: "initialEquipments", userRowCreation: false,
+			rowGenerator: "Drag_VisualEvent_getTableInitialEquipmentRow",
+			columns: [
+				{
+					key: "etypeId",
+					name: "Type",
+					input: "equipmentType",
+					readOnly: true,
+				},
+				{
+					key: "equipId",
+					name: "Equipment",
+					getInputParameters: "Drag_VisualEvent_getTableInitialEquipmentEquippableEquipements",
+				},
+			],
+			columnWidths: ['10rem', '1fr'],
+		},
+		traits: {
+			type: "table", name: "traits", userRowCreation: true,
+			columns: [
+				{
+					key: "code", 
+					name: "Type", 
+					input: "selectTraitType",
+					refreshRowOnChange: true,
+				}, 
+				{
+					key: "content",
+					name: "Content",
+					getInputParameters: "Drag_VisualEvent_getTableTraitInputsFromRowCode",
+				},
+			], 
+			columnWidths: ['10rem', '1fr'],
+		},
+		learnableSkills: {
+			type: "table", name: "learnableSkills", userRowCreation: true,
+			columns: [
+				{
+					key: "level", 
+					name: "Level", 
+					input: "integer",
+				}, 
+				{
+					key: "skillId",
+					name: "Skill",
+					input: "skill",
+				},
+				{
+					key: "note",
+					name: "Note", 
+					input: "note",
+				},
+			], 
+			columnWidths: ['6rem', '1fr', '1fr']
+		},
+
 		empty: {type: "empty", name: "", default: ""},
 	};
 };
