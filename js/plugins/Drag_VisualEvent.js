@@ -1062,6 +1062,14 @@ Drag.VisualEvent.version = "0.2.195";
 		}
 	};
 	
+	Drag.VisualEvent.openPictureGridPlacementWindow = function(button, data) {
+		Drag.VisualEvent.openWindow(
+			'Drag_DevTools_PictureGridPlacementWindow.html', 'Picture Grid Placement Window', 
+			Math.min(data.screenWidth * 1.3, window.screen.width), Math.min(data.screenHeight * 1.3, window.screen.height), 0, 0, 
+			{...{input: button}, ...data}
+		);
+	};
+	
 	Drag.VisualEvent.openDatabaseEditor = function() {
 		Drag.VisualEvent.openWindow(
 			'Drag_DevTools_DatabaseEditor.html', 'Database Editor', 
@@ -4141,6 +4149,38 @@ Drag.VisualEvent.version = "0.2.195";
 		}
 	};
 	
+	Drag.VisualEvent.onPictureGridPlacementClick = function(button) {
+		if (!button)
+			return;
+		const node = Drag.VisualEvent.getAncestorById(button, 'graphNode');
+		if (!node)
+			return;
+		
+		const editor = Drag.VisualEvent.getEditor();
+		if (!editor)
+			return;
+		
+		const inputs = editor.getNodeInputs(node);
+		const values = editor.parseNodeInputs(node, inputs);
+		const data = {
+			pictureId: values[0],
+			pictureName: values[1],
+			position: values[2],
+			origin: values[3],
+			x: values[4],
+			y: values[5],
+			scaleX: values[6],
+			scaleY: values[7],
+			opacity: values[8],
+			blendMode: values[9],
+			screenWidth: Graphics.width,
+			screenHeight: Graphics.height,
+			inputs: inputs
+		};
+		
+		Drag.VisualEvent.openPictureGridPlacementWindow(button, data);
+	};
+	
 	Drag.VisualEvent.getColorInputField = function(params, index, controller = null) {
 		return `
 			<div class="relative columnGap05em flex">
@@ -4383,7 +4423,6 @@ Drag.VisualEvent.version = "0.2.195";
 		
 		const colorId = parseInt(input.value) || 0;
 		const image = new Image();
-		
 		image.src = "../../img/system/Window.png";
 		image.onload = function() {
 			const canvas = document.createElement("canvas");
@@ -4392,7 +4431,7 @@ Drag.VisualEvent.version = "0.2.195";
 
 			const ctx = canvas.getContext("2d");
 			ctx.drawImage(image, 0, 0);
-			backgroundColor = Drag.VisualEvent.sampleRpgMakerTextColor(ctx, colorId);
+			preview.style.backgroundColor = Drag.VisualEvent.sampleRpgMakerTextColor(ctx, colorId);
 		};
 	};
 	
