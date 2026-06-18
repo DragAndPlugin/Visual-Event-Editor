@@ -1065,7 +1065,7 @@ Drag.VisualEvent.version = "0.2.195";
 	Drag.VisualEvent.openPictureGridPlacementWindow = function(button, data) {
 		Drag.VisualEvent.openWindow(
 			'Drag_DevTools_PictureGridPlacementWindow.html', 'Picture Grid Placement Window', 
-			Math.min(data.screenWidth * 1.3, window.screen.width), Math.min(data.screenHeight * 1.3, window.screen.height), 0, 0, 
+			Math.min(data.screenWidth * 1.3, window.screen.width), Math.min(data.screenHeight * 1.5, window.screen.height), 0, 0, 
 			{...{input: button}, ...data}
 		);
 	};
@@ -4483,7 +4483,7 @@ Drag.VisualEvent.version = "0.2.195";
 		const height = params.height || 6.25; 
 		
 		return `
-			<input type="text" class="onReadyOnChange ${params.class || ''}"
+			<input type="text" class="onReadyOnChange ${params.class || ''}" id="${params.id || ''}"
 				style="font-size: 0; cursor: pointer; padding: 0; position: relative; overflow: hidden; width: ${width}rem; height: ${height}rem; background-size: cover;" 
 				onclick="$.Drag.VisualEvent.openFileExplorer(this); ${params.onclick || ''}" onchange="$.Drag.VisualEvent.updatePicture(this); ${params.onchange || ''}" onfocus="this.blur()" onload="$.Drag.VisualEvent.updatePicture(this)"
 				${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} value="${params.value}" ${params.disabled ? "disabled" : ""}
