@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+<head>
+	<meta charset="UTF-8">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="viewport" content="user-scalable=no">
+	<link rel="icon" href="../../icon/icon.png" type="image/png">
+	<link rel="apple-touch-icon" href="../../icon/icon.png">
+	<link href="../css/Drag_DevTools.css" rel="stylesheet">
+	<style>
+		:root {
+			--background-color2: #21222b;
+		}
+
+		html, body {
+			height: 100%;
+			overflow: hidden;
+		}
+
+		body {
+			margin: 0;
+			background: var(--background-color);
+		}
+
+		#content {
+			display: grid;
+			grid-template-columns: 1fr 21em;
+			height: 100%;
+			padding-bottom: 3.125em;
+			box-sizing: border-box;
+		}
+
+		#preview-panel {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			min-width: 0;
+			min-height: 0;
+			padding: 1em;
+			box-sizing: border-box;
+			overflow: auto;
+		}
+
+		#preview-container {
+			position: relative;
+			overflow: hidden;
+			background: black;
+			user-select: none;
+		}
+	
+		#preview-container > div {
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			pointer-events: none;
+		}
+		
+		#preview-container > div:first-child {
+			background-size: cover;
+		}
+
+		#preview-picture {
+			position: absolute;
+			cursor: move;
+			box-shadow: 0 0 0 0.0625em white;
+		}
+
+		#settings-panel {
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+			min-height: 0;
+			padding: 1em;
+			box-sizing: border-box;
+			border-left: 0.0625em solid rebeccapurple;
+			background: var(--background-color2);
+			overflow-y: auto;
+			font-size: 0.85em;
+		}
+
+		#settings-panel > div {
+			margin-bottom: 1em;
+			padding-bottom: 1em;
+			border-bottom: 0.0625em solid rebeccapurple;
+		}
+		
+		#settings-panel > div:last-child {
+			border-bottom: 0;
+		}
+
+		#settings-panel > div > h3 {
+			margin: 0 0 0.75em 0;
+			text-transform: uppercase;
+			font-size: 0.95em;
+			letter-spacing: 0.05em;
+			text-align: center;
+		}
+
+		.input-row {
+			display: flex;
+			align-items: center;
+			margin-bottom: 0.5em;
+		}
+
+		.input-row > label {
+			flex: 0 0 8em;
+		}
+		
+		.input-row > input[type="checkbox"] {
+			flex: 0 0 auto;
+		}
+
+		.presets {
+			display: grid;
+			grid-template-columns: 1fr 1fr 1fr 1fr;
+			grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
+		}
+
+		.presets > button {
+			margin: 0.15em;
+			padding: 0.45em;
+			position: relative;
+		}
+		
+		.presets > button > span {
+			position: absolute;
+			background: white;
+			top: 0;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			width: 33%;
+			height: 33%;
+		}
+		
+		#user-preset-container button {
+			padding: 0.5em 1.5em;
+		}
+		
+		#user-preset-input {
+			flex: 1 1 auto;
+		}
+
+		#bottom-container {
+			position: fixed;
+			right: 0;
+			bottom: 0;
+			left: 0;
+			display: flex;
+			justify-content: flex-end;
+			max-height: 3.125em;
+			padding: 0.5em;
+			box-sizing: border-box;
+			border-top: 0.0625em solid rebeccapurple;
+			background: var(--background-color2);
+		}
+
+		#bottom-container > * {
+			margin-right: 1em;
+		}
+
+		#bottom-container > *:last-child {
+			margin-right: 0em;
+		}
+
+		#bottom-container > button {
+			cursor: pointer;
+			padding: 0.5em 2em;
+		}
+
+		input[type="text"], input[type="number"] {
+			min-width: 0 !important;
+			border: 0.0625rem solid var(--color);
+		}
+		
+		input[type="text"]:focus, input[type="number"]:focus {
+			border: 0.0625rem solid rebeccapurple;
+		}
+		
+		#autofit-textarea-checkbox:not(:checked) ~ span > svg > path {
+			fill: grey !important;
+			stroke: grey !important;
+		}
+		
+		#autofit-textarea-checkbox:checked ~ span > svg > path {
+			fill: white ! important;
+			stroke: white !important;
+		}
+
+		button {
+			padding: 0.625em 1.25em;
+			border: 0.0625em solid var(--color);
+		}
+
+		button:hover {
+			background: var(--background-color2);
+		}
+
+		button:active {
+			transform: scale(0.985);
+		}
+	</style>
+</head>
+<body>
+	<div id="content">
+		<div id="preview-panel">
+			<div id="preview-container">
+				<div id="preview-grid"></div>
+				<div id="preview-center"></div>
+				<img id="preview-picture" draggable="false">
+			</div>
+		</div>
+		<div id="settings-panel">
+			<div>
+				<h3>Position</h3>
+				<div id="origin-input-container" class="input-row">
+					<label>Origin</label>
+				</div>
+				<div id="x-input-container" class="input-row">
+					<label>X</label>
+				</div>
+				<div id="y-input-container" class="input-row">
+					<label>Y</label>
+				</div>
+			</div>
+			<div>
+				<h3>Scale</h3>
+				<div id="scale-x-input-container" class="input-row">
+					<label>Width</label>
+				</div>
+				<div id="scale-y-input-container" class="input-row">
+					<label>Height</label>
+				</div>
+			</div>
+			<div>
+				<h3>Picture</h3>
+				<div id="picture-input-container" class="input-row">
+					<label>Picture</label>
+				</div>
+				<div id="opacity-input-container" class="input-row">
+					<label>Opacity</label>
+				</div>
+				<div id="blend-mode-input-container" class="input-row">
+					<label>Blend Mode</label>
+				</div>
+			</div>
+			<div>
+				<h3>Grid</h3>
+				<div class="input-row">
+					<label>Show Grid</label>
+					<input id="show-grid-input" type="checkbox" checked onchange="updateGrid();">
+				</div>
+				<div class="input-row">
+					<label>Grid Size</label>
+					<input id="grid-size-input" type="number" value="48" min="4" onchange="updateGrid();">
+				</div>
+				<div class="input-row">
+					<label>Snap</label>
+					<input id="snap-input" type="checkbox" checked>
+				</div>
+				<div class="input-row">
+					<label>Snap Size</label>
+					<input id="snap-size-input" type="number" value="8" min="1">
+				</div>
+			</div>
+			<div>
+				<h3>Presets</h3>
+				<div class="presets">
+					<button onclick="applyPreset(0, 0);">↖</button>
+					<button onclick="applyPreset(0.5, 0);">↑</button>
+					<button onclick="applyPreset(1, 0);">↗</button>
+					<button onclick="applyPreset(0, 0, 1, 0.334);"><span style="width: unset; bottom: unset;"></span></button>
+					
+					<button onclick="applyPreset(0, 0.5);">←</button>
+					<button onclick="applyPreset(0.5, 0.5);">●</button>
+					<button onclick="applyPreset(1, 0.5);">→</button>
+					<button onclick="applyPreset(0, 0.334, 1, 0.334);"><span style="transform: translate(0%, -50%); top: 50%; bottom: unset; width: unset;"></span></button>
+					
+					<button onclick="applyPreset(0, 1);">↙</button>
+					<button onclick="applyPreset(0.5, 1);">↓</button>
+					<button onclick="applyPreset(1, 1);">↘</button>
+					<button onclick="applyPreset(0, 0.667, 1, 0.334);"><span style="top: unset; width: unset;"></span></button>
+					
+					<button onclick="applyPreset(0, 0, 0.334, 1);"><span style="right: unset; height: unset;"></span></button>
+					<button onclick="applyPreset(0.334, 0, 0.334, 1);"><span style="transform: translate(-50%, 0%); left: 50%; right: unset; height: unset;"></span></button>
+					<button onclick="applyPreset(0.667, 0, 0.334, 1);"><span style="left: unset; height: unset;"></span></button>
+					<button onclick="applyPreset(0, 0, 1, 1);"><span style="width: unset; height: unset;"></span></button>
+					
+					<button onclick="fitPictureWidth();">Fit Width</button>
+					<button onclick="fitPictureHeight();">Fit Height</button>
+					<button onclick="containPicture();">Contain</button>
+					<button onclick="coverPicture();">Cover</button>
+				</div>
+			</div>
+			<div>
+				<h3>User Presets</h3>
+				<div id="user-preset-container"></div>
+			</div>
+		</div>
+		<div id="bottom-container">
+			<button onclick="apply()">Apply</button>
+			<button onclick="ok()">OK</button>
+			<button onclick="quit();">Cancel</button>
+		</div>
+	</div>
+	<script>
+		window._dragOffsetX = 0;
+		window._dragOffsetY = 0;
+		
+		function main() {
+			document.title = "Drag_DevTools_PictureGridPlacementWindow";
+			loadDataMainWindow();
+			$.Drag.VisualEvent.setLightMode(document);
+			setup();
+		};
+		
+		function loadDataMainWindow() {
+			$ = window.opener;
+		};
+		
+		function setup() {
+			if (!window.data)
+				window.data = {};
+			
+			window.data.pictureName = window.data.pictureName || "";
+			window.data.screenWidth = window.data.screenWidth || $.Graphics.width || 816;
+			window.data.screenHeight = window.data.screenHeight || $.Graphics.height || 624;
+			window.data.origin = Number(window.data.origin || 0);
+			window.data.x = Number(window.data.x || 0);
+			window.data.y = Number(window.data.y || 0);
+			window.data.scaleX = Number(window.data.scaleX || 100);
+			window.data.scaleY = Number(window.data.scaleY || 100);
+			window.data.opacity = Number(window.data.opacity ?? 255);
+			window.data.blendMode = Number(window.data.blendMode || 0);
+			
+			const container = document.querySelector("#preview-container");
+			container.style.width = window.data.screenWidth + "px";
+			container.style.height = window.data.screenHeight + "px";
+			
+			const picture = document.querySelector("#preview-picture");
+			if (window.data.pictureName)
+				picture.src = "../../img/pictures/" + window.data.pictureName + ".png";
+			else
+				picture.style.display = "none";
+			
+			document.querySelector("#origin-input-container").insertAdjacentHTML('beforeend', $.Drag.VisualEvent.getInputField(
+				{...$.Drag.VisualEvent.getInputParameters('selectOrigin'), ...{id: "origin-input", onchange: "updatePreview();"}}
+			));
+			document.querySelector("#origin-input").value = window.data.origin;
+			
+			document.querySelector("#x-input-container").insertAdjacentHTML('beforeend', $.Drag.VisualEvent.getInputField(
+				{...$.Drag.VisualEvent.getInputParameters('x'), ...{id: "x-input", onchange: "updatePreview();"}}
+			));
+			document.querySelector("#x-input").value = window.data.x;
+			
+			document.querySelector("#y-input-container").insertAdjacentHTML('beforeend', $.Drag.VisualEvent.getInputField(
+				{...$.Drag.VisualEvent.getInputParameters('y'), ...{id: "y-input", onchange: "updatePreview();"}}
+			));
+			document.querySelector("#y-input").value = window.data.y;
+			
+			document.querySelector("#scale-x-input-container").insertAdjacentHTML('beforeend', $.Drag.VisualEvent.getInputField(
+				{...$.Drag.VisualEvent.getInputParameters('width'), ...{id: "scale-x-input", onchange: "updatePreview();"}}
+			));
+			document.querySelector("#scale-x-input").value = window.data.scaleX;
+			
+			document.querySelector("#scale-y-input-container").insertAdjacentHTML('beforeend', $.Drag.VisualEvent.getInputField(
+				{...$.Drag.VisualEvent.getInputParameters('height'), ...{id: "scale-y-input", onchange: "updatePreview();"}}
+			));
+			document.querySelector("#scale-y-input").value = window.data.scaleY;
+			
+			document.querySelector("#picture-input-container").insertAdjacentHTML('beforeend', $.Drag.VisualEvent.getInputField(
+				{...$.Drag.VisualEvent.getInputParameters('picture'), ...{id: "picture-input", onchange: "updatePreview();"}}
+			));
+			document.querySelector("#picture-input").value = window.data.pictureName;
+			
+			document.querySelector("#opacity-input-container").insertAdjacentHTML('beforeend', $.Drag.VisualEvent.getInputField(
+				{...$.Drag.VisualEvent.getInputParameters('opacity'), ...{id: "opacity-input", onchange: "updatePreview();"}}
+			));
+			document.querySelector("#opacity-input").value = window.data.opacity;
+			
+			document.querySelector("#blend-mode-input-container").insertAdjacentHTML('beforeend', $.Drag.VisualEvent.getInputField(
+				{...$.Drag.VisualEvent.getInputParameters('selectBlendMode'), ...{id: "blend-mode-input", onchange: "updatePreview();"}}
+			));
+			document.querySelector("#blend-mode-input").value = window.data.blendMode;
+			
+			setGridDefaultSize();
+			updateGrid();
+			updateLines();
+			updatePreview();
+			setupDragEvents();
+			
+			loadUserPresets();
+			updateUserPresets();
+			
+			$.Drag.VisualEvent.triggerAllOnReadyOnChange(document);
+		};
+		
+		function updatePreview() {
+			const picture = document.querySelector("#preview-picture");
+			const origin = Number(document.querySelector("#origin-input").value);
+			const x = Number(document.querySelector("#x-input").value);
+			const y = Number(document.querySelector("#y-input").value);
+			const scaleX = Number(document.querySelector("#scale-x-input").value || 100);
+			const scaleY = Number(document.querySelector("#scale-y-input").value || 100);
+			const opacity = Number(document.querySelector("#opacity-input").value ?? 255);
+			const blendMode = Number(document.querySelector("#blend-mode-input").value || 0);
+			const pictureName = document.querySelector('#picture-input').value || "";
+			
+			if (pictureName)
+				picture.src = "../../img/pictures/" + pictureName + ".png";
+			else
+				picture.style.display = "none";
+			
+			picture.style.left = x + "px";
+			picture.style.top = y + "px";
+			picture.style.opacity = Math.max(0, Math.min(255, opacity)) / 255;
+			
+			switch (blendMode) {
+				case 1: 
+					picture.style.mixBlendMode = "screen";
+					break;
+				case 2: 
+					picture.style.mixBlendMode = "multiply";
+					break;
+				case 3: 
+					picture.style.mixBlendMode = "screen";
+					break;
+				default: 
+					picture.style.mixBlendMode = "normal";
+					break;
+			}
+			
+			const offsetX = origin === 1 ? -50 : 0;
+			const offsetY = origin === 1 ? -50 : 0;
+			picture.style.transform = `translate(${offsetX}%, ${offsetY}%) scale(${scaleX / 100}, ${scaleY / 100})`;
+		};
+		
+		function setGridDefaultSize() {
+			const gridSizeInput = document.querySelector("#grid-size-input");
+			const size = (data.screenWidth / (data.screenWidth % 48)) || 48;
+			gridSizeInput.value = size;
+		};
+		
+		function updateGrid() {
+			const grid = document.querySelector("#preview-grid");
+			const show = document.querySelector("#show-grid-input").checked;
+			if (!show) {
+				grid.style.backgroundImage = "";
+				return;
+			}
+			
+			const size = parseInt(document.querySelector("#grid-size-input").value) || 48;
+			grid.style.backgroundSize = `${size}px ${size}px`;
+			grid.style.backgroundImage = `linear-gradient(to right, rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.15) 1px, transparent 1px)`;
+		};
+		
+		function updateLines() {
+			const previewCenter = document.querySelector("#preview-center");
+			const cx = Math.floor(window.data.screenWidth / 2);
+			const cy = Math.floor(window.data.screenHeight / 2);
+			previewCenter.style.backgroundImage = `linear-gradient(to right, transparent ${cx - 1}px, rgba(255,255,255,0.35) ${cx}px, transparent ${cx + 1}px), linear-gradient(to bottom, transparent ${cy - 1}px, rgba(255,255,255,0.35) ${cy}px, transparent ${cy + 1}px)`;
+		};
+		
+		window._dragging = false;
+		function setupDragEvents() {
+			const picture = document.querySelector("#preview-picture");
+			const container = document.querySelector("#preview-container");
+			picture.addEventListener("mousedown", function(event) {
+				window._dragging = true;
+				
+				const stageRect = container.getBoundingClientRect();
+				const x = Number(document.querySelector("#x-input").value);
+				const y = Number(document.querySelector("#y-input").value);
+				
+				_dragOffsetX = event.clientX - stageRect.left - x;
+				_dragOffsetY = event.clientY - stageRect.top - y;
+				
+				event.preventDefault();
+			});
+			
+			window.addEventListener("mousemove", function(event) {
+				if (!window._dragging)
+					return;
+				
+				const stageRect = container.getBoundingClientRect();
+				let x = event.clientX - stageRect.left - _dragOffsetX;
+				let y = event.clientY - stageRect.top - _dragOffsetY;
+				
+				if (document.querySelector("#snap-input").checked) {
+					const snap = Number(document.querySelector("#snap-size-input").value || 1);
+					x = Math.round(x / snap) * snap;
+					y = Math.round(y / snap) * snap;
+				}
+				
+				document.querySelector("#x-input").value = Math.round(x);
+				document.querySelector("#y-input").value = Math.round(y);
+				
+				updatePreview();
+			});
+			
+			window.addEventListener("mouseup", function() {
+				window._dragging = false;
+			});
+		};
+		
+		const USER_PRESET_CACHE_FILEPATH = './Drag_VisualEvent/cache/pictureGridPlacementUserPresets.json';
+		function loadUserPresets() {
+			try {
+				data.userPresets = require(USER_PRESET_CACHE_FILEPATH);
+			} catch (error) {
+				console.warn("Couldn't load user presets. Error :", error);
+				data.userPresets = {};
+			}
+		};
+		
+		function updateUserPresets(selected = "") {
+			const container = document.querySelector('#user-preset-container');
+			if (!data.userPresets)
+				data.userPresets = {};
+			
+			const options = Object.values(data.userPresets).map(preset => `<option value="${preset.name}" ${selected === preset.name ? 'selected' : ''}>${preset.name}</option>`);
+			if (!options.length)
+				options.push(`<option value="none" selected disabled hidden>No custom preset created.</option>`);
+			
+			container.innerHTML = `
+				<div class="select input-row">
+					<select id="user-preset-input">
+						${options.join('')}
+					</select>
+				</div>
+				<div class="input-row" style="justify-content: space-between;">
+					<button onclick="applyUserPreset();">Apply</button>
+					<button onclick="saveUserPreset();">Save</button>
+					<button onclick="deleteUserPreset();">Delete</button>
+				</div>
+			`;
+		};
+		
+		function refreshUserPresetSelect() {
+			const select = document.querySelector('#user-preset-input');
+			if (!select)
+				return;
+			
+			const selected = select.value || "";
+			updateUserPresets(selected);
+		};
+		
+		function saveUserPreset() {
+			let presetName = prompt("Please enter a custom preset name");
+			if (!presetName)
+				return;
+			
+			presetName = presetName.trim();
+			if (!presetName)
+				return;
+			
+			if (data.userPresets[presetName] && !confirm("A custom preset already exists with this name. Override ?"))
+				return;
+			
+			const preset = gatherData();
+			preset.name = presetName;
+			delete preset.pictureName;
+			delete preset.pictureId;
+			data.userPresets[presetName] = preset;
+			saveUserPresetsInCache();
+			
+			refreshUserPresetSelect(presetName);
+		};
+		
+		function saveUserPresetsInCache() {
+			$.Drag.VisualEvent.writeJSON(USER_PRESET_CACHE_FILEPATH, data.userPresets);
+		};
+		
+		function deleteUserPreset() {
+			const select = document.querySelector('#user-preset-input');
+			if (!select)
+				return;
+			
+			const presetName = select.value || "";
+			if (!presetName)
+				return;
+			
+			const preset = data.userPresets[presetName];
+			if (!preset)
+				return;
+			
+			if (!confirm(`Delete custom preset ${presetName} ?`))
+				return;
+			
+			delete data.userPresets[presetName];
+			saveUserPresetsInCache();
+			
+			refreshUserPresetSelect();
+		};
+		
+		function applyUserPreset() {
+			const select = document.querySelector('#user-preset-input');
+			if (!select)
+				return;
+			
+			const presetName = select.value || "";
+			if (!presetName)
+				return;
+			
+			const preset = data.userPresets[presetName];
+			if (!preset)
+				return;
+			
+			document.querySelector("#origin-input").value = preset.origin;
+			document.querySelector("#x-input").value = preset.x;
+			document.querySelector("#y-input").value = preset.y;
+			document.querySelector("#scale-x-input").value = preset.scaleX;
+			document.querySelector("#scale-y-input").value = preset.scaleY;
+			document.querySelector("#opacity-input").value = preset.opacity;
+			document.querySelector("#blend-mode-input").value = preset.blendMode;
+			updatePreview();
+		};
+		
+		function applyPreset(x, y, width = 0, height = 0) {
+			const picture = document.querySelector("#preview-picture");
+			if (!picture || !picture.naturalWidth || !picture.naturalHeight)
+				return;
+			
+			const targetWidth = data.screenWidth * width;
+			const targetHeight = data.screenHeight * height;
+			if (width)
+				document.querySelector("#scale-x-input").value = Math.round(targetWidth / picture.naturalWidth * 100);
+			else
+				document.querySelector("#scale-x-input").value = 100;
+			if (height)
+				document.querySelector("#scale-y-input").value = Math.round(targetHeight / picture.naturalHeight * 100);
+			else
+				document.querySelector("#scale-y-input").value = 100;
+			
+			const origin = Number(document.querySelector("#origin-input").value || 0);
+			let posX = data.screenWidth * x;
+			let posY = data.screenHeight * y;
+			if (origin === 1 && width)
+				posX += targetWidth / 2;
+			if (origin === 1 && height)
+				posY += targetHeight / 2;
+			
+			document.querySelector("#x-input").value = Math.round(posX);
+			document.querySelector("#y-input").value = Math.round(posY);
+			updatePreview();
+		};
+		
+		function fitPictureWidth() {
+			const picture = document.querySelector("#preview-picture");
+			if (!picture || !picture.naturalWidth)
+				return;
+			
+			document.querySelector("#scale-x-input").value = Math.round(window.data.screenWidth / picture.naturalWidth * 100);
+			updatePreview();
+		};
+		
+		function fitPictureHeight() {
+			const picture = document.querySelector("#preview-picture");
+			if (!picture || !picture.naturalHeight)
+				return;
+			
+			document.querySelector("#scale-y-input").value =
+				Math.round(window.data.screenHeight / picture.naturalHeight * 100);
+			updatePreview();
+		};
+		
+		function containPicture() {
+			const picture = document.querySelector("#preview-picture");
+			if (!picture || !picture.naturalWidth || !picture.naturalHeight)
+				return;
+			
+			const scale = Math.min(window.data.screenWidth / picture.naturalWidth, window.data.screenHeight / picture.naturalHeight);
+			document.querySelector("#scale-x-input").value = Math.round(scale * 100);
+			document.querySelector("#scale-y-input").value = Math.round(scale * 100);
+			updatePreview();
+		};
+		
+		function coverPicture() {
+			const picture = document.querySelector("#preview-picture");
+			if (!picture || !picture.naturalWidth || !picture.naturalHeight)
+				return;
+			
+			const scale = Math.max(window.data.screenWidth / picture.naturalWidth, window.data.screenHeight / picture.naturalHeight);
+			document.querySelector("#scale-x-input").value = Math.round(scale * 100);
+			document.querySelector("#scale-y-input").value = Math.round(scale * 100);
+			updatePreview();
+		};
+		
+		function gatherData() {
+			return {
+				pictureId: window.data.pictureId,
+				pictureName: document.querySelector("#picture-input").value,
+				origin: Number(document.querySelector("#origin-input").value),
+				x: Number(document.querySelector("#x-input").value),
+				y: Number(document.querySelector("#y-input").value),
+				scaleX: Number(document.querySelector("#scale-x-input").value),
+				scaleY: Number(document.querySelector("#scale-y-input").value),
+				opacity: Number(document.querySelector("#opacity-input").value),
+				blendMode: Number(document.querySelector("#blend-mode-input").value)
+			};
+		};
+		
+		function apply() {
+			if (!window.data.inputs)
+				return;
+			
+			const result = gatherData();
+			if (window.data.inputs[1])
+				window.data.inputs[1].value = result.pictureName;
+			
+			if (window.data.inputs[2])
+				window.data.inputs[2].value = String(result.origin);
+			
+			if (window.data.inputs[3] && window.data.inputs[3].value == "0") {
+				if (window.data.inputs[4])
+					window.data.inputs[4].value = result.x;
+				if (window.data.inputs[5])
+					window.data.inputs[5].value = result.y;
+			}
+			
+			if (window.data.inputs[6])
+				window.data.inputs[6].value = result.scaleX;
+			if (window.data.inputs[7])
+				window.data.inputs[7].value = result.scaleY;
+			if (window.data.inputs[8])
+				
+				window.data.inputs[8].value = result.opacity;
+			if (window.data.inputs[9])
+				window.data.inputs[9].value = String(result.blendMode);
+			
+			for (const input of window.data.inputs)
+				if (input.onchange)
+					input.onchange();
+		};
+		
+		function ok() {
+			apply();
+			quit();
+		};
+		
+		function quit() {
+			window.close();
+		};
+		
+		main();
+	</script>
+</body>
+</html>
