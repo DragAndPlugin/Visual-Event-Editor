@@ -1,7 +1,7 @@
 function init() {
 	// openDevTools();
 	window._startPerformance = performance.now();
-	console.log("Having DevTools open can cause performance issue with the Visual Event Editor. If you notice performance drop while having this window opened, please try to close it.");
+	console.log("Having the console open can cause performance issue with the Visual Event Editor. If you notice performance drop while having this window opened, please try to close it.");
 	
 	showLoading();
 	
@@ -298,10 +298,6 @@ function openDiscordLink() {
 	$.Drag.VisualEvent.openUrl($.Drag.VisualEvent.discordUrl);
 };
 
-function openDevTools() {
-	nw.Window.get().showDevTools();
-};
-
 function openExpandedEventCommandsLink() {
 	$.Drag.VisualEvent.openUrl($.Drag.VisualEvent.expandedEventCommandsUrl);
 };
@@ -506,7 +502,7 @@ function setupGraphNodesFromCache() {
 				x: cacheNode.x, y: cacheNode.y, nodeId: cacheNode.nodeId, name: name, classList: "nodeEvent undeletable uncopyable",
 				isPluginCommand: false,	commandCode: 0, parametersValues: cacheNode.parameters
 			}, false, false);
-			
+			addedNodes.push(cacheNode);
 			continue;
 		}
 		
@@ -1491,48 +1487,45 @@ function apply(type = window.data.targetType, mapId = window.data.mapTargetId, t
 	
 	switch (type) {
 		case "Common Event":
-			// console.log(window.data.$dataCommonEvents[window.data.targetId]);
-			// if (!$.Drag.VisualEvent.isIdentical(window.data.$dataCommonEvents[window.data.targetId], eventData))
-				// console.log($.Drag.VisualEvent.compareIdentical(window.data.$dataCommonEvents[window.data.targetId], eventData));
-			// else
-				// console.log("identical");
-			
 			window.data.$dataCommonEvents[targetId] = $.Drag.VisualEvent.deepCopyJSON(eventData);
-			$.$dataCommonEvents[targetId] = $.Drag.VisualEvent.deepCopyJSON(eventData);
-			console.log(`Common Event id:${targetId} changes applied.`);
+			try {
+				$.$dataCommonEvents[targetId] = $.Drag.VisualEvent.deepCopyJSON(eventData);
+				console.log(`Common Event id:${targetId} changes applied.`);
+			} catch (error) {
+				console.error("Couldn't apply changes to runtime, please reload (F5) to apply.", error);
+			}
 			
 			refreshCommonEventList();
 			break;
-		case "Map Event":
-			// console.log(window.data.loadedMap.events[window.data.targetId]);
-			// if (!$.Drag.VisualEvent.isIdentical(window.data.loadedMap.events[window.data.targetId], eventData))
-				// console.log($.Drag.VisualEvent.compareIdentical(window.data.loadedMap.events[window.data.targetId], eventData));
-			// else 
-				// console.log("identical");
-			
+		case "Map Event":			
 			window.data._cacheMaps[mapId].events[targetId] = $.Drag.VisualEvent.deepCopyJSON(eventData);
-			if ($.$dataMap && $.$gameMap && $.$gameMap._mapId === mapId) {
-				$.$dataMap.events[targetId] = $.Drag.VisualEvent.deepCopyJSON(eventData);
-				$.$gameMap._events[targetId] = new $.Game_Event(mapId, targetId);
-				$.$gamePlayer.reserveTransfer($.$gameMap._mapId, $.$gamePlayer.x, $.$gamePlayer.y, 0, 0);
-				$.$gameMap._interpreter.setWaitMode("transfer");
+			try {
+				if ($.$dataMap && $.$gameMap && $.$gameMap._mapId === mapId) {
+					$.$dataMap.events[targetId] = $.Drag.VisualEvent.deepCopyJSON(eventData);
+					if ("note" in $.$dataMap.events[targetId])
+						$.DataManager.extractMetadata($.$dataMap.events[targetId]);
+					
+					$.$gameMap._events[targetId] = new $.Game_Event(mapId, targetId);
+					$.$gamePlayer.reserveTransfer($.$gameMap._mapId, $.$gamePlayer.x, $.$gamePlayer.y, 0, 0);
+					$.$gameMap._interpreter.setWaitMode("transfer");
+				}
+				console.log(`Map Event id:${targetId} changes applied.`);
+			} catch (error) {
+				console.error("Couldn't apply changes to runtime, please reload (F5) to apply.", error);
 			}
-			console.log(`Map Event id:${targetId} changes applied.`);
 			
 			refreshMapEventList();
 			break;
 		case "Troop Event":
-			// console.log(window.data.$dataTroops[window.data.targetId]);
-			// if (!$.Drag.VisualEvent.isIdentical(window.data.$dataTroops[window.data.targetId], eventData))
-				// console.log($.Drag.VisualEvent.compareIdentical(window.data.$dataTroops[window.data.targetId], eventData))
-			// else
-				// console.log("identical");
-			
 			window.data.$dataTroops[targetId] = $.Drag.VisualEvent.deepCopyJSON(eventData);
-			$.$dataTroops[targetId] = $.Drag.VisualEvent.deepCopyJSON(eventData);
-			if ($.$gameTroop._inBattle && $.$gameTroop._troopId === targetId)
-				$.$gameTroop.setup(targetId);
-			console.log(`Troop Event id:${targetId} changes applied.`);
+			try {
+				$.$dataTroops[targetId] = $.Drag.VisualEvent.deepCopyJSON(eventData);
+				if ($.$gameTroop._inBattle && $.$gameTroop._troopId === targetId)
+					$.$gameTroop.setup(targetId);
+				console.log(`Troop Event id:${targetId} changes applied.`);
+			} catch (error) {
+				console.error("Couldn't apply changes to runtime, please reload (F5) to apply.", error);
+			}
 			
 			refreshTroopEventList();
 			break;
