@@ -341,7 +341,7 @@ function reconnectNodeFromConnectionsMap(node, connectionsMap, inputOnly = false
 	
 	if (!frag)
 		frag = document.createDocumentFragment();
-	
+	console.log(connectionsMap, node, inputOnly);
 	for (const [connectionIndex, target] of connectionsMap.inputs.entries()) {
 		const connection = getNodeConnectionsById(node, connectionIndex).input;
 		if (!connection)

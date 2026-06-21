@@ -148,7 +148,7 @@ function makeNodeFromParams(params = {}, saveInHistory = false, cache = false, o
 	
 	const customOutputExecParams = isCustom ? getCustomNodeOutputExecParams(params.commandCode) : {};
 	if (params.haveOutputExecNode) {
-		const inputListLength = customInputExecParams && customInputExecParams.min_list ? customInputExecParams.min_list : 1;
+		const inputListLength = customOutputExecParams && customOutputExecParams.min_list ? customOutputExecParams.min_list : 1;
 		for (let l = 0; l < inputListLength; l++)
 			nodeContent += `
 				<span class="nodeOutput" id="main-exec-output"> 
@@ -166,7 +166,7 @@ function makeNodeFromParams(params = {}, saveInHistory = false, cache = false, o
 		${isCustom && customNodeData.body && typeof customNodeData.body === "string" ? customNodeData.body : ''}
 		${(params.content || "")}
 	`;
-	
+	console.log(nodeContent);
 	node.innerHTML = nodeContent; 
 	
 	setNodePosition(node, params.x || 0, params.y || 0, false, cache);
@@ -332,11 +332,7 @@ function onNodeInputsReady(node, onNodeReady) {
 		}
 	}
 	
-	triggerModsFunction("onNodeReady", [node]);
-	for (const mod of Object.values(window._mods))
-		if (typeof mod.onNodeReady === "function")
-			mod.onNodeReady(window, node);
-		
+	triggerModsFunction("onNodeReady", node);		
 	node._preventInputChange = false;
 };
 
