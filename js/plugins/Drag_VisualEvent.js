@@ -106,8 +106,7 @@ Drag.VisualEvent.version = "0.2.195";
 
 	Drag.VisualEvent.getInputParameters = function(type, properties = {}) {
 		if (Drag.VisualEvent.inputs[type]) {
-			// return {...{...Drag.VisualEvent.inputs[type]}, ...properties}; 
-			return Drag.VisualEvent.deepCopyJSON(Drag.VisualEvent.inputs[type]);
+			return  {...Drag.VisualEvent.deepCopyJSON(Drag.VisualEvent.inputs[type]), ...properties};
 		} else
 			return {...{type: type}, ...properties}; 
 	};
@@ -142,9 +141,16 @@ Drag.VisualEvent.version = "0.2.195";
 		return arr.reduce((acc, val) => acc.concat(val), []);
 	};
 	
-	Drag.VisualEvent.openDevTools = function() {
-		if (Utils.isNwjs() && Utils.isOptionValid("test"))
+	Drag.VisualEvent.openDevTools = function(win = window) {
+		if (!win)
+			return;
+		
+		if (win.nw && win.nw.Window)
+			win.nw.Window.get().showDevTools();
+		else if (typeof win.require === "function" && typeof win.process === "object") {
+			const nw = win.require('nw.gui');
 			nw.Window.get().showDevTools();
+		}
 	};
 	
 	Drag.VisualEvent.escapeRegExp = function(string) {
@@ -175,13 +181,6 @@ Drag.VisualEvent.version = "0.2.195";
 			chrome.runtime.reload();
 		else
 			location.reload();
-	};
-	
-	Drag.VisualEvent.showDevTools = function() {
-		if (SceneManager.showDevTools)
-			SceneManager.showDevTools();
-		else 
-			require('nw.gui').Window.get().showDevTools();
 	};
 	
 	Drag.VisualEvent.mergeObjects = function(obj1, obj2, excludedKeys = []) {
@@ -2182,6 +2181,18 @@ Drag.VisualEvent.version = "0.2.195";
 		}
 	};
 	
+	Drag.VisualEvent.isFormInput = function(element) {
+		return Drag.VisualEvent.isInput(element) || Drag.VisualEvent.isTextArea(element) || Drag.VisualEvent.isSelect(element) || Drag.VisualEvent.isCheckbox(element) || Drag.VisualEvent.isRadio(element);
+	};
+	
+	Drag.VisualEvent.isCheckbox = function(element) {
+		return (element && element.nodeName && element.nodeName.toLowerCase() === "checkbox");
+	};
+	
+	Drag.VisualEvent.isTextArea = function(element) {
+		return (element && element.nodeName && element.nodeName.toLowerCase() === "textarea");
+	};
+	
 	Drag.VisualEvent.isRadio = function(element) {
 		return (element && element.nodeName && Drag.VisualEvent.isInput(element) && element.type.toLowerCase() === "radio");
 	};
@@ -2870,6 +2881,9 @@ Drag.VisualEvent.version = "0.2.195";
 			return [eventId, {list: list, repeat: repeat, skippable: skippable, wait: wait}];
 		}
 		
+		if (input.getAttribute("data-inputType") === "table")
+			return Drag.VisualEvent.getTableValue(input);
+		
 		const valueCount = input.getAttribute('data-valueCount') || 1;
 		const inputValue = input.getAttribute('data-value') ? input.getAttribute('data-value') : input.value;
 		const values = valueCount > 1 ? inputValue.split(',') : [inputValue];
@@ -2898,6 +2912,38 @@ Drag.VisualEvent.version = "0.2.195";
 		}
 		
 		return (values.length > 1 ? values : values[0]);
+	};
+	
+	Drag.VisualEvent.getTableValue = function(table) {
+		const tableName = table.getAttribute('data-input-name');
+		const tableParameters = Drag.VisualEvent.getInputParameters(tableName);
+		if (!tableParameters)
+			return [];
+		
+		if (tableParameters.parseTable && typeof window[tableParameters.parseTable] === 'function')
+			return window[tableParameters.parseTable](table);
+		
+		const rows = table.querySelectorAll('.table-input-row');
+		const values = [];
+		for (const row of rows) {
+			const value = tableParameters.defaultRowValue && typeof tableParameters.defaultRowValue === 'object' ? Drag.VisualEvent.deepCopyJSON(tableParameters.defaultRowValue) : {};
+			const inputs = row.querySelectorAll('*[data-key]');
+			for (const input of inputs) {
+				const key = input.getAttribute('data-key');
+				if (!key)
+					continue;
+				
+				value[key] = Drag.VisualEvent.getInputValue(input);
+			}
+			
+			values.push(value);
+		}
+		
+		return values;
+	};
+	
+	function Drag_VisualEvent_getTableInitialEquipmentValue(table) {
+		return Array.from(table.querySelectorAll('*[data-column-key="equipId"] select')).map(select => Drag.VisualEvent.getInputValue(select));
 	};
 	
 	Drag.VisualEvent.setInputValue = function(input, value) {
@@ -3089,6 +3135,17 @@ Drag.VisualEvent.version = "0.2.195";
 		/>`;
 	};
 	
+	Drag.VisualEvent.getNotetagManagerInputField = function(params, index, controller = null) {
+		return `
+			<div id="manage-notetag-container" onclick="$.Drag.VisualEvent.openNotetagManager(this.lastElementChild);">
+				${params.showLabel ? '<label for="map-event-notes">Manage note(tag)s :</label>' : ''}
+				<textarea class="unfitTextArea ${params.class || ''}" id="${params.id || ''}" placeholder="Write note(tag)s..."
+					onchange="$.Drag.VisualEvent.autoFitTextArea(this); ${params.onchange || ''}" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();" onclick="this.blur();" onfocus="this.blur();"
+					${params.data || ''}>${params.value || params.default || ''}</textarea>
+			</div>
+		`;
+	};
+	
 	Drag.VisualEvent.getStructInputField = function(params, index, controller = null) {
 		if (params.value && typeof params.value === "object")
 			params.value = JSON.stringify(params.value);
@@ -3216,7 +3273,7 @@ Drag.VisualEvent.version = "0.2.195";
 		ctx.fillText(String(maxValue), x + w - 34, y + 4);
 		ctx.restore();
 	};
-
+	
 	function getClassParameterCurveColor(index) {
 		const colors = [
 			"#ff7070",
@@ -3279,29 +3336,38 @@ Drag.VisualEvent.version = "0.2.195";
 		let html = `<div class="table-input-row" style="grid-template-columns: ${columnWidths.join(' ')};">`;
 		for (const column of params.columns) {
 			let inputParam;
-			
 			if (typeof window[column.getInputParameters] === "function")
 				inputParam = window[column.getInputParameters](row, rowId, params);
 			else
 				inputParam = Drag.VisualEvent.getInputParameters(column.input);
-			
 			if (!inputParam)
 				continue;
-			
 			if (!Array.isArray(inputParam))
 				inputParam = [inputParam];
 			
+			let keys;
+			if (typeof window[column.getInputKeys] === "function")
+				keys = window[column.getInputKeys](row, rowId, params);
+			else
+				keys = column.key;
+			if (!keys)
+				keys = [""]
+			if (!Array.isArray(keys))
+				keys = [keys];
+			
 			html += `<div class="table-input-cell" data-column-key="${column.key}" ${inputParam.length > 1 ? `style="display: grid; grid-template-columns: repeat(${inputParam.length}, 1fr);"`: ''}>`;
-			for (const param of inputParam) {
+			for (const [i, param] of inputParam.entries()) {
 				if (column.refreshRowOnChange)
 					param.onchange = (param.onchange || "") + " $.Drag.VisualEvent.refreshTableRow(this);";
 				
-				param.value = row[column.key];
+				param.value = row[keys[i]];
 				if (param.value === undefined)
 					param.value = param.default !== undefined ? param.default : "";
-
+				
 				if (column.readOnly)
 					param.disabled = true;
+				
+				param.data = `${param.data || ""} data-key="${keys[i]}"`;
 				
 				html += `
 					${Drag.VisualEvent.getInputField(param)}
@@ -3309,7 +3375,7 @@ Drag.VisualEvent.version = "0.2.195";
 			}
 			html += `</div>`;
 		}
-
+		
 		if (params.userRowCreation) {
 			html += `
 				<div class="table-input-controls">
@@ -3318,7 +3384,7 @@ Drag.VisualEvent.version = "0.2.195";
 				</div>
 			`;
 		}
-
+		
 		html += `</div>`;
 		return html;
 	};
@@ -3336,15 +3402,27 @@ Drag.VisualEvent.version = "0.2.195";
 		if (!tableParams)
 			return;
 		
-		const add = table.querySelector(':scope > .table-input-add');
 		const html = Drag.VisualEvent.getTableInputRow(tableParams);
+		const parsed = (new DOMParser()).parseFromString(html, "text/html");
+		if (!parsed.body || !parsed.body.firstChild)
+			return;
 		
-		if (add)
-			add.insertAdjacentHTML('beforebegin', html);
+		parsed.body.firstChild.classList.add('addedTableInputRow');
+		const target = button.closest('.table-input-row');
+		if (target)
+			target.insertAdjacentElement('beforebegin', parsed.body.firstChild);
 		else
-			table.insertAdjacentHTML('beforeend', html);
-	}
-
+			table.lastElementChild.insertAdjacentElement('beforebegin', parsed.body.firstChild);
+		
+		for (const input of table.querySelectorAll('.addedTableInputRow *[onload]'))
+			if (input.onload)
+				input.onload();
+		
+		for (const input of table.querySelectorAll('.addedTableInputRow *[onchange]'))
+			if (input.onchange)
+				input.onchange();
+	};
+	
 	Drag.VisualEvent.removeTableInputRow = function (event, button) {
 		event.preventDefault();
 		event.stopPropagation();
@@ -3400,18 +3478,19 @@ Drag.VisualEvent.version = "0.2.195";
 		return system.equipTypes.map((name, index) => ({etypeId: index, equipId: equips[index - 1] || 0})).filter(row => row.etypeId > 0);
 	};
 	
-	function Drag_VisualEvent_getTableInitialEquipmentEquippableEquipements(row, rowId, params) {
+	function Drag_VisualEvent_getTableInitialEquipmentEquippableEquipementsInputs(row, rowId, params) {
 		const actor = params.context ? params.context : null;
 		const equipments = Drag.VisualEvent.getActorEquippableItemsByType(actor, row.etypeId) || [];
 		return {
 			type: "select",
 			name: "Equipment",
-			values: ["0"].concat(equipments.map(equipment => String(equipment.id))),
-			options: ["None"].concat(equipments.map(equipment => equipment.name))
+			values: [0].concat(equipments.map(equipment => equipment.id)),
+			options: ["None"].concat(equipments.map(equipment => equipment.name)),
+			data: "data-dataType='number'"
 		};
 	};
 	
-	function Drag_VisualEvent_getTableTraitInputsFromRowCode(row) {
+	function Drag_VisualEvent_getTableTraitInputsFromRow(row) {
 		switch (parseInt(row.code)) {
 			case 11:
 				return [Drag.VisualEvent.getInputParameters("elementType"), Drag.VisualEvent.getInputParameters("rate")];
@@ -3462,6 +3541,85 @@ Drag.VisualEvent.version = "0.2.195";
 		}
 	};
 	
+	function Drag_VisualEvent_getTableTraitKeysFromRow(row) {
+		switch (parseInt(row.code)) {
+			case 11:
+				return ["dataId", "value"];
+			case 12:
+			case 21:
+				return ["dataId", "value"];
+			case 13:
+			case 32:
+				return ["dataId", "value"];
+			case 14:
+				return "dataId";
+			case 22:
+				return ["dataId", "value"];
+			case 23:
+				return ["dataId", "value"];
+			case 31:
+				return "dataId";
+			case 33:
+			case 34:
+				return "value";
+			case 35:
+				return "dataId";
+			case 41:
+			case 42:
+				return "dataId";
+			case 43:
+			case 44:
+				return "dataId";
+			case 51:
+				return "dataId";
+			case 52:
+				return "dataId";
+			case 53:
+			case 54:
+				return "dataId";
+			case 55:
+				return "dataId";
+			case 61:
+				return "value";
+			case 62:
+				return "dataId";
+			case 63:
+				return "dataId";
+			case 64:
+				return "dataId";
+			default:
+				return "value";
+		}
+	};
+	
+	function Drag_VisualEvent_getTableEffectsInputsFromRow(row) {
+		switch (parseInt(row.code)) {
+			case 11:
+			case 12:
+				return [Drag.VisualEvent.getInputParameters("percentage"), Drag.VisualEvent.getInputParameters("integer")];
+			case 13:
+				return Drag.VisualEvent.getInputParameters("integer");
+			case 21:
+			case 22:
+				return [Drag.VisualEvent.getInputParameters("state"), Drag.VisualEvent.getInputParameters("percentage")];
+			case 31:
+			case 32:
+			case 42:
+				return [Drag.VisualEvent.getInputParameters("selectParameter"), Drag.VisualEvent.getInputParameters("repeat")];
+			case 33:
+			case 34:
+				return Drag.VisualEvent.getInputParameters("selectParameter");
+			case 41:
+				return Drag.VisualEvent.getInputParameters("selectSpecialEffect");
+			case 43:
+				return Drag.VisualEvent.getInputParameters("skill");
+			case 44:
+				return Drag.VisualEvent.getInputParameters("commonEvent");
+			default:
+				return Drag.VisualEvent.getInputParameters("empty");
+		}
+	};
+	
 	Drag.VisualEvent.getListInputField = function(params) {
 		const inputs = []; 
 		const parameters = params.inputs.map(input => Drag.VisualEvent.getInputParameters(input));
@@ -3504,7 +3662,6 @@ Drag.VisualEvent.version = "0.2.195";
 	
 	Drag.VisualEvent.canvas = document.createElement('canvas');
 	Drag.VisualEvent.ctx = Drag.VisualEvent.canvas.getContext('2d');
-	
 	Drag.VisualEvent.measureTextWidth = function(textArea, text) {
 		const style = window.getComputedStyle(textArea);
 		Drag.VisualEvent.ctx.font = style.font;
@@ -3516,8 +3673,8 @@ Drag.VisualEvent.version = "0.2.195";
 			textArea.style.width = Math.max(...textArea.value.split('\n').map(line => Drag.VisualEvent.measureTextWidth(textArea, line))) + 8 + "px";
 		
 		if (textArea.getAttribute('data-resizeHeight') !== "false") {
-			textArea.style.height = ""; 
-			textArea.style.height = textArea.scrollHeight + 5 + "px";
+			textArea.style.height = "unset"; 
+			textArea.ownerDocument.defaultView.requestAnimationFrame(() => textArea.style.height = textArea.scrollHeight + 5 + "px");
 		}
 	};
 	
@@ -3567,7 +3724,7 @@ Drag.VisualEvent.version = "0.2.195";
 			<div class="relative">
 				<input type="number" id="${params.id ? params.id : ''}" class="${params.class || ''}" 
 					value="${value}" ${params.max !== undefined ? `max="${params.max}"` : ''} ${params.min !== undefined ? `min="${params.min}"` : ''} placeholder="${params.placeholder || ''}" 
-					onchange="${params.onchange || ''}" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();" onblur="$.Drag.VisualEvent.sanitizeInput(this);"
+					onchange="${params.onchange || ''}" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();" onblur="$.Drag.VisualEvent.sanitizeInput(this);" ${params.onload ? `onload="${params.onload}"` : ''}
 					data-isInputInteger="true" ${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} ${params.disabled ? 'disabled' : ''} 
 				/>
 				${params.tooltip ? `<span class="input-tooltip" data-tooltip="${params.tooltip}"></span>` : ''}
@@ -4165,8 +4322,8 @@ Drag.VisualEvent.version = "0.2.195";
 		const data = {
 			pictureId: values[0],
 			pictureName: values[1],
-			position: values[2],
-			origin: values[3],
+			origin: values[2],
+			positionDesignation: values[3],
 			x: values[4],
 			y: values[5],
 			scaleX: values[6],
