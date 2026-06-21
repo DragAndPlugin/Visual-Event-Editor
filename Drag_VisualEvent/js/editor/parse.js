@@ -81,7 +81,8 @@ function parseEventDataFromEditor(onlySelected = false, sequence = null) {
 	const topPanel = document.querySelector('#topPanel');
 	if (!topPanel)
 		return null;
-	
+
+	triggerModsFunction('onParseGraph', eventNode);
 	switch (window.data.targetType) {
 		case "Common Event":
 			return {
@@ -124,8 +125,6 @@ function parseEventDataFromEditor(onlySelected = false, sequence = null) {
 			mapEventPages[pageId].stepAnime = mapEventParameters[11];
 			mapEventPages[pageId].directionFix = mapEventParameters[12];
 			mapEventPages[pageId].through = mapEventParameters[13];
-			
-			// const [x, y] = $.Drag.VisualEvent.getInputValue(document.querySelector('#topPanel #map-event-location'));
 			
 			return {
 				id: eventId,
