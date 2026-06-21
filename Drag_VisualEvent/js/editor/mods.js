@@ -3,7 +3,7 @@ function importEditorMods() {
 	window._mods = {};
 	const RMName = $.Utils.RPGMAKER_NAME;
 	const filenames = $.Drag.VisualEvent.getFileList('./Drag_VisualEvent/js/mods').filter(file => file.endsWith(".js"));
-	for (filename of filenames) {
+	for (const filename of filenames) {
 		const filenameWithoutExt = filename.replace('.js', '');
 		const mod = require(`./Drag_VisualEvent/js/mods/${filename}`);
 		
@@ -20,8 +20,13 @@ function importEditorMods() {
 };
 
 function triggerModsFunction(func, args = []) {
-	args.unshift(window);
+	if (!args)
+		args = [];
+	if (!Array.isArray(args))
+		args = [args];
+	const funcArgs = [window].concat(args);
+	
 	for (const mod of Object.values(window._mods))
 		if (typeof mod[func] === "function")
-			mod[func](...args);
+			mod[func](...funcArgs);
 };
