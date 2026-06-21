@@ -557,6 +557,7 @@ div#functionList {
     flex-direction: column;
     max-height: 80vh;
     overflow: hidden;
+	z-index: 10001;
 }
 
 #editor-logs-menu > h3 {
