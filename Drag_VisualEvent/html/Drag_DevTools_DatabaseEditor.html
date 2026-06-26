@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html style="height: 100%;">
+<head>
+	<meta charset="UTF-8">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="viewport" content="user-scalable=no">
+	<link rel="icon" href="../../icon/icon.png" type="image/png">
+	<link rel="apple-touch-icon" href="../../icon/icon.png">
+	<link href="../css/Drag_DevTools.css" rel="stylesheet">
+	<style>
+		:root {
+			--background-color2: #21222b;
+		}
+
+		html, body {
+			height: 100%;
+			overflow: hidden;
+		}
+
+		#content {
+			display: grid;
+			grid-template-columns: 13em 1fr;
+			height: 100%;
+			margin: 0;
+			padding-bottom: 3.125em;
+			box-sizing: border-box;
+			background: var(--background-color);
+		}
+		
+		#database-category-panel {
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+			min-height: 0;
+			border-right: 0.0625em solid rebeccapurple;
+			background: var(--background-color2);
+		}
+
+		#database-category-panel > div:first-child, #database-entry-panel > div:first-child {
+			padding: 0.85em 1em;
+			border-bottom: 0.0625em solid rebeccapurple;
+			font-weight: bold;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			text-align: center;
+		}
+		
+		#database-category-panel > div:first-child {
+			font-size: 1.2em;
+		}
+
+		#database-category-list {
+			flex: 1 1 auto;
+			overflow-y: auto;
+			padding: 0.35em;
+			box-sizing: border-box;
+		}
+
+		.database-category {
+			cursor: pointer;
+			padding: 0.65em 0.85em;
+			margin-bottom: 0.2em;
+			border: 0.0625em solid transparent;
+			font-weight: bold;
+			text-align: center;
+			letter-spacing: 0.02em;
+			font-size: 1.1em;
+		}
+		
+		.database-category:nth-child(odd) {
+			background: rgb(255 255 255 / 0.06);
+		}
+
+		.database-category:hover {
+			background: rgb(255 255 255 / 0.15);
+			border-color: rgb(255 255 255 / 0.33);
+		}
+		
+		.database-category.selected {
+			background: linear-gradient(90deg, rgb(90 130 190 / 0.45), rgb(90 130 190 / 0.12));
+			border-color: rgb(140 190 255 / 0.4);
+			box-shadow: inset 0 0 0 0.0625em rgb(255 255 255 / 0.06), 0 0 0.5em rgb(80 140 255 / 0.15);
+		}
+		
+		#database-main-panel {
+			display: grid;
+			grid-template-columns: 20em 1fr;
+			min-width: 0;
+			min-height: 0;
+		}
+		
+		#database-entry-panel {
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+			min-height: 0;
+			border-right: 0.0625em solid rebeccapurple;
+			background: var(--background-color2);
+		}
+		
+		#database-entry-search {
+			padding: 0.75em;
+			border-bottom: 0.0625em solid rebeccapurple;
+			background: var(--background-color2);
+		}
+		
+		#database-entry-search > input {
+			flex: 1 1 auto;
+			margin-right: 0.5em;
+			padding: 0.5em 0.75em;
+			box-sizing: border-box;
+			background: var(--background-color2);
+		}
+		
+		#database-entry-search > div {
+			display: flex;
+			align-items: baseline;
+			margin-top: 0.75em;
+		}
+		
+		#database-entry-search > div > button {
+			flex: 0 0 auto;
+			padding: 0.5em 0.85em;
+			margin-left: 0.5em;
+		}
+		
+		#database-entry-list {
+			flex: 1 1 auto;
+			overflow-y: auto;
+			padding: 0.35em;
+			box-sizing: border-box;
+		}
+		
+		.database-entry {
+			cursor: pointer;
+			display: grid;
+			grid-template-columns: 2.5em 1fr;
+			align-items: center;
+			min-height: 2em;
+			padding: 0.2em 0.2em;
+			margin-bottom: 0.2em;
+			border: 0.0625em solid transparent;
+			box-sizing: border-box;
+			user-select: none;
+			font-size: 0.85em;
+		}
+		
+		// .database-entry[draggable="true"] {
+			// cursor: grab;
+		// }
+		
+		.database-entry[draggable="true"]:active {
+			cursor: grabbing;
+		}
+		
+		.database-entry:nth-child(even) {
+			background: rgb(255 255 255 / 6%);
+		}
+		
+		.database-entry:hover {
+			background: rgb(255 255 255 / 12%);
+			border-color: rgb(255 255 255 / 20%);
+		}
+
+		.database-entry.selected {
+			background: rgb(90 130 190 / 35%);
+			border-color: rgb(140 190 255 / 40%);
+		}
+
+		.database-entry > span {
+			color: lightgrey;
+			font-size: 0.8em;
+			opacity: 0.75;
+			margin-bottom: 0.5em;
+		}
+
+		.database-entry > b {
+			font-weight: normal;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+		
+		.database-entry-group {
+			padding: 0.25em;
+			border: 0.0625em solid transparent;
+		}
+
+		.database-entry-group.drag-over {
+			border: 0.0625em solid rgb(255 255 255 / 50%);
+			background: rgb(255 255 255 / 20%);
+		}
+		
+		.database-entry.drop-before {
+			border-top: 0.15em solid white;
+		}
+
+		.database-entry-group-header {
+			font-weight: bold;
+			user-select: none;
+			padding: 0.2em 0.625em;
+			cursor: pointer;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			letter-spacing: 0.03em;
+			text-transform: uppercase;
+			margin-bottom: 0.5em;
+			font-size: 0.85em;
+		}
+		
+		// .database-entry-group-header[draggable="true"] {
+			// cursor: grab;
+		// }
+
+		.database-entry-group-header[draggable="true"]:active {
+			cursor: grabbing;
+		}
+
+		.database-entry-group.group-drop-before {
+			border-top: 0.15em solid white;
+		}
+		
+		.database-entry-group-header > div {
+			display: flex;
+			align-items: center;
+		}
+		
+		.database-entry-group-header > div > svg {
+			margin-right: 0.5em;
+		}
+		
+		.database-entry-group-header button {
+			padding: 0.1em 0.25em;
+			margin-right: 0.5em;
+			border: 0em;
+			background: transparent;
+		}
+		
+		.database-entry-group-header[data-collapsed="true"] > span:last-child > span {
+			transform: rotate(90deg);
+		}
+
+		.database-entry-group-header:hover {
+			background: rgb(70 130 180 / 70%);
+		}
+
+		.database-entry-group-content {
+			padding-left: 0.5em;
+			margin-left: 0.5em;
+			border-left: 0.0625em solid rebeccapurple;
+		}
+		
+		.database-entry-group-header[data-collapsed="true"] ~ .database-entry-group-content > .database-entry:not(.selected) {
+			display: none;
+		}
+		
+		#database-entry-maximum {
+			margin: 0.3125em;
+		}
+		
+		#database-entry-maximum > div {
+			display: flex;
+			align-items: baseline;
+			justify-content: space-evenly;
+			margin-top: 0.25em;
+		}
+
+		#database-detail-panel {
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+			min-height: 0;
+		}
+		
+		#database-detail-content {
+			display: flex;
+			height: 100%;
+			width: 100%;
+			min-width: 0;
+			min-height: 0;
+			overflow: hidden;
+			padding: 1em 1.25em;
+			box-sizing: border-box;
+			background: var(--background-color2);
+		}
+		
+		.database-detail-column {
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+			min-height: 0;
+			box-sizing: border-box;
+			padding-right: 1em;
+		}
+		
+		.database-detail-column:last-child {
+			padding-right: 0;
+		}
+		
+		.database-section {
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+			min-height: 0;
+			padding: 0.5em 0em;
+			box-sizing: border-box;
+			overflow: hidden;
+		}
+		
+		.database-section-title {
+			flex: 0 0 auto;
+			margin-bottom: 0.75em;
+			padding-bottom: 0.35em;
+			border-bottom: 0.0625em solid rebeccapurple;
+			font-weight: bold;
+			color: white;
+		}
+		
+		.database-section-content {
+			flex: 1 1 auto;
+			min-height: 0;
+			overflow: hidden scroll;
+			box-sizing: border-box;
+			background-color: rgb(255 255 255 / 5%);
+		}
+		
+		.database-input-rows {
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+			justify-content: flex-start;
+			min-height: 0;
+			height: 100%;
+			margin: 0;
+		}
+		
+		.database-input-row {
+			display: flex;
+			flex: 0 0 auto;
+			align-items: center;
+			justify-content: center;
+			width: 100%;
+			margin-bottom: 0.75em;
+			padding: 0.5em;
+			box-sizing: border-box;
+		}
+
+		.database-input-row:last-child {
+			margin-bottom: 0;
+		}
+
+		.database-input-cell {
+			box-sizing: border-box;
+			padding-right: 0.75em;
+			height: 100%;
+		}
+		
+		.database-input-cell > p {
+			text-transform: capitalize;
+			margin-bottom: 0.25em;
+			margin-top: 0em;
+		}
+
+		.database-input-cell:last-child {
+			padding-right: 0;
+		}
+
+		.database-section textarea {
+			width: 100%;
+			box-sizing: border-box;
+			resize: vertical;
+		}
+		
+		#bottom-container {
+			position: fixed;
+			right: 0;
+			bottom: 0;
+			left: 0;
+			display: flex;
+			justify-content: flex-end;
+			max-height: 3.125em;
+			padding: 0.5em;
+			box-sizing: border-box;
+			border-top: 0.0625em solid rebeccapurple;
+			background: var(--background-color2);
+		}
+
+		#bottom-container > * {
+			margin-right: 1em;
+		}
+
+		#bottom-container > *:last-child {
+			margin-right: 0em;
+		}
+
+		#bottom-container > button {
+			cursor: pointer;
+			padding: 0.5em 2em;
+		}
+
+		input[type="text"], input[type="number"] {
+			min-width: 0 !important;
+			border: 0.0625rem solid var(--color);
+		}
+		
+		input[type="text"]:focus, input[type="number"]:focus {
+			border: 0.0625rem solid rebeccapurple;
+		}
+
+		input[data-inputtype="struct"], input[data-inputType="struct"] {
+			display: none;
+		}
+
+		#autofit-textarea-checkbox {
+			opacity: 0;
+		}
+		
+		#autofit-textarea-checkbox:not(:checked) ~ span > svg > path {
+			fill: grey !important;
+			stroke: grey !important;
+		}
+		
+		#autofit-textarea-checkbox:checked ~ span > svg > path {
+			fill: white ! important;
+			stroke: white !important;
+		}
+
+		textarea {
+			max-width: 100%;
+			border: 0.0625rem solid var(--color);
+		}
+		
+		textarea:focus {
+			outline: none;
+			border: 0.0625rem solid rebeccapurple;
+		}
+
+		button {
+			padding: 0.625em 1.25em;
+			border: 0.0625em solid var(--color);
+		}
+
+		button:hover {
+			background: var(--background-color2);
+		}
+
+		button:active {
+			transform: scale(0.985);
+		}
+		
+		.search-hidden, .collapsed {
+			display: none !important;
+		}
+
+		.contextmenu {
+			position: absolute;
+			z-index: 100;
+			display: flex;
+			flex-direction: column;
+			min-width: 12em;
+			padding: 0.4em;
+			box-sizing: border-box;
+			border: 0.0625em solid rebeccapurple;
+			background: var(--background-color2);
+			cursor: initial;
+		}
+
+		.contextmenu > div {
+			cursor: pointer;
+			display: flex;
+			justify-content: flex-start;
+			padding: 0.55em 0.75em;
+			box-sizing: border-box;
+			user-select: none;
+		}
+
+		.contextmenu > div:hover {
+			background: var(--background-color);
+		}
+
+		.contextmenu > span {
+			display: block;
+			height: 0.0625em;
+			margin: 0.35em 0.5em;
+			padding: 0;
+			background: grey;
+			pointer-events: none;
+		}
+
+		.contextmenu > .danger {
+			color: #ffaaaa;
+		}
+		
+		.disabled {
+			pointer-events: none;
+			cursor: default;
+			color: grey;
+		}
+	</style>
+	<script type="text/javascript" src="../../js/plugins.js"></script>
+</head>
+<body style="height: 100%;">
+	<div id="content">
+		<div id="database-category-panel">
+			<div>Database</div>
+			<div id="database-category-list">
+				<div class="database-category selected" data-databaseCategory="Actors" onclick="selectDatabaseCategory(this);">Actors</div>
+				<div class="database-category" data-databaseCategory="Classes" onclick="selectDatabaseCategory(this);">Classes</div>
+				<div class="database-category" data-databaseCategory="Skills" onclick="selectDatabaseCategory(this);">Skills</div>
+				<div class="database-category" data-databaseCategory="Items" onclick="selectDatabaseCategory(this);">Items</div>
+				<div class="database-category" data-databaseCategory="Weapons" onclick="selectDatabaseCategory(this);">Weapons</div>
+				<div class="database-category" data-databaseCategory="Armors" onclick="selectDatabaseCategory(this);">Armors</div>
+				<div class="database-category" data-databaseCategory="Enemies" onclick="selectDatabaseCategory(this);">Enemies</div>
+				<div class="database-category" data-databaseCategory="States" onclick="selectDatabaseCategory(this);">States</div>
+				<div class="database-category disabled" title="Not yet available" data-databaseCategory="Animations" onclick="selectDatabaseCategory(this);">Animations</div>
+				<div class="database-category disabled" title="Not yet available" data-databaseCategory="Tilesets" onclick="selectDatabaseCategory(this);">Tilesets</div>
+				<div class="database-category" data-databaseCategory="System1" onclick="selectDatabaseCategory(this);">System1</div>
+				<div class="database-category" data-databaseCategory="System2" onclick="selectDatabaseCategory(this);">System2</div>
+				<div class="database-category" data-databaseCategory="Types" onclick="selectDatabaseCategory(this);">Types</div>
+				<div class="database-category" data-databaseCategory="Terms" onclick="selectDatabaseCategory(this);">Terms</div>
+			</div>
+		</div>
+		<div id="database-main-panel"></div>
+		<div id="bottom-container">
+			<button onclick="apply()">Apply</button>
+			<button onclick="ok()">OK</button>
+			<button onclick="quit();">Cancel</button>
+		</div>
+	</div>
+	<script type="text/javascript">
+		function main() {
+			document.title = "Drag_DevTools_DatabaseEditor";
+			loadDataMainWindow();
+			$.Drag.VisualEvent.setLightMode(document);
+		};
+		
+		function loadDataMainWindow() {
+			$ = window.opener;
+			setup();
+		};
+		
+		function setup() {
+			window.DEFAULT_GROUP_NAME = "DEFAULT";
+			window._data = {};
+			window._databaseCategory = "Actors";
+			window._databaseEntryId = 1;
+			window._databaseCategoryConfigs = require('./Drag_VisualEvent/js/data/database_data.js')($.Utils.RPGMAKER_NAME);
+			
+			makeDatabaseMainPanelContent();
+		};
+		
+		function getDatabaseCategoryConfig(category) {
+			if (!category)
+				category = window._databaseCategory;
+			
+			if (!category)
+				return {};
+			
+			if (!window._databaseCategoryConfigs[category])
+				return {};
+			
+			return window._databaseCategoryConfigs[category];
+		};
+		
+		function selectDatabaseCategory(elem) {
+			const mainPanel = document.querySelector('#database-main-panel');
+			mainPanel.innerHTML = '';
+			
+			const category = elem.getAttribute('data-databaseCategory');
+			if (!category)
+				return;
+			
+			for (const selected of elem.parentElement.querySelectorAll('.selected'))
+				selected.classList.remove('selected');
+			elem.classList.add('selected');
+			
+			window._databaseCategory = category;
+			makeDatabaseMainPanelContent(mainPanel);
+		};
+		
+		function makeDatabaseMainPanelContent(mainPanel = null) {
+			if (!mainPanel)
+				mainPanel = document.querySelector('#database-main-panel');
+			
+			const config = getDatabaseCategoryConfig();
+			if (!window._data[`${config.displayName}`])
+				window._data[`${config.displayName}`] = require(`data/${config.dataFile}`);
+			
+			let content = ``;
+			if (config.hasEntryList) {
+				content += `
+					<div id="database-entry-panel">
+						<div>${config.displayName}</div>
+						<div id="database-entry-search">
+							<input type="text" placeholder="Search ${config.displayName}..." onchange="" oninput="">
+							<div>
+								<input type="text" placeholder="Enter group name...">
+								<button onclick="addDatabaseGroup(this);">Create Group</button>
+							</div>
+						</div>
+						<div id="database-entry-list">
+							${makeDatabaseEntryListContent(config)}
+						</div>
+						<div id="database-entry-maximum">
+							<label>Change Maximum: </label>
+							<div>
+								<div class="relative">
+									<input type="number" value="1" min="1" onchange="$.Drag.VisualEvent.sanitizeInput(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();" id="entry-maximum-input" data-isinputinteger="true" data-inputtype="integer" data-defaultvalue="">
+								</div>
+								<button onclick="changeMaximumEntries();" style="padding: 0.5em 2em; margin-left: 0.5em;">Ok</button>
+							</div>
+						</div>
+					</div>
+				`;
+			}
+			
+			content += `
+				<div id="database-detail-panel"></div>
+			`;
+			mainPanel.innerHTML = content;
+			
+			makeDatabaseDetailsContent(1, config);
+		};
+		
+		function makeDatabaseEntryListContent(config, selectedId = 1) {
+			const organization = getDatabaseOrganization(config.displayName);
+			const groupedEntries = makeGroupedEntries(config);
+			
+			let content = "";
+			for (const groupName of getOrderedDatabaseGroups(organization)) {
+				if (!groupedEntries[groupName])
+					continue;
+				
+				const entries = groupedEntries[groupName];				
+				const collapsed = organization.collapsedGroups.includes(groupName);
+				const canRemove = groupName !== window.DEFAULT_GROUP_NAME;
+				
+				content += `
+					<div class="database-entry-group" data-group="${$.Drag.VisualEvent.escapeHTML(groupName)}"
+						ondragover="onGroupDragOver(event, this);" ondragleave="onGroupDragLeave(event, this);" ondrop="onGroupDrop(event, this);"
+					>
+						<div class="database-entry-group-header" onclick="toggleDatabaseGroup(this);"
+							data-group="${$.Drag.VisualEvent.escapeHTML(groupName)}" data-collapsed="${collapsed ? "true" : "false"}" ${groupName !== window.DEFAULT_GROUP_NAME ? `draggable="true"` : ""}
+							ondragstart="onGroupDragStart(event, this);"
+						>
+							<div>
+								<svg width="14px" height="14px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<path style="stroke-width: 1px; fill: beige;" fill-rule="evenodd" clip-rule="evenodd" d="M1 5C1 3.34315 2.34315 2 4 2H8.55848C9.84977 2 10.9962 2.82629 11.4045 4.05132L11.7208 5H20C21.1046 5 22 5.89543 22 7V9.00961C23.1475 9.12163 23.9808 10.196 23.7695 11.3578L22.1332 20.3578C21.9603 21.3087 21.132 22 20.1654 22H3C1.89543 22 1 21.1046 1 20V5ZM20 9V7H11.7208C10.8599 7 10.0956 6.44914 9.82339 5.63246L9.50716 4.68377C9.37105 4.27543 8.98891 4 8.55848 4H4C3.44772 4 3 4.44772 3 5V12.2709L3.35429 10.588C3.54913 9.66249 4.36562 9 5.31139 9H20ZM3.36634 20C3.41777 19.9109 3.4562 19.8122 3.47855 19.706L5.31139 11L21 11H21.8018L20.1654 20L3.36634 20Z"></path>
+								</svg>
+								${$.Drag.VisualEvent.escapeHTML(groupName)} (${entries.length})
+							</div>
+							<div>
+								${canRemove ? `<button onclick="removeDatabaseGroup(event, this);">×</button>` : ""}
+								<span>❱</span>
+							</div>
+						</div>
+						<div class="database-entry-group-content">
+				`;
+				
+				for (const entry of entries) {
+					content += `
+						<div class="database-entry ${entry.id === selectedId ? 'selected' : ''}" data-id="${entry.id}" draggable="true"
+							onclick="selectDatabaseEntry(this);" ondragstart="onEntryDragStart(event, this);" ondragover="onEntryDragOver(event, this);" ondrop="onEntryDrop(event, this);" ondragleave="onEntryDragLeave(event, this);"
+						>
+							<span>${String(entry.id).padStart(4, '0')}</span>
+							<b>${$.Drag.VisualEvent.escapeHTML(entry.name || "")}</b>
+						</div>
+					`;
+				}
+				
+				content += `
+						</div>
+					</div>
+				`;
+			}
+			
+			return content;
+		};
+		
+		function makeDatabaseDetailsContent(entryId, config) {
+			if (!config)
+				config = getDatabaseCategoryConfig();
+			
+			const entry = window._data[`${config.displayName}`][entryId];
+			
+			let html = `<div id="database-detail-content">`;
+			for (let col = 1; col <= config.layout.cols; col++) {
+				const colWidth = config.layout.colWidths[col - 1] || (1 / config.layout.cols);
+				
+				html += `
+					<div class="database-detail-column" style="width: ${colWidth * 100}%;">
+						${makeDatabaseDetailColumnContent(entry, config, col)}
+					</div>
+				`;
+			}
+			
+			html += `</div>`;
+			
+			const detailPanel = document.querySelector('#database-detail-panel');
+			detailPanel.innerHTML = html;
+			
+			for (const input of detailPanel.querySelectorAll('*[onload]'))
+				input.onload();
+		};
+		
+		function makeDatabaseDetailColumnContent(entry, config, col) {
+			const rows = [];
+			for (const sectionName in config.layout.rows) {
+				const layout = config.layout.rows[sectionName];
+				if (!layout || layout.col !== col)
+					continue;
+				
+				rows.push({
+					name: sectionName,
+					layout: layout
+				});
+			}
+			rows.sort((a, b) => (a.layout.row || 0) - (b.layout.row || 0));
+			
+			const groupedRows = [];
+			for (const row of rows)
+				if (!groupedRows[row.layout.row])
+					groupedRows[row.layout.row] = row;
+				else if (!Array.isArray(groupedRows[row.layout.row]))
+					groupedRows[row.layout.row] = [groupedRows[row.layout.row], row];
+				else
+					groupedRows[row.layout.row].push(row);
+			
+			let html = "";
+			for (const row of groupedRows) {
+				if (!row)
+					continue;
+				
+				if (Array.isArray(row)) {
+					const height = Math.max(...row.map((r) => r.layout.height))
+					
+					html += `<div style="display: flex; height: ${height * 100}%">`;
+					for (const r of row) {
+						const section = config.content[r.name];
+						if (!section)
+							continue;
+						html += makeDatabaseSectionRow(r, entry, section, 1);
+					}
+					html += `</div>`;
+				} else {
+					const section = config.content[row.name];
+					if (!section)
+						continue;
+					html += makeDatabaseSectionRow(row, entry, section);
+				}
+			}
+			
+			return html;
+		};
+		
+		function makeDatabaseSectionRow(row, entry, section, height) {
+			const width = row.layout.width || 1;
+			height = height ? height : (row.layout.height || 0);
+			return `
+				<div class="database-section" style="width: ${width * 100}%; height: ${height * 100}%;">
+					<div class="database-section-title">${$.Drag.VisualEvent.escapeHTML(row.name)}</div>
+					<div class="database-section-content">
+						${makeDatabaseSectionContent(entry, section)}
+					</div>
+				</div>
+			`;
+		};
+		
+		function makeDatabaseSectionContent(entry, section) {
+			let html = `<div class="database-input-rows">`;
+			for (let rowIndex = 0; rowIndex < section.inputs.length; rowIndex++) {
+				const rowInputs = Array.isArray(section.inputs[rowIndex]) ? section.inputs[rowIndex] : [section.inputs[rowIndex]];
+				const rowWidths = Array.isArray(section.widths[rowIndex]) ? section.widths[rowIndex] : [section.widths[rowIndex] || 1];
+				const rowValues = Array.isArray(section.values[rowIndex]) ? section.values[rowIndex] : [section.values[rowIndex]];
+				const rowShowTitles = section.showTitle && Array.isArray(section.showTitle[rowIndex]) ? section.showTitle[rowIndex] : [];
+				
+				html += `<div class="database-input-row">`;
+				for (let i = 0; i < rowInputs.length; i++) {
+					const inputName = rowInputs[i];
+					const width = rowWidths[i] || 1;
+					const value = rowValues[i];
+					const showTitle = rowShowTitles[i];
+					
+					const inputParameters = $.Drag.VisualEvent.getInputParameters(inputName);
+					if (Array.isArray(value))
+						inputParameters.value = value.map(val => entry.hasOwnProperty(val) ? entry[val] : '').join(',');
+					else 
+						inputParameters.value = entry.hasOwnProperty(value) ? entry[value] : inputParameters.hasOwnProperty('default') ? inputParameters.default : '';
+					
+					inputParameters.context = entry;
+					inputParameters.data = `${(inputParameters.data || "")} data-dataKey="${value}"`;
+					html += `
+						<div class="database-input-cell" style="width: ${width * 100}%;">
+							<p>${showTitle || showTitle === undefined ? (inputParameters.name || inputName) : ''}</p>
+							${$.Drag.VisualEvent.getInputField(inputParameters)}
+						</div>
+					`;
+				}
+				
+				html += `</div>`;
+			}
+			html += `</div>`;
+			
+			return html;
+		};
+		
+		function refreshDatabaseEntryList() {
+			const list = document.querySelector('#database-entry-list');
+			const config = getDatabaseCategoryConfig();
+			
+			if (!list || !config)
+				return;
+			
+			const selected = list.querySelector('.database-entry.selected');
+			const selectedId = selected ? parseInt(selected.getAttribute('data-id')) : 1;
+			
+			list.innerHTML = makeDatabaseEntryListContent(config, selectedId);
+		};
+		
+		function selectDatabaseEntry(elem) {
+			if (!elem)
+				return;
+			
+			const id = parseInt(elem.getAttribute('data-id'));
+			if (!id)
+				return;
+			
+			window._databaseEntryId = id;
+			makeDatabaseDetailsContent(id);
+			
+			const list = document.querySelector('#database-entry-list');
+			for (const selected of list.querySelectorAll('.selected'))
+				selected.classList.remove('selected');
+			elem.classList.add('selected');
+		};
+		
+		
+		
+		
+		function getDatabaseOrganization(category) {
+			window._databaseOrganization = window._databaseOrganization || {};
+			
+			if (!window._databaseOrganization[category]) {
+				window._databaseOrganization[category] = {
+					groups: {
+						"TEST 1": [1, 3, 2],
+						"TEST 2": [5, 6, 8],
+					},
+					groupOrder: ["TEST 2", "TEST 1"],
+					collapsedGroups: []
+				};
+			}
+			
+			return window._databaseOrganization[category];
+		};
+		
+		function getDatabaseGroupOfEntry(entryId, organization) {
+			for (const groupName in organization.groups)
+				if (organization.groups[groupName].includes(entryId))
+					return groupName;
+			
+			return null;
+		};
+		
+		function makeGroupedEntries(config) {
+			const data = window._data[`${config.displayName}`];
+			const organization = getDatabaseOrganization(config.displayName);
+			const groupedEntries = {};
+			const usedIds = {};
+			
+			for (const groupName in organization.groups) {
+				groupedEntries[groupName] = [];
+				
+				for (const id of organization.groups[groupName]) {
+					const entry = data[id];
+					
+					if (!entry)
+						continue;
+					
+					groupedEntries[groupName].push(entry);
+					usedIds[id] = true;
+				}
+			}
+			
+			groupedEntries[window.DEFAULT_GROUP_NAME] = [];
+			for (const entry of data) {
+				if (!entry || usedIds[entry.id])
+					continue;
+				
+				groupedEntries[window.DEFAULT_GROUP_NAME].push(entry);
+			}
+			
+			return groupedEntries;
+		};
+		
+		function getOrderedDatabaseGroups(organization) {
+			const names = [];
+			for (const name of organization.groupOrder || [])
+				if (organization.groups[name])
+					names.push(name);
+			
+			for (const name in organization.groups)
+				if (!names.includes(name))
+					names.push(name);
+			
+			return [window.DEFAULT_GROUP_NAME].concat(names);
+		};
+		
+		function toggleDatabaseGroup(elem) {
+			elem.setAttribute('data-collapsed', elem.getAttribute('data-collapsed') !== "true");
+		};
+		
+		function addDatabaseGroup(button) {
+			const category = window._databaseCategory;
+			const organization = getDatabaseOrganization(category);
+			const input = button.previousElementSibling;
+			
+			let name = input.value.trim().toUpperCase();
+			if (!name || name.toLowerCase() === window.DEFAULT_GROUP_NAME || organization.groups[name]) {
+				input.style.border = "0.0625em solid red";
+				return;
+			}
+			
+			input.style.border = "0.0625em solid transparent";
+			organization.groups[name] = [];
+			refreshDatabaseEntryList();
+		};
+		
+		function removeDatabaseGroup(event, button) {
+			event.preventDefault();
+			event.stopPropagation();
+			
+			const header = button.closest('.database-entry-group-header');
+			if (!header)
+				return;
+			
+			const groupName = header.getAttribute('data-group');
+			if (!groupName || groupName === window.DEFAULT_GROUP_NAME)
+				return;
+			
+			if (!confirm(`Remove group "${groupName}"?\n\nEntries inside this group will be moved back to ${window.DEFAULT_GROUP_NAME}.`))
+				return;
+			
+			const organization = getDatabaseOrganization(window._databaseCategory);
+			delete organization.groups[groupName];
+			
+			const index = organization.collapsedGroups.indexOf(groupName);
+			if (index >= 0)
+				organization.collapsedGroups.splice(index, 1);
+			
+			refreshDatabaseEntryList();
+		};
+		
+		function moveEntryToGroup(entryId, targetGroup, beforeEntryId = null) {
+			const organization = getDatabaseOrganization(window._databaseCategory);
+			for (const groupName in organization.groups) {
+				const index = organization.groups[groupName].indexOf(entryId);
+				if (index >= 0)
+					organization.groups[groupName].splice(index, 1);
+			}
+			
+			organization.defaultOrder = organization.defaultOrder || [];
+			let index = organization.defaultOrder.indexOf(entryId);
+			if (index >= 0)
+				organization.defaultOrder.splice(index, 1);
+			
+			const targetArray = targetGroup === window.DEFAULT_GROUP_NAME ? organization.defaultOrder : (organization.groups[targetGroup] = organization.groups[targetGroup] || []);
+			const insertIndex = beforeEntryId ? targetArray.indexOf(beforeEntryId) : -1;
+			if (insertIndex >= 0)
+				targetArray.splice(insertIndex, 0, entryId);
+			else
+				targetArray.push(entryId);
+			
+			refreshDatabaseEntryList();
+		};
+		
+		function moveDatabaseGroupBefore(groupName, beforeGroupName) {
+			const organization = getDatabaseOrganization(window._databaseCategory);
+			organization.groupOrder = organization.groupOrder || Object.keys(organization.groups);
+			organization.groupOrder = organization.groupOrder.filter(name => name !== groupName && organization.groups[name]);
+			
+			const index = organization.groupOrder.indexOf(beforeGroupName);
+			if (index >= 0)
+				organization.groupOrder.splice(index, 0, groupName);
+			else
+				organization.groupOrder.push(groupName);
+			
+			refreshDatabaseEntryList();
+		};
+		
+		//--------------------------------------------------------------------------------
+		// DRAG LIST ENTRY EVENTS
+		
+		function onEntryDragStart(event, elem) {
+			const id = parseInt(elem.getAttribute('data-id'));
+			if (!id)
+				return;
+			
+			window._draggedEntryId = id;
+			event.dataTransfer.effectAllowed = 'move';
+		};
+		
+		function onEntryDragOver(event, elem) {
+			const group = elem.closest('.database-entry-group').querySelector('.database-entry-group-header').getAttribute('data-group');
+			const draggedId = window._draggedEntryId;
+			if (group === window.DEFAULT_GROUP_NAME || !draggedId)
+				return;
+			
+			event.preventDefault();
+			elem.classList.add('drop-before');
+		};
+		
+		function onEntryDragLeave(event, elem) {
+			elem.classList.remove('drop-before');
+		};
+		
+		function onEntryDrop(event, elem) {
+			event.preventDefault();
+			event.stopPropagation();
+			elem.classList.remove('drop-before');
+			
+			const draggedId = window._draggedEntryId;
+			const beforeId = parseInt(elem.getAttribute('data-id'));
+			const group = elem.closest('.database-entry-group').querySelector('.database-entry-group-header').getAttribute('data-group');
+			if (group === window.DEFAULT_GROUP_NAME)
+				return;
+			
+			if (!draggedId || !beforeId || draggedId === beforeId)
+				return;
+			
+			moveEntryToGroup(draggedId, group, beforeId);
+			window._draggedEntryId = null;
+		};
+		
+		//--------------------------------------------------------------------------------
+		// DRAG GROUP EVENTS
+		
+		function onGroupDragStart(event, groupElem) {
+			const groupName = groupElem.getAttribute('data-group');
+			if (!groupName || groupName === window.DEFAULT_GROUP_NAME) {
+				event.preventDefault();
+				return;
+			}
+			
+			window._draggedGroupName = groupName;
+			event.dataTransfer.effectAllowed = 'move';
+		};
+		
+		function onGroupDragOver(event, groupElem) {
+			event.preventDefault();
+			
+			if (!groupElem)
+				return;
+			
+			const draggedId = window._draggedEntryId;
+			if (draggedId) {
+				if (groupElem.classList.contains('drag-over'))
+					return;
+				
+				groupElem.classList.add('drag-over');
+				event.dataTransfer.dropEffect = 'move';
+			}
+			
+			const draggedGroup = window._draggedGroupName;
+			if (draggedGroup) {
+				const targetGroup = groupElem.getAttribute('data-group');
+				if (!targetGroup || targetGroup === window.DEFAULT_GROUP_NAME || draggedGroup === targetGroup)
+					return;
+
+				groupElem.classList.add('group-drop-before');
+			}
+		};
+		
+		function onGroupDragLeave(event, groupElem) {
+			if (!groupElem)
+				return;
+			
+			const related = event.relatedTarget;
+			if (related && groupElem.contains(related))
+				return;
+			
+			groupElem.classList.remove('drag-over');
+			groupElem.classList.remove('group-drop-before');
+		};
+		
+		function onGroupDrop(event, groupElem) {
+			if (!groupElem)
+				return;
+			
+			event.preventDefault();
+			event.stopPropagation();
+			
+			groupElem.classList.remove('drag-over');
+			groupElem.classList.remove('group-drop-before');
+			
+			const entryId = window._draggedEntryId;
+			const targetGroup = groupElem.getAttribute('data-group');
+			if (!targetGroup)
+				return;
+			
+			if (entryId)
+				moveEntryToGroup(entryId, targetGroup);
+			
+			const draggedGroup = window._draggedGroupName;
+			if (draggedGroup && targetGroup !== window.DEFAULT_GROUP_NAME && draggedGroup !== targetGroup)
+				moveDatabaseGroupBefore(draggedGroup, targetGroup);
+			
+			window._draggedGroupName = null;
+			window._draggedEntryId = null;
+		};
+		
+		function gatherDatabaseEntry() {
+			const val = window._data[window._databaseCategory][window._databaseEntryId];
+			for (const input of document.querySelectorAll('#database-detail-content *[data-dataKey]')) {
+				const inputValue = $.Drag.VisualEvent.getInputValue(input);
+				if (Array.isArray(inputValue)) {
+					const key = input.getAttribute('data-dataKey');
+					const keys = key.split(',');
+					if (keys.length === inputValue.length)
+						for (const [i, value] of inputValue.entries())
+							val[keys[i]] = value;
+					else
+						val[key] = inputValue
+				} else {
+					const key = input.getAttribute('data-dataKey');					
+					val[key] = inputValue
+				}
+			}
+			
+			return val;
+		};
+		
+		function apply() {
+			const val = gatherDatabaseEntry();
+			console.log(val);
+		};
+		
+		function ok() {
+			apply();
+			quit();
+		};
+		
+		function quit() {
+			window.close();
+		};
+		
+		main();
+		$.Drag.VisualEvent.triggerAllOnReadyOnChange(document);
+		
+		nw.Window.get().on('close', function () {
+			if (window._databaseEditorDirty && confirm("Some modifications hasn't been saved. Save changes ?"))
+				apply();
+			
+			this.close(true);
+		});
+	</script>
+</body>
+</html>
