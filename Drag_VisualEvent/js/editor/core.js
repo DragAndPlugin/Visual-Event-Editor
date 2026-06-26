@@ -51,6 +51,9 @@ function init() {
 			if (window._cache.editor.search && window._cache.editor.search.open)
 				toggleSearch();
 			
+			if (window._cache.editor.nodeListDisplayMode)
+				setNodeListDisplayMode(window._cache.editor.nodeListDisplayMode);
+			
 			console.log(`Initialization completed in ${performance.now() - window._startPerformance}ms`);
 			
 			resetGraphState();
@@ -749,7 +752,10 @@ function getCommandClassList(commandCode) {
 };
 
 function makeCustomClassList(commandCategory) {
-	return `node-${commandCategory.toLowerCase().replace(/ /g, "-").replace("&", "and")}`;
+	if (!Array.isArray(commandCategory))
+		commandCategory = [commandCategory];
+	
+	return commandCategory.map(category => 'node-' + category.toLowerCase().replace(/ /g, "-").replace("&", "and")).join(' ');
 };
 
 function getCommandOutputLabel(commandCode) {
