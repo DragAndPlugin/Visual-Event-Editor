@@ -5,6 +5,7 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		characterSheet: {type: "image", name: "Character", default: "", valueCount: 2, src: 'img/characters', data: `data-src='img/characters' data-isFullCharacterSheet="true" data-previewType='image' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='png'`},
 		singleFrameCharacter: {type: "image", name: "Image", default: "", valueCount: 2, src: 'img/characters', data: `data-src='img/characters' data-isCharacterSheet="true" data-previewType='image' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='png' data-allowTilesetSelection='true'`},
 		svbattler: {type: "image", name: "SV Battler", default: "", src: 'img/sv_actors', data: `data-src='img/sv_actors' data-previewType='image' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='png'`},
+		svenemy: {type: "image", name: "SV Enemy", default: "", src: 'img/sv_enemies', data: `data-src='img/sv_enemies' data-previewType='image' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='png'`},
 		parallax: {type: "image", name: "Parallax Background", default: "", src: 'img/parallaxes', data: `data-src='img/parallaxes' data-previewType='image' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='png'`},
 		picture: {type: "image", name: "Picture", default: "", src: 'img/pictures', data: `data-src='img/pictures' data-previewType='image' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='png'`},
 		battlebacks: {type: "image", name: "Battle Backgrounds", valueCount: 2, default: "", src: ['img/battlebacks2', 'img/battlebacks1'], data: `data-fileCount='2' data-src='["img/battlebacks2", "img/battlebacks1"]' data-previewType='image' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='png'`},
@@ -31,6 +32,9 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		//conditions
 		mapEventConditions: {type: "eventConditions", name: "Conditions", default: "", eventType: 'Map Event', data: "data-eventType='Map Event'"},
 		troopEventConditions: {type: "eventConditions", name: "Conditions", default: "", eventType: 'Troop Event', data: "data-eventType='Troop Event'"},
+		
+		//notetag manager
+		notetagManager: {type: "notetagManager", name: "Notetag Manager", default: ""},
 		
 		//database
 		variable: {type: "variable", default: 1, name: "Variable"},
@@ -90,6 +94,7 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		blue: {type: "range", name: "Blue", onchange: "", default: 0, min: -255, max: 255, step: 5},
 		rangeSpeed: {type: "range", name: "Speed", onchange: "", default: 5, min: 1, max: 9, step: 1},
 		rangePower: {type: "range", name: "Power", onchange: "", default: 5, min: 1, max: 9, step: 1},
+		hue: {type: "range", name: "Hue", onchange: "", default: 0, min: 0, max: 360, step: 1},
 		
 		//buttons
 		play: {type: "button", name: "", notParam: true, value: "Play", onclick: "playAudio(this);"},
@@ -164,7 +169,9 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		selectEquipmentFromType: {type: "select", options: [], evalOptions: '["None"].concat($dataArmors.concat($dataWeapons).filter(item => item && item.etypeId === index + 1).map(item => item.name))', name: "Equipment Item", data: "data-dataType='number'", default: 0},
 		selectMZGameDataType: {type: "select", options: ["Item", "Weapon", "Armor", "Actor", "Enemy", "Character", "Party", "Other", "Last"], name: "Game Data", data: "data-dataType='number'", default: 0},
 		selectMVGameDataType: {type: "select", options: ["Item", "Weapon", "Armor", "Actor", "Enemy", "Character", "Party", "Other"], name: "Game Data", data: "data-dataType='number'", default: 0},
-		selectActorParameter: {type: "select", options: ["Level", "EXP", "HP", "MP", "Max HP", "Max MP", "Attack", "Defense", "M. Attack", "M. Defense", "Agility", "Luck", "TP"], name: "Actor Parameter", data: "data-dataType='number'", default: 0},
+		selectActorParameter: {type: "select", name: "Actor Parameter", data: "data-dataType='number'", default: 0,
+			options: ["Level", "EXP", "HP", "MP", "TP", "Max HP", "Max MP", "Attack", "Defense", "M. Attack", "M. Defense", "Agility", "Luck"], 
+			values: [0, 1, 2, 3, 12, 4, 5, 6, 7, 8, 9, 10, 11]},
 		selectTroopEnemyParameter: {type: "select", options: ["HP", "MP", "Max HP", "Max MP", "Attack", "Defense", "M. Attack", "M. Defense", "Agility", "Luck", "TP"], name: "Enemy Parameter", data: "data-dataType='number'", default: 0},
 		selectCharacterPositionDirection: {type: "select", options: ["Map X", "Map Y", "Direction", "Screen X", "Screen Y"], name: "Character Location/Direction", data: "data-dataType='number'", default: 0},
 		selectPartyMember: {type: "select", options: ["Member #1", "Member #2", "Member #3", "Member #4", "Member #5", "Member #6", "Member #7", "Member #8"], name: "Party Member", data: "data-dataType='number'", default: 0},
@@ -175,7 +182,7 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		selectAdvancedSearchItemType: {type: 'select', name: '', 
 			options: ["Integer", "Text", "Switch", "Variable", "Actor", "Animation", "Armor", "Class", "Common Event", "Enemy", "Item", "Skill", "State", "Tileset", "Troop", "Weapon", "Equipment Type", "Element Type", "Face", "Character Sheet", "Character", "SV Battler", "Parallax", "Picture", "Battlebacks", "Command"],
 			values: ["integer", "text", "switch", "variable", "actor", "animation", "armor", "class", "common_event", "enemy", "item", "skill", "state", "tileset", "troop", "weapon", "equipment_type", "elementType", "image", "image", "image", "image", "image", "image", "image", "command"]}, 
-		selectTraitType: {type: "select", name: "Trait Type",  
+		selectTraitType: {type: "select", name: "Trait Type", data: "data-dataType='number'",
 			options: ["Element Rate", "Debuff Rate", "State Rate", "State Resist", "Parameter", "Ex-Parameter", "Sp-Parameter", "Attack Element", "Attack State", "Attack Speed", "Attack Times", "Attack Skill", "Skill Type Add", "Skill Type Seal", "Skill Add", "Skill Seal", "Equip Weapon", "Equip Armor", "Equip Lock", "Equip Seal", "Slot Type", "Action Times", "Special Flag", "Collapse Effect", "Party Ability"],
 			values: [11, 12, 13, 14, 21, 22, 23, 31, 32, 33, 34, 35, 41, 42, 43, 44, 51, 52, 53, 54, 55, 61, 62, 63, 64]},
 		selectExParameter: {type: "select", name: "Ex Parameter", data: "data-dataType='number'", default: 0, options: ["Hit Rate", "Evasion Rate", "Critical Rate", "Critical Evasion", "Magic Evasion", "Magic Reflection", "Counter Attack", "HP Regeneration", "MP Regeneration", "TP Regeneration"]},
@@ -183,8 +190,22 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		selectSpecialFlag: {type: "select", name: "Special Flag", data: "data-dataType='number'", default: 0, options: ["Auto Battle", "Guard", "Substitute", "Preserve TP"], values: [0, 1, 2, 3]},
 		selectSlotType: {type: "select", name: "Slot Type", data: "data-dataType='number'", default: 0, options: ["Normal", "Dual Wield"], values: [0, 1]},
 		selectCollapseEffect: {type: "select", name: "Collapse Effect", data: "data-dataType='number'", default: 0, options: ["Normal", "Boss", "Instant"], values: [0, 1, 2]},
-		selectPartyAbility: {
-			type: "select", name: "Party Ability", data: "data-dataType='number'", default: 0, options: ["Encounter Half", "Encounter None", "Cancel Surprise", "Raise Preemptive", "Gold Double", "Drop Item Double"], values: [0, 1, 2, 3, 4, 5]},
+		selectPartyAbility: {type: "select", name: "Party Ability", data: "data-dataType='number'", default: 0, options: ["Encounter Half", "Encounter None", "Cancel Surprise", "Raise Preemptive", "Gold Double", "Drop Item Double"], values: [0, 1, 2, 3, 4, 5]},
+		selectOccasion: {type: "select", name: "Occasion", data: "data-dataType='number'", default: 0, options: ["Always", "Battle Screen", "Menu Screen", "Never"]},
+		selectScope: {type: "select", name: "Scope", data: "data-dataType='number'", default: 0, options: ["None", "Enemy", "Ally", "Enemy & Ally", "User"]},
+		selectHitType: {type: "select", name: "Hit Type", data: "data-dataType='number'", default: 0, options: ["Certain Hit", "Physical Attack", "Magical Attack"]},
+		selectDamageType: {type: "select", name: "Damage Type", data: "data-dataType='number'", default: 0, options: ["None", "HP Damage", "MP Damage", "HP Recover", "MP Recover", "HP Drain", "MP Drain"]},
+		selectCriticalHit: {type: "select", name: "Critical Hit", data: "data-dataType='number'", default: 1, options: ["Yes", "No"]},
+		selectEffectType: {type: "select", name: "Effect Type", data: "data-dataType='number'", default: 1, 
+			options: ["Recover HP", "Recover MP", "Gain TP", "Add State", "Remove State", "Add Buff", "Add Debuff", "Remove Buff", "Remove Debuff", "Special Effect", "Grow", "Learn Skill", "Common Event"],
+			values: [11, 12, 13, 21, 22, 31, 32, 33, 34, 41, 42, 43, 44]},
+		selectSpecialEffect: {type: "select", name: "Special Effect", data: "data-dataType='number'", default: 0, options: ["Escape"]},
+		selectItemType: {type: "select", name: "Item Type", data: "data-dataType='number'", default: 0, options: ["Regular Item", "Key Item", "Hidden Item A", "Hidden Item B"]},
+		selectConsumable: {type: "select", name: "Consumable", data: "data-dataType='number'", default: 0, options: ["Yes", "No"]},
+		selectRestriction: {type: "select", name: "Restriction", data: "data-dataType='number'", default: 0, options: ["None", "Attack an enemy", "Attack anyone", "Attack an ally", "Cannot move"]},
+		selectSVMotion: {type: "select", name: "[SV] Motion", data: "data-dataType='number'", default: 0, options: ["Normal", "Abnormal", "Sleep", "Dead"]},
+		selectSVOverlay: {type: "select", name: "[SV] Overlay", data: "data-dataType='number'", default: 0, options: ["None", "Poison", "Blind", "Silence", "Rage", "Confusion", "Charm", "Sleep", "Paralysis", "Cure", "Fear"]},
+		selectRemoveTiming: {type: "select", name: "Auto-removal Timing", data: "data-dataType='number'", default: 0, options: ["None", "Action End", "Turn End"]},
 		
 		//outputs
 		outputList: {type: "empty", name: "", isOutput: true, notParam: true, isList: true},
@@ -220,6 +241,10 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		fastForward: {type: "checkbox", default: false, name: "No Fast Forward"},
 		targetAllEnemies: {type: "checkbox", default: false, name: "Target all enemies in the troop"},
 		resetVariable: {type: "checkbox", name: "Reset Variable", default: true, showName: true},
+		removeBattleEnd: {type: "checkbox", name: "Remove at Battle End", default: false, showName: true},
+		removeRestriction: {type: "checkbox", name: "Remove by Restriction", default: false, showName: true},
+		removeDamage: {type: "checkbox", name: "Remove by Damage", default: false, showName: true},
+		removeWalking: {type: "checkbox", name: "Remove by Walking", default: false, showName: true},
 		
 		//integer
 		int: {type: "integer", default: 0, name: ""},
@@ -242,10 +267,30 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		sec: {type: "integer", name: "", tooltip: "sec", evalValue: "value % 60", min: 0, max: 59, default: 0},
 		min: {type: "integer", name: "",  tooltip: "min", evalValue: "Math.floor(value / 60)", min: 0, default: 0},
 		percentage: {type: "integer", name: "", tooltip: "%", default: 50, min: 0, max: 100},
-		rate: {type: "integer", name: "Rate", tooltip: "%", default: 100, min: 0, max: 100},
+		rate: {type: "integer", name: "Rate", tooltip: "%", default: 100, min: 0, max: 100, onload: "this.setAttribute('data-value', this.value); this.value = Math.floor(this.value * 100);", onchange: "this.setAttribute('data-value', this.value / 100);"},
 		valueInt: {type: "integer", default: 0, name: "Value"},
-		initialLevel: {type: "integer", default: 1, min: 0, name: "Initial Level"},
-		maxLevel: {type: "integer", default: 99, min: 0, name: "Max Level"},
+		initialLevel: {type: "integer", default: 1, min: 1, name: "Initial Level"},
+		maxLevel: {type: "integer", default: 99, min: 1, name: "Max Level"},
+		mpCost: {type: "integer", default: 0, min: 0, name: "MP Cost"},
+		tpCost: {type: "integer", default: 0, min: 0, name: "TP Cost"},
+		tpGain: {type: "integer", default: 0, min: 0, name: "TP Gain"},
+		success: {type: "integer", name: "Success", tooltip: "%", default: 100, min: 0, max: 100},
+		variance: {type: "integer", name: "Variance", tooltip: "%", default: 20, min: 0},
+		repeat: {type: "integer", name: "Repeat", tooltip: "time(s)", default: 1, min: 1},
+		turns: {type: "integer", name: "Turns", tooltip: "turn(s)", default: 1, min: 1},
+		price: {type: "integer", name: "Price", tooltip: "G", default: 0, min: 0},
+		attack: {type: "integer", name: "Attack", default: 0, min: 0},
+		defense: {type: "integer", name: "Defense", default: 0, min: 0},
+		mAttack: {type: "integer", name: "M. Attack", default: 0, min: 0},
+		mDefense: {type: "integer", name: "M. Defense", default: 0, min: 0},
+		agility: {type: "integer", name: "Agility", default: 0, min: 0},
+		luck: {type: "integer", name: "Luck", default: 0, min: 0},
+		maxHp: {type: "integer", name: "Max HP", default: 0, min: 0},
+		maxMp: {type: "integer", name: "Max MP", default: 0, min: 0},
+		exp: {type: "integer", name: "EXP", default: 0, min: 0},
+		gold: {type: "integer", name: "Gold", default: 0, min: 0},
+		rating: {type: "integer", name: "Rating", default: 1, min: 1},
+		priority: {type: "integer", name: "Priority", default: 50, min: 0},
 		intList: {type: "integer", name: "", default: 1, isList: true},
 		
 		//string & textareas
@@ -253,11 +298,13 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		string: {type: "string", name: "", default: ""},
 		stringList: {type: "string", name: "", default: "", isList: true},
 		name: {type: "string", name: "Name", default: ""},
+		notetagName: {type: "string", name: "Notetag", default: ""},
+		formula: {type: "string", name: "Formula", default: "0"},
 		text: {type: "text", name: "Text", default: ""},
 		script: {type: "text", name: "Script", default: ""},
-		notetagName: {type: "string", name: "Notetag", default: ""},
 		value: {type: "text", name: "Value", default: ""},
-		profile: {type: "text", name: "Profile", default: ""},
+		profile: {type: "text", name: "Profile", default: "", placeholder: "Enter a profile..."},
+		description: {type: "text", name: "Description", default: "", placeholder: "Enter a description..."},
 		
 		//lists
 		stringIntList: {type: "list", name: "Values / Weights", inputs: ["value", "weight"]},
@@ -269,6 +316,7 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		initialEquipments: {
 			type: "table", name: "initialEquipments", userRowCreation: false,
 			rowGenerator: "Drag_VisualEvent_getTableInitialEquipmentRow",
+			parseTable: "Drag_VisualEvent_getTableInitialEquipmentValue",
 			columns: [
 				{
 					key: "etypeId",
@@ -279,7 +327,7 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 				{
 					key: "equipId",
 					name: "Equipment",
-					getInputParameters: "Drag_VisualEvent_getTableInitialEquipmentEquippableEquipements",
+					getInputParameters: "Drag_VisualEvent_getTableInitialEquipmentEquippableEquipementsInputs",
 				},
 			],
 			columnWidths: ['10rem', '1fr'],
@@ -296,10 +344,12 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 				{
 					key: "content",
 					name: "Content",
-					getInputParameters: "Drag_VisualEvent_getTableTraitInputsFromRowCode",
+					getInputParameters: "Drag_VisualEvent_getTableTraitInputsFromRow",
+					getInputKeys: "Drag_VisualEvent_getTableTraitKeysFromRow",
 				},
 			], 
 			columnWidths: ['10rem', '1fr'],
+			defaultRowValue: {code: 0, dataId: 0, value: 1},
 		},
 		learnableSkills: {
 			type: "table", name: "learnableSkills", userRowCreation: true,
@@ -320,9 +370,49 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 					input: "note",
 				},
 			], 
-			columnWidths: ['6rem', '1fr', '1fr']
+			columnWidths: ['6rem', '1fr', '1fr'],
+			defaultRowValue: {level: 1, note: "", skillId: 1},
+		},
+		effects: {
+			type: "table", name: "effects", userRowCreation: true,
+			columns: [
+				{
+					key: "code", 
+					name: "Type", 
+					input: "selectEffectType",
+					refreshRowOnChange: true,
+				}, 
+				{
+					key: "content",
+					name: "Content",
+					getInputParameters: "Drag_VisualEvent_getTableEffectsInputsFromRow",
+				},
+			], 
+			columnWidths: ['10rem', '1fr'],
+		},
+		actionPatterns: {
+			type: "table", name: "Action Patterns", userRowCreation: true,
+			columns: [
+				{
+					key: "skillId", 
+					name: "Skill", 
+					input: "skill",
+				}, 
+				{
+					key: "condition",
+					name: "Condition",
+					input: "selectActionCondition",
+				},
+				{
+					key: "rating",
+					name: "Rating",
+					input: "rating",
+				},
+			], 
+			columnWidths: ['10rem', '1fr', '4em'],
 		},
 
+		//fallback input
 		empty: {type: "empty", name: "", default: ""},
 	};
 };
