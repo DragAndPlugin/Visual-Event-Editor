@@ -10,7 +10,10 @@ function toggleSearch() {
 		searchContainer.classList.add('hidden');
 	
 	searchContainer.querySelector('#search-result').innerHTML = '';
-	window._searchOpened = !searchContainer.classList.contains('hidden');
+	
+	const opened = !searchContainer.classList.contains('hidden');
+	window._searchOpened = opened
+	window._cache.editor.search.open = opened;
 };
 
 function focusSearch(container) {
