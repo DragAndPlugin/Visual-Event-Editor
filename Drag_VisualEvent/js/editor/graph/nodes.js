@@ -166,7 +166,7 @@ function makeNodeFromParams(params = {}, saveInHistory = false, cache = false, o
 		${isCustom && customNodeData.body && typeof customNodeData.body === "string" ? customNodeData.body : ''}
 		${(params.content || "")}
 	`;
-	console.log(nodeContent);
+	
 	node.innerHTML = nodeContent; 
 	
 	setNodePosition(node, params.x || 0, params.y || 0, false, cache);

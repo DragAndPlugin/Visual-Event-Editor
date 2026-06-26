@@ -350,7 +350,7 @@ document.addEventListener("DOMContentLoaded", function () {
 					$.Drag.VisualEvent.reloadGame();
 					break;
 				case 119: // F8
-					$.Drag.VisualEvent.showDevTools();
+					$.Drag.VisualEvent.openDevTools($);
 					break;
 			}
 		}

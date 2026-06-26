@@ -1,10 +1,3 @@
-function openAdvancedSearch(input) {
-	$.Drag.VisualEvent.openAdvancedSearchWindow(input);
-	hideCommonEventContextMenu();
-	hideMapEventContextMenu();
-	hideTroopEventContextMenu();
-};
-
 // common event
 function showCommonEventContextMenu(e) {
 	const contextmenu = document.querySelector('#common-event-contextmenu');
