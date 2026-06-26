@@ -145,6 +145,8 @@
 			
 			#rename-panel label {
 				font-size: 1em;
+				display: flex;
+				align-items: center;
 			}
 			
 			#rename-panel input {
@@ -177,6 +179,45 @@
 			#bottom-container > button {
 				cursor: pointer;
 				padding: 0.5em 2em;
+			}
+			
+			.switch-toggle {
+				position: relative;
+				width: 3em;
+				height: 1em;
+				border: 0.0625em solid rgb(255 255 255 / 30%);
+				border-radius: 999px;
+				cursor: pointer;
+				transition: background-color 0.15s ease;
+				margin: 0 0.5em;
+			}
+			
+			.switch-toggle.off {
+				background: rgb(255 0 0 / 50%);
+			}
+			
+			.switch-toggle.on {
+				background: rgb(0 128 0 / 50%);
+			}
+			
+			.switch-toggle::after {
+				content: "";
+				position: absolute;
+				top: 0.125em;
+				left: 0.125em;
+				width: calc(1em - 0.25em);
+				height: calc(1em - 0.25em);
+				border-radius: 50%;
+				background: white;
+				transition: transform 0.15s ease;
+			}
+			
+			.switch-toggle.on::after {
+				transform: translateX(2em);
+			}
+			
+			.switch-toggle:hover {
+				border-color: white;
 			}
 		</style>
     </head>
@@ -268,14 +309,23 @@
 			};
 			
 			function update() {
-				const renamePanelChilds = Array.from(document.querySelectorAll('#rename-panel > div'));
-				for (const child of renamePanelChilds) {
-					const id = parseInt(child.getAttribute('data-id'));
-					const label = child.querySelector('label');
-					const currentValue = getItemValue(id);
-					const newHtml = `${String(id).padStart(4, '0')} (${currentValue}):`;
-					if (label.innerHTML !== newHtml)
-						label.innerHTML = newHtml;
+				if (data.type === "switch") {
+					for (const toggle of document.querySelectorAll('.switch-toggle')) {
+						const id = parseInt(toggle.getAttribute('data-id'));
+						const value = $.$gameSwitches.value(id);
+						toggle.classList.toggle('on', value);
+						toggle.classList.toggle('off', !value);
+					}
+				} else {
+					const renamePanelChilds = Array.from(document.querySelectorAll('#rename-panel > div'));
+					for (const child of renamePanelChilds) {
+						const id = parseInt(child.getAttribute('data-id'));
+						const label = child.querySelector('label');
+						const currentValue = getItemValue(id);
+						const newHtml = `${String(id).padStart(4, '0')} ${currentValue}:`;
+						if (label.innerHTML !== newHtml)
+							label.innerHTML = newHtml;
+					}
 				}
 			};
 			
@@ -321,7 +371,7 @@
 				for (let i = min; i <= max; i++) {
 					const item = document.createElement('div');
 					const currentValue = getItemValue(i);
-					item.innerHTML = `<label>${String(i).padStart(4, '0')} (${currentValue}):</label>` + $.Drag.VisualEvent.getInputField({type: "string", value: items[i], default: "", placeholder: "Enter a name...", data: `data-id="${i}"`, onchange: "updateItemName(this);"});
+					item.innerHTML = `<label>${String(i).padStart(4, '0')} ${currentValue}:</label>` + $.Drag.VisualEvent.getInputField({type: "string", value: items[i], default: "", placeholder: "Enter a name...", data: `data-id="${i}"`, onchange: "updateItemName(this);"});
 					item.setAttribute('data-id', i);
 					
 					renamePanel.appendChild(item);
@@ -333,13 +383,23 @@
 					if (!$.$gameSwitches || $.$gameSwitches.length - 1 < id)
 						return "<span class='red'>?</span>";
 		
-					return $.$gameSwitches.value(id) ? "<span class='green'>ON</span>" : "<span class='red'>OFF</span>";
+					return $.$gameSwitches.value(id) ? `<div class="switch-toggle on" data-id="${id}" onclick="toggleSwitch(this)"></div>` : `<div class="switch-toggle off" data-id="${id}" onclick="toggleSwitch(this)"></div>`;
 				} else {
 					if (!$.$gameVariables || $.$gameVariables.length - 1 < id)
 						return "?";
 					
-					return $.$gameVariables.value(id);
+					return `(${$.$gameVariables.value(id)})`;
 				}
+			};
+			
+			function toggleSwitch(button) {
+				const id = parseInt(button.getAttribute("data-id"));
+
+				const newValue = !$.$gameSwitches.value(id);
+				$.$gameSwitches.setValue(id, newValue);
+
+				button.classList.toggle("on", newValue);
+				button.classList.toggle("off", !newValue);
 			};
 			
 			function updateItemName(input) {
