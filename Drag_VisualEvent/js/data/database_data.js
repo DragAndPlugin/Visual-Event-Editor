@@ -63,7 +63,7 @@ module.exports = function(RPGMAKER_NAME) {
 				},
 				"Note": {
 					inputs: [
-						["text"]
+						["notetagManager"]
 					],
 					values: [
 						["note"]
@@ -145,7 +145,7 @@ module.exports = function(RPGMAKER_NAME) {
 				},
 				"Note": {
 					inputs: [
-						["text"]
+						["notetagManager"]
 					],
 					values: [
 						["note"]
@@ -179,8 +179,8 @@ module.exports = function(RPGMAKER_NAME) {
 					inputs: [
 						["name", "icon"],
 						["description"],
-						["skillType", "mp", "tp"],
-						["scope", "occasion"],
+						["skillType", "mpCost", "tpCost"],
+						["selectScope", "selectOccasion"],
 					],
 					values: [
 						["name", "iconIndex"],
@@ -198,7 +198,7 @@ module.exports = function(RPGMAKER_NAME) {
 				"Invocation": {
 					inputs: [
 						["speed", "success", "repeat", "tpGain"],
-						["hitType", "animation"]
+						["selectHitType", "animation"]
 					],
 					values: [
 						["speed", "successRate", "repeats", "tpGain"],
@@ -222,6 +222,10 @@ module.exports = function(RPGMAKER_NAME) {
 						[1],
 						[1]
 					],
+					showTitle: [
+						[false],
+						[false]
+					],
 				},
 				"Required Weapon": {
 					inputs: [
@@ -236,9 +240,9 @@ module.exports = function(RPGMAKER_NAME) {
 				},
 				"Damage": {
 					inputs: [
-						["damageType", "elementType"],
+						["selectDamageType", "elementType"],
 						["formula"],
-						["variance", "criticalHit"],
+						["variance", "selectCriticalHit"],
 					],
 					values: [
 						["damage.type", "damage.elementId"],
@@ -267,7 +271,7 @@ module.exports = function(RPGMAKER_NAME) {
 				},
 				"Note": {
 					inputs: [
-						["text"]
+						["notetagManager"]
 					],
 					values: [
 						["note"]
@@ -303,8 +307,8 @@ module.exports = function(RPGMAKER_NAME) {
 					inputs: [
 						["name", "icon"],
 						["description"],
-						["itemType", "price", "consumable"],
-						["scope", "occasion"],
+						["selectItemType", "price", "selectConsumable"],
+						["selectScope", "selectOccasion"],
 					],
 					values: [
 						["name", "iconIndex"],
@@ -322,7 +326,7 @@ module.exports = function(RPGMAKER_NAME) {
 				"Invocation": {
 					inputs: [
 						["speed", "success", "repeat", "tpGain"],
-						["hitType", "animation"]
+						["selectHitType", "animation"]
 					],
 					values: [
 						["speed", "successRate", "repeats", "tpGain"],
@@ -335,9 +339,9 @@ module.exports = function(RPGMAKER_NAME) {
 				},
 				"Damage": {
 					inputs: [
-						["damageType", "elementType"],
+						["selectDamageType", "elementType"],
 						["formula"],
-						["variance", "criticalHit"],
+						["variance", "selectCriticalHit"],
 					],
 					values: [
 						["damage.type", "damage.elementId"],
@@ -366,7 +370,7 @@ module.exports = function(RPGMAKER_NAME) {
 				},
 				"Note": {
 					inputs: [
-						["text"]
+						["notetagManager"]
 					],
 					values: [
 						["note"]
@@ -446,7 +450,7 @@ module.exports = function(RPGMAKER_NAME) {
 				},
 				"Note": {
 					inputs: [
-						["text"]
+						["notetagManager"]
 					],
 					values: [
 						["note"]
@@ -525,7 +529,7 @@ module.exports = function(RPGMAKER_NAME) {
 				},
 				"Note": {
 					inputs: [
-						["text"]
+						["notetagManager"]
 					],
 					values: [
 						["note"]
@@ -604,6 +608,11 @@ module.exports = function(RPGMAKER_NAME) {
 						[1],
 						[1],
 					],
+					showTitle: [
+						[false],
+						[false],
+						[false],
+					],
 				},
 				"Action Patterns": {
 					inputs: [
@@ -635,7 +644,7 @@ module.exports = function(RPGMAKER_NAME) {
 				},
 				"Note": {
 					inputs: [
-						["text"]
+						["notetagManager"]
 					],
 					values: [
 						["note"]
@@ -652,9 +661,9 @@ module.exports = function(RPGMAKER_NAME) {
 				cols: 2,
 				colWidths: [0.5, 0.5],
 				rows: {
-					"General Settings": 	{col: 1, row: 1, width: 1, height: 0.4},
-					"Rewards": 				{col: 1, row: 2, width: 0.25, height: 0.3},
-					"Drop Items": 			{col: 1, row: 2, width: 0.75, height: 0.3},
+					"General Settings": 	{col: 1, row: 1, width: 1, height: 0.5},
+					"Rewards": 				{col: 1, row: 2, width: 0.25, height: 0.25},
+					"Drop Items": 			{col: 1, row: 2, width: 0.75, height: 0.25},
 					"Action Patterns": 		{col: 1, row: 3, width: 1, height: 0.3},
 					"Traits": 				{col: 2, row: 1, width: 1, height: 0.66},
 					"Note": 				{col: 2, row: 2, width: 1, height: 0.33}
@@ -669,8 +678,8 @@ module.exports = function(RPGMAKER_NAME) {
 				"General Settings": {
 					inputs: [
 						["name", "icon"],
-						["restriction", "priority"],
-						["svmotion", "svoverlay"],
+						["selectRestriction", "priority"],
+						["selectSVMotion", "selectSVOverlay"],
 					],
 					values: [
 						["name", "iconIndex"],
@@ -686,7 +695,7 @@ module.exports = function(RPGMAKER_NAME) {
 				"Removal Conditions": {
 					inputs: [
 						["removeBattleEnd", "removeRestriction"],
-						["removeTimling"],
+						["selectRemoveTiming"],
 						["removeDamage"],
 						["removeWalking"],
 					],
@@ -702,13 +711,19 @@ module.exports = function(RPGMAKER_NAME) {
 						[1],
 						[1],
 					],
+					showTitle: [
+						[false, false],
+						[true],
+						[false],
+						[false],
+					],
 				},
 				"Messages": {
 					inputs: [
-						["message"],
-						["message"],
-						["message"],
-						["message"],
+						["string"],
+						["string"],
+						["string"],
+						["string"],
 					],
 					values: [
 						["message1"],
@@ -721,6 +736,12 @@ module.exports = function(RPGMAKER_NAME) {
 						[1],
 						[1],
 						[1],
+					],
+					showTitle: [
+						[false],
+						[false],
+						[false],
+						[false],
 					],
 				},
 				"Traits": {
@@ -739,7 +760,7 @@ module.exports = function(RPGMAKER_NAME) {
 				},
 				"Note": {
 					inputs: [
-						["text"]
+						["notetagManager"]
 					],
 					values: [
 						["note"]
