@@ -380,23 +380,19 @@ function handleNodeListKeyDown(event) {
 			search.blur();
 			index = index < 0 ? 0 : (index + 1) % items.length;
 			selectNodeListCategoryCommand(items[index], nodeList);
-			console.log("down");
 			break;
 		case 38: // arrow up
 			search.blur();
 			index = index < 0 ? items.length - 1 : (index - 1 + items.length) % items.length;
 			selectNodeListCategoryCommand(items[index], nodeList);
-			console.log("up");
 			break;
 		case 37: // arrow left
 			search.blur();
 			moveNodeListCategory(-1);
-			console.log("left");
 			break;
 		case 39: // arrow right
 			search.blur();
 			moveNodeListCategory(1);
-			console.log("right");
 			break;
 		case 13: // enter
 			if (document.activeElement === search) {
