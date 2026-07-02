@@ -191,6 +191,45 @@ module.exports = function(Drag, RPGMAKER_NAME) {
 				Drag.VisualEvent.inputs.state, Drag.VisualEvent.inputs.tileset, Drag.VisualEvent.inputs.troop, Drag.VisualEvent.inputs.weapon, Drag.VisualEvent.inputs.equipmentType, Drag.VisualEvent.inputs.elementType, 
 				Drag.VisualEvent.inputs.face, Drag.VisualEvent.inputs.characterSheet, Drag.VisualEvent.inputs.singleFrameCharacter, Drag.VisualEvent.inputs.svbattler, Drag.VisualEvent.inputs.parallax, Drag.VisualEvent.inputs.picture, Drag.VisualEvent.inputs.battlebacks, 
 				Drag.VisualEvent.inputs.command],
-		}
+		},
+		selectInteractiveScope: {
+			type: "interactive", name: "Scope", behavior: [-1, 0, [1, 2], -1, -1],
+			controller: Drag.VisualEvent.inputs.selectScopeSide,
+			dependances: [
+				{
+					type: "interactive", name: "Number", behavior: [-1, -1, 0], containerStyle: "align-items: center;",
+					controller: Drag.VisualEvent.inputs.selectScopeEnemyNumber, 
+					dependances: [Drag.VisualEvent.inputs.randomEnemy]
+				},
+				Drag.VisualEvent.inputs.selectScopeAllyNumber,
+				Drag.VisualEvent.inputs.selectScopeStatus
+			],
+			dependancesStyle: [1, [0.5, 0.5]]
+		},
+		interactiveRemoveTiming: {
+			type: "interactive", name: "Auto-Removal Timing", behavior: [-1, [0, 1], [2, 3]],
+			controller: Drag.VisualEvent.inputs.selectRemoveTiming,
+			dependances: [
+				Drag.VisualEvent.inputs.turns, Drag.VisualEvent.inputs.turns,
+				Drag.VisualEvent.inputs.turns, Drag.VisualEvent.inputs.turns
+			],
+			dependancesStyle: [[0.5, 0.5], [0.5, 0.5]]
+		},
+		interactiveRemoveDamage: {
+			type: "interactive", name: "Remove by Damage", behavior: [0, -1],
+			controller: Drag.VisualEvent.inputs.selectRemoveDamage,
+			dependances: [
+				Drag.VisualEvent.inputs.percentage,
+			],
+		},
+		interactiveRemoveWalking: {
+			type: "interactive", name: "Remove by Walking", behavior: [0, -1],
+			controller: Drag.VisualEvent.inputs.selectRemoveWalking,
+			dependances: [
+				Drag.VisualEvent.inputs.steps,
+			],
+		},
+		
+		
 	};
 };

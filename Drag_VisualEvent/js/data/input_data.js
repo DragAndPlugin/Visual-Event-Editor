@@ -8,7 +8,7 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		svenemy: {type: "image", name: "SV Enemy", default: "", src: 'img/sv_enemies', data: `data-src='img/sv_enemies' data-previewType='image' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='png'`},
 		parallax: {type: "image", name: "Parallax Background", default: "", src: 'img/parallaxes', data: `data-src='img/parallaxes' data-previewType='image' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='png'`},
 		picture: {type: "image", name: "Picture", default: "", src: 'img/pictures', data: `data-src='img/pictures' data-previewType='image' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='png'`},
-		battlebacks: {type: "image", name: "Battle Backgrounds", valueCount: 2, default: "", src: ['img/battlebacks2', 'img/battlebacks1'], data: `data-fileCount='2' data-src='["img/battlebacks2", "img/battlebacks1"]' data-previewType='image' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='png'`},
+		battlebacks: {type: "image", name: "Battle Backgrounds", valueCount: 2, default: "", src: ['img/battlebacks1', 'img/battlebacks2'], data: `data-fileCount='2' data-src='["img/battlebacks1", "img/battlebacks2"]' data-previewType='image' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='png'`},
 		
 		//audio
 		bgm: {type: "audio", name: "Name", default: "Battle1", src: 'audio/bgm', data: `data-type="bgm" data-src='audio/bgm' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='ogg'`},
@@ -71,10 +71,14 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		animation: {type: "animation", default: 1, name: "Animation"},
 		animationNone: {type: "animation", default: 0, name: "Animation", addOptions: ["None"]},
 		equipmentType: {type: "equipment_type", default: 1, name: "Equipment Type"},
+		equipmentTypeNoWeapon: {type: "equipment_type", default: 2, name: "Equipment Type", removeOptions: [1]},
 		elementType: {type: "element_type", default: 1, name: "Element Type"},
+		elementTypeBasicNone: {type: "element_type", default: 1, name: "Element Type", addOptions: ["Normal Attack", "None"]},
 		skillType: {type: "skill_type", default: 1, name: "Skill Type"},
 		weaponType: {type: "weapon_type", default: 1, name: "Weapon Type"},
+		weaponTypeNone: {type: "weapon_type", default: 1, name: "Weapon Type", addOptions: ["None"]},
 		armorType: {type: "armor_type", default: 1, name: "Armor Type"},
+		armorTypeNone: {type: "armor_type", default: 1, name: "Armor Type", addOptions: ["None"]},
 		
 		//command
 		command: {type: "command", default: 0, name: "Command"},
@@ -94,7 +98,7 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		blue: {type: "range", name: "Blue", onchange: "", default: 0, min: -255, max: 255, step: 5},
 		rangeSpeed: {type: "range", name: "Speed", onchange: "", default: 5, min: 1, max: 9, step: 1},
 		rangePower: {type: "range", name: "Power", onchange: "", default: 5, min: 1, max: 9, step: 1},
-		hue: {type: "range", name: "Hue", onchange: "", default: 0, min: 0, max: 360, step: 1},
+		hue: {type: "range", name: "Hue", onchange: "updateImageHue(this);", default: 0, min: 0, max: 360, step: 1},
 		
 		//buttons
 		play: {type: "button", name: "", notParam: true, value: "Play", onclick: "playAudio(this);"},
@@ -105,6 +109,9 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		sunsetTint: {type: "button", name: "", notParam: true, value: "Sunset", data: "data-preset='sunset'", onclick: "$.Drag.VisualEvent.setPresetTint(this);"},
 		nightTint: {type: "button", name: "", notParam: true, value: "Night", data: "data-preset='night'", onclick: "$.Drag.VisualEvent.setPresetTint(this);"},
 		pictureGridPlacement: {type: "button", name: "", notParam: true, value: "Grid Placement", onclick: "$.Drag.VisualEvent.onPictureGridPlacementClick(this);"},
+		castButton: {type: "button", name: "", notParam: true, value: "casts *!", onclick: "setSkillMessage('cast');"},
+		doesButton: {type: "button", name: "", notParam: true, value: "does *!", onclick: "setSkillMessage('does');"},
+		usesButton: {type: "button", name: "", notParam: true, value: "uses *!", onclick: "setSkillMessage('uses');"},
 		
 		//radio
 		boolean: {type: "radio", options: ["ON", "OFF"], name: "", data: "data-dataType='number'", default: 0},
@@ -195,17 +202,25 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		selectScope: {type: "select", name: "Scope", data: "data-dataType='number'", default: 0, options: ["None", "Enemy", "Ally", "Enemy & Ally", "User"]},
 		selectHitType: {type: "select", name: "Hit Type", data: "data-dataType='number'", default: 0, options: ["Certain Hit", "Physical Attack", "Magical Attack"]},
 		selectDamageType: {type: "select", name: "Damage Type", data: "data-dataType='number'", default: 0, options: ["None", "HP Damage", "MP Damage", "HP Recover", "MP Recover", "HP Drain", "MP Drain"]},
-		selectCriticalHit: {type: "select", name: "Critical Hit", data: "data-dataType='number'", default: 1, options: ["Yes", "No"]},
+		selectCriticalHit: {type: "select", name: "Critical Hit", data: "data-dataType='boolean'", default: 1, options: ["Yes", "No"], values: [true, false]},
 		selectEffectType: {type: "select", name: "Effect Type", data: "data-dataType='number'", default: 1, 
 			options: ["Recover HP", "Recover MP", "Gain TP", "Add State", "Remove State", "Add Buff", "Add Debuff", "Remove Buff", "Remove Debuff", "Special Effect", "Grow", "Learn Skill", "Common Event"],
 			values: [11, 12, 13, 21, 22, 31, 32, 33, 34, 41, 42, 43, 44]},
 		selectSpecialEffect: {type: "select", name: "Special Effect", data: "data-dataType='number'", default: 0, options: ["Escape"]},
-		selectItemType: {type: "select", name: "Item Type", data: "data-dataType='number'", default: 0, options: ["Regular Item", "Key Item", "Hidden Item A", "Hidden Item B"]},
-		selectConsumable: {type: "select", name: "Consumable", data: "data-dataType='number'", default: 0, options: ["Yes", "No"]},
+		// selectItemType: {type: "select", name: "Item Type", data: "data-dataType='number'", default: 0, options: ["Regular Item", "Key Item", "Hidden Item A", "Hidden Item B"]},
+		selectConsumable: {type: "select", name: "Consumable", data: "data-dataType='boolean'", default: 0, options: ["Yes", "No"], values: [true, false]},
 		selectRestriction: {type: "select", name: "Restriction", data: "data-dataType='number'", default: 0, options: ["None", "Attack an enemy", "Attack anyone", "Attack an ally", "Cannot move"]},
 		selectSVMotion: {type: "select", name: "[SV] Motion", data: "data-dataType='number'", default: 0, options: ["Normal", "Abnormal", "Sleep", "Dead"]},
 		selectSVOverlay: {type: "select", name: "[SV] Overlay", data: "data-dataType='number'", default: 0, options: ["None", "Poison", "Blind", "Silence", "Rage", "Confusion", "Charm", "Sleep", "Paralysis", "Cure", "Fear"]},
+		selectScopeSide: {type: "select", name: "Side", data: "data-dataType='number'", default: 0, options: ["None", "Enemy", "Ally", "All Enemy & Ally", "User"]},
+		selectScopeEnemyNumber: {type: "select", name: "Number", data: "data-dataType='number'", default: 0, options: ["One", "All", "Random"]},
+		selectScopeAllyNumber: {type: "select", name: "Number", data: "data-dataType='number'", default: 0, options: ["One", "All"]},
+		selectScopeStatus: {type: "select", name: "Status", data: "data-dataType='number'", default: 0, options: ["Alive", "Dead", "Unconditional"]},
+		selectItemKind: {type: "select", name: "Item Kind", data: "data-dataType='number'", default: 1, options: ["None", "Item", "Weapons", "Armors"]},
+		selectActionCondition: {type: "select", name: "Condition", data: "data-dataType='number'", default: 1, options: ["Always", "Turn", "HP", "MP", "State", "Party Level", "Switch"]},
 		selectRemoveTiming: {type: "select", name: "Auto-removal Timing", data: "data-dataType='number'", default: 0, options: ["None", "Action End", "Turn End"]},
+		selectRemoveDamage: {type: "select", name: "Remove by Damage", data: "data-dataType='boolean'", default: false, options: ["Yes", "No"], values: [true, false]},
+		selectRemoveWalking: {type: "select", name: "Remove by Walking", data: "data-dataType='boolean'", default: false, options: ["Yes", "No"], values: [true, false]},
 		
 		//outputs
 		outputList: {type: "empty", name: "", isOutput: true, notParam: true, isList: true},
@@ -243,8 +258,6 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		resetVariable: {type: "checkbox", name: "Reset Variable", default: true, showName: true},
 		removeBattleEnd: {type: "checkbox", name: "Remove at Battle End", default: false, showName: true},
 		removeRestriction: {type: "checkbox", name: "Remove by Restriction", default: false, showName: true},
-		removeDamage: {type: "checkbox", name: "Remove by Damage", default: false, showName: true},
-		removeWalking: {type: "checkbox", name: "Remove by Walking", default: false, showName: true},
 		
 		//integer
 		int: {type: "integer", default: 0, name: ""},
@@ -278,7 +291,9 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		variance: {type: "integer", name: "Variance", tooltip: "%", default: 20, min: 0},
 		repeat: {type: "integer", name: "Repeat", tooltip: "time(s)", default: 1, min: 1},
 		turns: {type: "integer", name: "Turns", tooltip: "turn(s)", default: 1, min: 1},
+		steps: {type: "integer", name: "Steps", tooltip: "step(s)", default: 100, min: 1},
 		price: {type: "integer", name: "Price", tooltip: "G", default: 0, min: 0},
+		itemDropProbability: {type: "integer", name: "Probability", tooltip: "1 /", default: 1, min: 1},
 		attack: {type: "integer", name: "Attack", default: 0, min: 0},
 		defense: {type: "integer", name: "Defense", default: 0, min: 0},
 		mAttack: {type: "integer", name: "M. Attack", default: 0, min: 0},
@@ -291,6 +306,7 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 		gold: {type: "integer", name: "Gold", default: 0, min: 0},
 		rating: {type: "integer", name: "Rating", default: 1, min: 1},
 		priority: {type: "integer", name: "Priority", default: 50, min: 0},
+		randomEnemy: {type: "integer", name: "Random", default: 1, min: 1, max: 4},
 		intList: {type: "integer", name: "", default: 1, isList: true},
 		
 		//string & textareas
@@ -386,12 +402,35 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 					key: "content",
 					name: "Content",
 					getInputParameters: "Drag_VisualEvent_getTableEffectsInputsFromRow",
+					getInputKeys: "Drag_VisualEvent_getTableEffectsKeysFromRow",
 				},
 			], 
 			columnWidths: ['10rem', '1fr'],
 		},
+		dropItems: {
+			type: "table", name: "dropItems", userRowCreation: true,
+			columns: [
+				{
+					key: "kind", 
+					name: "Kind", 
+					input: "selectItemKind",
+					refreshRowOnChange: true,
+				}, 
+				{
+					key: "dataId",
+					name: "ID",
+					getInputParameters: "Drag_VisualEvent_getTableDropItemInputsFromRow",
+				},
+				{
+					key: "denominator",
+					name: "Probability",
+					input: "itemDropProbability",
+				},
+			], 
+			columnWidths: ['0.6fr', '1fr', '0.5fr'],
+		},
 		actionPatterns: {
-			type: "table", name: "Action Patterns", userRowCreation: true,
+			type: "table", name: "actionPatterns", userRowCreation: true,
 			columns: [
 				{
 					key: "skillId", 
@@ -399,9 +438,15 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 					input: "skill",
 				}, 
 				{
-					key: "condition",
-					name: "Condition",
+					key: "conditionType", 
+					name: "Condition Type", 
 					input: "selectActionCondition",
+					refreshRowOnChange: true,
+				},
+				{
+					name: "Condition Parameters",
+					getInputParameters: "Drag_VisualEvent_getTableActionPatternsInputsFromRow",
+					getInputKeys: "Drag_VisualEvent_getTableActionPatternsKeysFromRow",
 				},
 				{
 					key: "rating",
@@ -409,7 +454,7 @@ module.exports = function(RPGMAKER_NAME, VisualEvent, window) {
 					input: "rating",
 				},
 			], 
-			columnWidths: ['10rem', '1fr', '4em'],
+			columnWidths: ['10rem', '0.5fr', '1fr', '4em'],
 		},
 
 		//fallback input

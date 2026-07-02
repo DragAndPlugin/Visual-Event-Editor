@@ -74,6 +74,9 @@ module.exports = function(RPGMAKER_NAME) {
 					showTitle: [
 						[false]
 					],
+					rowStyle: [
+						['min-height: 100%;']
+					],
 				},
 			},
 			layout: {
@@ -156,6 +159,9 @@ module.exports = function(RPGMAKER_NAME) {
 					showTitle: [
 						[false]
 					],
+					rowStyle: [
+						['min-height: 100%;']
+					],
 				},
 			},
 			layout: {
@@ -180,7 +186,7 @@ module.exports = function(RPGMAKER_NAME) {
 						["name", "icon"],
 						["description"],
 						["skillType", "mpCost", "tpCost"],
-						["selectScope", "selectOccasion"],
+						["selectInteractiveScope", "selectOccasion"],
 					],
 					values: [
 						["name", "iconIndex"],
@@ -192,7 +198,7 @@ module.exports = function(RPGMAKER_NAME) {
 						[0.75, 0.25],
 						[1],
 						[0.5, 0.25, 0.25],
-						[0.5, 0.5]
+						[0.75, 0.25]
 					],
 				},
 				"Invocation": {
@@ -212,7 +218,8 @@ module.exports = function(RPGMAKER_NAME) {
 				"Message": {
 					inputs: [
 						["string"], 
-						["string"]
+						["string"],
+						["castButton", "doesButton", "usesButton"],
 					],
 					values: [
 						["message1"], 
@@ -220,16 +227,18 @@ module.exports = function(RPGMAKER_NAME) {
 					],
 					widths: [
 						[1],
-						[1]
+						[1],
+						["fit-content", "fit-content", "fit-content"],
 					],
 					showTitle: [
 						[false],
-						[false]
+						[false],
+						[false, false, false],
 					],
 				},
 				"Required Weapon": {
 					inputs: [
-						["weaponType", "weaponType"]
+						["weaponTypeNone", "weaponTypeNone"]
 					],
 					values: [
 						["requiredWtypeId1", "requiredWtypeId2"]
@@ -240,14 +249,14 @@ module.exports = function(RPGMAKER_NAME) {
 				},
 				"Damage": {
 					inputs: [
-						["selectDamageType", "elementType"],
+						["selectDamageType", "elementTypeBasicNone"],
 						["formula"],
 						["variance", "selectCriticalHit"],
 					],
 					values: [
-						["damage.type", "damage.elementId"],
-						["damage.formula"],
-						["damage.variance", "damage.critical"],
+						[{"damage": "type"}, {"damage": "elementId"}],
+						[{"damage": "formula"}],
+						[{"damage": "variance"}, {"damage": "critical"}],
 					],
 					widths: [
 						[0.5, 0.5],
@@ -282,6 +291,9 @@ module.exports = function(RPGMAKER_NAME) {
 					showTitle: [
 						[false]
 					],
+					rowStyle: [
+						['min-height: 100%;']
+					],
 				},
 			},
 			layout: {
@@ -290,8 +302,8 @@ module.exports = function(RPGMAKER_NAME) {
 				rows: {
 					"General Settings": 	{col: 1, row: 1, width: 1, height: 0.4},
 					"Invocation": 			{col: 1, row: 2, width: 1, height: 0.2},
-					"Message": 				{col: 1, row: 3, width: 1, height: 0.2},
-					"Required Weapon": 		{col: 1, row: 4, width: 1, height: 0.2},
+					"Message": 				{col: 1, row: 3, width: 1, height: 0.25},
+					"Required Weapon": 		{col: 1, row: 4, width: 1, height: 0.15},
 					"Damage": 				{col: 2, row: 1, width: 1, height: 0.33},
 					"Effects": 				{col: 2, row: 2, width: 1, height: 0.33},
 					"Note": 				{col: 2, row: 3, width: 1, height: 0.33}
@@ -308,7 +320,7 @@ module.exports = function(RPGMAKER_NAME) {
 						["name", "icon"],
 						["description"],
 						["selectItemType", "price", "selectConsumable"],
-						["selectScope", "selectOccasion"],
+						["selectInteractiveScope", "selectOccasion"],
 					],
 					values: [
 						["name", "iconIndex"],
@@ -320,7 +332,7 @@ module.exports = function(RPGMAKER_NAME) {
 						[0.75, 0.25],
 						[1],
 						[0.5, 0.25, 0.25],
-						[0.5, 0.5]
+						[0.75, 0.25]
 					],
 				},
 				"Invocation": {
@@ -339,14 +351,14 @@ module.exports = function(RPGMAKER_NAME) {
 				},
 				"Damage": {
 					inputs: [
-						["selectDamageType", "elementType"],
+						["selectDamageType", "elementTypeBasicNone"],
 						["formula"],
 						["variance", "selectCriticalHit"],
 					],
 					values: [
-						["damage.type", "damage.elementId"],
-						["damage.formula"],
-						["damage.variance", "damage.critical"],
+						[{"damage": "type"}, {"damage": "elementId"}],
+						[{"damage": "formula"}],
+						[{"damage": "variance"}, {"damage": "critical"}],
 					],
 					widths: [
 						[0.5, 0.5],
@@ -380,6 +392,9 @@ module.exports = function(RPGMAKER_NAME) {
 					],
 					showTitle: [
 						[false]
+					],
+					rowStyle: [
+						['min-height: 100%;']
 					],
 				},
 			},
@@ -405,12 +420,12 @@ module.exports = function(RPGMAKER_NAME) {
 						["name", "icon"],
 						["description"],
 						["weaponType", "price"],
-						["animation"],
+						["animationNone"],
 					],
 					values: [
 						["name", "iconIndex"],
 						["description"],
-						["etypeId", "price"],
+						["wtypeId", "price"],
 						["animationId"],
 					],
 					widths: [
@@ -426,8 +441,8 @@ module.exports = function(RPGMAKER_NAME) {
 						["agility", "luck", "maxHp", "maxMp"],
 					],
 					values: [
-						["params[0]", "params[1]", "params[2]", "params[3]"],
-						["params[4]", "params[5]", "params[6]", "params[7]"],
+						[{params: 2}, {params: 3}, {params: 4}, {params: 5}],
+						[{params: 6}, {params: 7}, {params: 0}, {params: 1}],
 					],
 					widths: [
 						[0.25, 0.25, 0.25, 0.25],
@@ -460,6 +475,9 @@ module.exports = function(RPGMAKER_NAME) {
 					],
 					showTitle: [
 						[false]
+					],
+					rowStyle: [
+						['min-height: 100%;']
 					],
 				},
 			},
@@ -483,8 +501,8 @@ module.exports = function(RPGMAKER_NAME) {
 					inputs: [
 						["name", "icon"],
 						["description"],
-						["armorType", "price"],
-						["equipmentType"],
+						["armorTypeNone", "price"],
+						["equipmentTypeNoWeapon"],
 					],
 					values: [
 						["name", "iconIndex"],
@@ -505,8 +523,8 @@ module.exports = function(RPGMAKER_NAME) {
 						["agility", "luck", "maxHp", "maxMp"],
 					],
 					values: [
-						["params[0]", "params[1]", "params[2]", "params[3]"],
-						["params[4]", "params[5]", "params[6]", "params[7]"],
+						[{params: 2}, {params: 3}, {params: 4}, {params: 5}],
+						[{params: 6}, {params: 7}, {params: 0}, {params: 1}],
 					],
 					widths: [
 						[0.25, 0.25, 0.25, 0.25],
@@ -540,6 +558,9 @@ module.exports = function(RPGMAKER_NAME) {
 					showTitle: [
 						[false]
 					],
+					rowStyle: [
+						['min-height: 100%;']
+					],
 				},
 			},
 			layout: {
@@ -562,14 +583,14 @@ module.exports = function(RPGMAKER_NAME) {
 					inputs: [
 						["name"],
 						["svenemy", "hue"],
-						["maxHp", "maxmP", "attack", "defense"],
+						["maxHp", "maxMp", "attack", "defense"],
 						["mAttack", "mDefense", "agility", "luck"],
 					],
 					values: [
 						["name"],
 						["battlerName", "battlerHue"],
-						["params[0]", "params[1]", "params[2]", "params[3]"],
-						["params[4]", "params[5]", "params[6]", "params[7]"],
+						[{params: 0}, {params: 1}, {params: 2}, {params: 3}],
+						[{params: 4}, {params: 5}, {params: 6}, {params: 7}],
 					],
 					widths: [
 						[1],
@@ -594,23 +615,15 @@ module.exports = function(RPGMAKER_NAME) {
 				},
 				"Drop Items": {
 					inputs: [
-						["selectEnemyDropItem"],
-						["selectEnemyDropItem"],
-						["selectEnemyDropItem"],
+						["dropItems"]
 					],
 					values: [
-						["dropItems[0]"],
-						["dropItems[1]"],
-						["dropItems[2]"],
+						["dropItems"]
 					],
 					widths: [
 						[1],
-						[1],
-						[1],
 					],
 					showTitle: [
-						[false],
-						[false],
 						[false],
 					],
 				},
@@ -655,16 +668,19 @@ module.exports = function(RPGMAKER_NAME) {
 					showTitle: [
 						[false]
 					],
+					rowStyle: [
+						['min-height: 100%;']
+					],
 				},
 			},
 			layout: {
 				cols: 2,
 				colWidths: [0.5, 0.5],
 				rows: {
-					"General Settings": 	{col: 1, row: 1, width: 1, height: 0.5},
-					"Rewards": 				{col: 1, row: 2, width: 0.25, height: 0.25},
-					"Drop Items": 			{col: 1, row: 2, width: 0.75, height: 0.25},
-					"Action Patterns": 		{col: 1, row: 3, width: 1, height: 0.3},
+					"General Settings": 	{col: 1, row: 1, width: 1, height: "fit-content"},
+					"Rewards": 				{col: 1, row: 2, width: 0.25, height: 0.29},
+					"Drop Items": 			{col: 1, row: 2, width: 0.75, height: 0.29},
+					"Action Patterns": 		{col: 1, row: 3, width: 1, height: 0.28},
 					"Traits": 				{col: 2, row: 1, width: 1, height: 0.66},
 					"Note": 				{col: 2, row: 2, width: 1, height: 0.33}
 				},
@@ -695,9 +711,9 @@ module.exports = function(RPGMAKER_NAME) {
 				"Removal Conditions": {
 					inputs: [
 						["removeBattleEnd", "removeRestriction"],
-						["selectRemoveTiming"],
-						["removeDamage"],
-						["removeWalking"],
+						["interactiveRemoveTiming"],
+						["interactiveRemoveDamage"],
+						["interactiveRemoveWalking"],
 					],
 					values: [
 						["removeAtBattleEnd", "removeByRestriction"],
@@ -714,8 +730,8 @@ module.exports = function(RPGMAKER_NAME) {
 					showTitle: [
 						[false, false],
 						[true],
-						[false],
-						[false],
+						[true],
+						[true],
 					],
 				},
 				"Messages": {
@@ -738,10 +754,10 @@ module.exports = function(RPGMAKER_NAME) {
 						[1],
 					],
 					showTitle: [
-						[false],
-						[false],
-						[false],
-						[false],
+						["If an actor is inflicted with the state :"],
+						["If an enemy is inflicted with the state :"],
+						["If the state persists :"],
+						["If the state is removed :"],
 					],
 				},
 				"Traits": {
@@ -770,6 +786,9 @@ module.exports = function(RPGMAKER_NAME) {
 					],
 					showTitle: [
 						[false]
+					],
+					rowStyle: [
+						['min-height: 100%;']
 					],
 				},
 			},
