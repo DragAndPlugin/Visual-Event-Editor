@@ -443,7 +443,7 @@
 							image.onload = hasSubSelection() ? setupSubSelection.bind(this, image) : '';
 							image.setAttribute('data-id', id);
 							if (id > 0)
-								image.style.zIndex = `-${id}`;
+								image.style.zIndex = `${id}`;
 							
 							if (id >= contentPreview.children.length)
 								contentPreview.appendChild(image);

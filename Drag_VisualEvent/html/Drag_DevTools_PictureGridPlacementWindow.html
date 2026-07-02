@@ -12,17 +12,17 @@
 		:root {
 			--background-color2: #21222b;
 		}
-
+		
 		html, body {
 			height: 100%;
 			overflow: hidden;
 		}
-
+		
 		body {
 			margin: 0;
 			background: var(--background-color);
 		}
-
+		
 		#content {
 			display: grid;
 			grid-template-columns: 1fr 21em;
@@ -30,7 +30,7 @@
 			padding-bottom: 3.125em;
 			box-sizing: border-box;
 		}
-
+		
 		#preview-panel {
 			display: flex;
 			align-items: center;
@@ -41,14 +41,14 @@
 			box-sizing: border-box;
 			overflow: auto;
 		}
-
+		
 		#preview-container {
 			position: relative;
 			overflow: hidden;
 			background: black;
 			user-select: none;
 		}
-	
+		
 		#preview-container > div {
 			position: absolute;
 			top: 0;
@@ -61,26 +61,27 @@
 		#preview-container > div:first-child {
 			background-size: cover;
 		}
-
+		
 		#preview-picture {
 			position: absolute;
 			cursor: move;
 			box-shadow: 0 0 0 0.0625em white;
 		}
-
+		
 		#settings-panel {
 			display: flex;
 			flex-direction: column;
 			min-width: 0;
 			min-height: 0;
 			padding: 1em;
+			padding-bottom: 0;
 			box-sizing: border-box;
 			border-left: 0.0625em solid rebeccapurple;
 			background: var(--background-color2);
 			overflow-y: auto;
-			font-size: 0.85em;
+			font-size: 0.8em;
 		}
-
+		
 		#settings-panel > div {
 			margin-bottom: 1em;
 			padding-bottom: 1em;
@@ -88,9 +89,14 @@
 		}
 		
 		#settings-panel > div:last-child {
+			margin-bottom: 0;
+			padding-bottom: 0;
+		}
+		
+		#settings-panel > div:last-child {
 			border-bottom: 0;
 		}
-
+		
 		#settings-panel > div > h3 {
 			margin: 0 0 0.75em 0;
 			text-transform: uppercase;
@@ -98,27 +104,29 @@
 			letter-spacing: 0.05em;
 			text-align: center;
 		}
-
+		
 		.input-row {
 			display: flex;
 			align-items: center;
 			margin-bottom: 0.5em;
 		}
-
+		
 		.input-row > label {
 			flex: 0 0 8em;
 		}
 		
 		.input-row > input[type="checkbox"] {
 			flex: 0 0 auto;
+			margin-right: 1em;
 		}
-
+		
 		.presets {
 			display: grid;
-			grid-template-columns: 1fr 1fr 1fr 1fr;
-			grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
+			grid-template-columns: repeat(4, 5em);
+			grid-template-rows: repeat(5, 3em);
+			justify-content: center;
 		}
-
+		
 		.presets > button {
 			margin: 0.15em;
 			padding: 0.45em;
@@ -143,7 +151,7 @@
 		#user-preset-input {
 			flex: 1 1 auto;
 		}
-
+		
 		#bottom-container {
 			position: fixed;
 			right: 0;
@@ -157,20 +165,20 @@
 			border-top: 0.0625em solid rebeccapurple;
 			background: var(--background-color2);
 		}
-
+		
 		#bottom-container > * {
 			margin-right: 1em;
 		}
-
+		
 		#bottom-container > *:last-child {
 			margin-right: 0em;
 		}
-
+		
 		#bottom-container > button {
 			cursor: pointer;
 			padding: 0.5em 2em;
 		}
-
+		
 		input[type="text"], input[type="number"] {
 			min-width: 0 !important;
 			border: 0.0625rem solid var(--color);
@@ -189,16 +197,16 @@
 			fill: white ! important;
 			stroke: white !important;
 		}
-
+		
 		button {
 			padding: 0.625em 1.25em;
 			border: 0.0625em solid var(--color);
 		}
-
+		
 		button:hover {
 			background: var(--background-color2);
 		}
-
+		
 		button:active {
 			transform: scale(0.985);
 		}
@@ -250,38 +258,32 @@
 			<div>
 				<h3>Grid</h3>
 				<div class="input-row">
-					<label>Show Grid</label>
+					<label>Grid</label>
 					<input id="show-grid-input" type="checkbox" checked onchange="updateGrid();">
-				</div>
-				<div class="input-row">
-					<label>Grid Size</label>
 					<input id="grid-size-input" type="number" value="48" min="4" onchange="updateGrid();">
 				</div>
 				<div class="input-row">
 					<label>Snap</label>
 					<input id="snap-input" type="checkbox" checked>
-				</div>
-				<div class="input-row">
-					<label>Snap Size</label>
 					<input id="snap-size-input" type="number" value="8" min="1">
 				</div>
 			</div>
 			<div>
 				<h3>Presets</h3>
 				<div class="presets">
-					<button onclick="applyPreset(0, 0);">↖</button>
-					<button onclick="applyPreset(0.5, 0);">↑</button>
-					<button onclick="applyPreset(1, 0);">↗</button>
+					<button onclick="applyPreset(0, 0);"><span></span></button>
+					<button onclick="applyPreset(0.5, 0);"><span style="left: 50%; transform: translate(-50%, 0);"></span></button>
+					<button onclick="applyPreset(1, 0);"><span style="left: unset;"></span></button>
 					<button onclick="applyPreset(0, 0, 1, 0.334);"><span style="width: unset; bottom: unset;"></span></button>
 					
-					<button onclick="applyPreset(0, 0.5);">←</button>
-					<button onclick="applyPreset(0.5, 0.5);">●</button>
-					<button onclick="applyPreset(1, 0.5);">→</button>
+					<button onclick="applyPreset(0, 0.5);"><span style="top: 50%; transform: translate(0, -50%);"></span></button>
+					<button onclick="applyPreset(0.5, 0.5);"><span style="top: 50%; transform: translate(-50%, -50%); left: 50%;"></span></button>
+					<button onclick="applyPreset(1, 0.5);"><span style="top: 50%; transform: translate(0, -50%); left: unset;"></span></button>
 					<button onclick="applyPreset(0, 0.334, 1, 0.334);"><span style="transform: translate(0%, -50%); top: 50%; bottom: unset; width: unset;"></span></button>
 					
-					<button onclick="applyPreset(0, 1);">↙</button>
-					<button onclick="applyPreset(0.5, 1);">↓</button>
-					<button onclick="applyPreset(1, 1);">↘</button>
+					<button onclick="applyPreset(0, 1);"><span style="top: unset;"></span></button>
+					<button onclick="applyPreset(0.5, 1);"><span style="top: unset; left: 50%; transform: translate(-50%, 0);"></span></button>
+					<button onclick="applyPreset(1, 1);"><span style="top: unset; left: unset;"></span></button>
 					<button onclick="applyPreset(0, 0.667, 1, 0.334);"><span style="top: unset; width: unset;"></span></button>
 					
 					<button onclick="applyPreset(0, 0, 0.334, 1);"><span style="right: unset; height: unset;"></span></button>
@@ -405,13 +407,14 @@
 			const y = Number(document.querySelector("#y-input").value);
 			const scaleX = Number(document.querySelector("#scale-x-input").value || 100);
 			const scaleY = Number(document.querySelector("#scale-y-input").value || 100);
-			const opacity = Number(document.querySelector("#opacity-input").value ?? 255);
+			const opacity = Number(document.querySelector("#opacity-input").value || 255);
 			const blendMode = Number(document.querySelector("#blend-mode-input").value || 0);
 			const pictureName = document.querySelector('#picture-input').value || "";
 			
-			if (pictureName)
+			if (pictureName) {
 				picture.src = "../../img/pictures/" + pictureName + ".png";
-			else
+				picture.style.display = "initial";
+			} else
 				picture.style.display = "none";
 			
 			picture.style.left = x + "px";
@@ -433,9 +436,8 @@
 					break;
 			}
 			
-			const offsetX = origin === 1 ? -50 : 0;
-			const offsetY = origin === 1 ? -50 : 0;
-			picture.style.transform = `translate(${offsetX}%, ${offsetY}%) scale(${scaleX / 100}, ${scaleY / 100})`;
+			picture.style.transformOrigin = origin === 0 ? 'top left' : 'center';
+			picture.style.transform = `translate(${origin === 1 ? -50 : 0}%, ${origin === 1 ? -50 : 0}%) scale(${scaleX / 100}, ${scaleY / 100})`;
 		};
 		
 		function setGridDefaultSize() {
@@ -714,7 +716,7 @@
 			if (window.data.inputs[2])
 				window.data.inputs[2].value = String(result.origin);
 			
-			if (window.data.inputs[3] && window.data.inputs[3].value == "0") {
+			if (window.data.positionDesignation === 0) {
 				if (window.data.inputs[4])
 					window.data.inputs[4].value = result.x;
 				if (window.data.inputs[5])

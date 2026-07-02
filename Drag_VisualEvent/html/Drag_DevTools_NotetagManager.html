@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html style="height: 100%">
+<html>
     <head>
         <meta charset="UTF-8">
         <meta name="apple-mobile-web-app-capable" content="yes">
@@ -9,8 +9,17 @@
         <link rel="apple-touch-icon" href="../../icon/icon.png">
 		<link href="../css/Drag_DevTools.css" rel="stylesheet">
 		<style>
+			:root {
+				--background-color2: #21222b;
+			}
 			html {
 				overflow-y: auto;
+			}
+			
+			h3 {
+				margin: 0;
+				letter-spacing: 0.025em;
+				margin-right: 0.5em;
 			}
 
 			#content {
@@ -18,20 +27,64 @@
 				margin: 0;
 			}
 			
-			#notes-container, #notetags-container {
-				padding: 0.5em;
+			#notes-container {
+				padding: 1em 0.5em 1.5em 0.5em;
+				border-bottom: 0.0625em solid rebeccapurple;
+				background: var(--background-color2);
 			}
 			
-			#notes-container > div, #notetags-container > div {
-				padding: 0.5em;
-				text-align: center;
+			#notes-container > *:last-child {
+				margin-top: 1em;
+				margin-left: 0.5em;
+				resize: vertical;
+			}
+
+			#notetags-container {
+				padding: 0.5em 0em;
+			}
+			
+			#notetags-container > div:first-child {
+				display: grid;
+				grid-template-columns: auto 1fr 4.5em;
+				margin: 0.5em 0.5em;
+			}
+			
+			#notetags-container > div:first-child > * {
+				display: flex;
+				align-items: center;
+			}
+			
+			#notetags-container > div:first-child button {
+				margin-left: 0.75em;
+				margin-top: 1em;
+			}
+			
+			#notetag-container {
+				padding: 1em 1em;
+				display: grid;
+				grid-template-columns: 1fr 4em;
+			}
+			
+			#notetag-container:nth-child(even) {
+				background: rgb(255 255 255 / 5%);
 			}
 			
 			#notetag-name-container, #notetag-value-container {
 				display: flex;
 				align-items: center;
+				justify-content: center;
 				position: relative;
-				margin-bottom: 0.5em;
+				padding: 0.25em 0;
+			}
+			
+			#notetag-value-container textarea {
+				resize: vertical;
+			}
+			
+			#notetag-button-container {
+				display: flex;
+				justify-content: flex-end;
+				align-items: center;
 			}
 			
 			#notetag-name-container::before, #notetag-name-container::after, #notetag-value-container::after {
@@ -48,36 +101,61 @@
 			
 			#notetag-name-container::after {
 				content: ":";
-				right: 0.3125em;
+				right: 0.8125em;
 			}
 			
 			#notetag-value-container::after {
 				content: ">";
-				right: 0.3125em;
+				right: 0.8125em;
 			}
 			
 			#notetag-name-container > input {
 				padding-left: 1em;
 			}
 			
+			#notetags-container button {
+				cursor: pointer;
+				min-width: 1.8em;
+				height: 1.8em;
+				padding: 0;
+				margin-right: 0.25em;
+				width: fit-content;
+			}
+			
+			#notetag-container > *:nth-child(odd) {
+				border-right: 1px solid gray;
+				padding-right: 0.5em;
+			}
+			
+			#notetag-container:last-child > #notetag-button-container:last-child > button:last-child {
+				opacity: 0;
+				pointer-events: none;
+			}
+			
+			
+			#notetag-container:nth-child(2) > #notetag-button-container:last-child > button:first-child {
+				opacity: 0;
+				pointer-events: none;
+			}
+			
 			#bottom-container {
 				position: fixed;
+				right: 0;
 				bottom: 0;
 				left: 0;
-				right: 0;
-				padding: 1em;
-				padding-right: 4em;
-				border-top: 0.125em solid rebeccapurple;
-				background-color: var(--background-color);
 				display: flex;
 				justify-content: flex-end;
-				z-index: 10;
+				max-height: 3.125em;
+				padding: 0.5em;
+				box-sizing: border-box;
+				border-top: 0.0625em solid rebeccapurple;
+				background: var(--background-color2);
 			}
-			
+
 			#bottom-container > * {
-				margin-right: 1.5em;
+				margin-right: 1em;
 			}
-			
+
 			#bottom-container > *:last-child {
 				margin-right: 0em;
 			}
@@ -86,17 +164,74 @@
 				cursor: pointer;
 				padding: 0.5em 2em;
 			}
+
+			input[type="text"], input[type="number"] {
+				min-width: 0 !important;
+				border: 0.0625rem solid var(--color);
+			}
 			
-			input[type="checkbox"] + span {
-				cursor: pointer;
+			input[type="text"]:focus, input[type="number"]:focus {
+				border: 0.0625rem solid rebeccapurple;
+			}
+
+			input[data-inputtype="struct"], input[data-inputType="struct"] {
+				display: none;
+			}
+
+			#autofit-textarea-checkbox {
+				opacity: 0;
+			}
+			
+			#autofit-textarea-checkbox:not(:checked) ~ span > svg > path {
+				fill: grey !important;
+				stroke: grey !important;
+			}
+			
+			#autofit-textarea-checkbox:checked ~ span > svg > path {
+				fill: white ! important;
+				stroke: white !important;
+			}
+
+			textarea {
+				max-width: 100%;
+				border: 0.0625rem solid var(--color);
+			}
+			
+			textarea:focus {
+				outline: none;
+				border: 0.0625rem solid rebeccapurple;
+			}
+
+			button {
+				padding: 0.625em 1.25em;
+				border: 0.0625em solid var(--color);
+			}
+
+			button:hover {
+				background: var(--background-color2);
+			}
+
+			button:active {
+				transform: scale(0.985);
+			}
+			
+			.search-hidden, .collapsed {
+				display: none !important;
+			}
+			
+			.selectable {
+				border: 0.0625em solid transparent;
+			}
+			
+			.selected {
+				border: 0.0625em solid rgb(255 255 255 / 50%);
 			}
 		</style>
     </head>
     <body style="height: 100%">
 		<div id="content">
 			<div id="notes-container">
-				<span>Notes :</span>
-				<input type="text" placeholder="Write notes" />
+				<h3>Notes :</h3>
 			</div>
 			<div id="notetags-container"></div>
 			<div id="bottom-container">
@@ -105,8 +240,6 @@
 			</div>
 		</div>
 		<script type="text/javascript">			
-			// to do 
-			// rememner notes and notetags position to replace them correctly in order on save 
 			function main() {
 				document.title = "Drag_DevTools_NotetagManager";
 				loadDataMainWindow();
@@ -140,9 +273,15 @@
 			};
 			
 			function setup() {
-				const reg = /<([^<>:]+)(:?)([^>]*)>/g;
+				data.isTextarea = data.input.tagName === "TEXTAREA";
+				const container = document.querySelector('#notes-container');
+				container.insertAdjacentHTML('beforeend', data.isTextarea ? 
+					`<textarea id="note-input" placeholder="Write notes..." onchange="$.Drag.VisualEvent.autoFitTextArea(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();" class="unfitTextArea onReadyOnChange" data-resizeWidth="false"></textarea>` : 
+					`<input type="text" id="note-input" placeholder="Write notes..." />`
+				); 
 				
-				const notesInput = document.querySelector('#notes-container > input');
+				const reg = /<([^<>:]+)(:?)([^>]*)>/g;
+				const notesInput = container.querySelector('#note-input');
 				notesInput.value = data.input.value.replace(reg, "");
 				
 				const notetagsContainer = document.querySelector('#notetags-container');
@@ -156,29 +295,56 @@
 				}
 				
 				notetagsContainer.innerHTML = `
-					<span>Notetags :</span>
-					<div>${getAddNotetagButton()}</div>
+					<div>
+						<h3>Notetags :</h3>
+						<div id="notetag-search">
+							<input type="text" placeholder="Search notetag..." onchange="searchNotetag(this);" onkeyup="this.onchange();" oninput="this.onchange();" onpaste="this.onchange();">
+						</div>
+						<div></div>
+						<div></div>
+						<div></div>
+						<div>${getAddNotetagButton()}</div>
+					</div>
 					${html}
 				`;
+				
+				$.Drag.VisualEvent.triggerAllOnReadyOnChange(document);
 			};
 			
 			function getNotetagElem(name = "", value = "") {
 				return `
-					<div id="notetag-container">
+					<div id="notetag-container" class="selectable" onclick="selectNotetagContainer(this);">
 						<div id="notetag-name-container">
 							<input placeholder="Name" type="text" list="notetags" value="${$.Drag.VisualEvent.escapeHTML(name)}" 
 								onchange="this.value = sanitizeNotetagName(this.value);" onkeyup="this.onchange();" oninput="this.onchange();" onpaste="this.onchange();"
 							/>
 						</div>
-						<div id="notetag-value-container">
-							<input type="text" value="${$.Drag.VisualEvent.escapeHTML(value)}" placeholder="Value" 
-								onchange="this.value = sanitizeNotetagValue(this.value);" onkeyup="this.onchange();" oninput="this.onchange();" onpaste="this.onchange();"
-							/>
+						<div id="notetag-button-container">
+							${getAddNotetagButton()}
+							${getRemoveNotetagButton()}
 						</div>
-						${getAddNotetagButton()}
-						${getRemoveNotetagButton()}
+						<div id="notetag-value-container">
+							${data.isTextarea ? `
+								<textarea placeholder="Value" id="notetag-value-input"
+									onchange="this.value = sanitizeNotetagValue(this.value);" onkeyup="this.onchange();" oninput="this.onchange();" onpaste="this.onchange();"
+								>${$.Drag.VisualEvent.escapeHTML(value)}</textarea>
+							` : `
+								<input type="text" value="${$.Drag.VisualEvent.escapeHTML(value)}" placeholder="Value" id="notetag-value-input"
+									onchange="this.value = sanitizeNotetagValue(this.value);" onkeyup="this.onchange();" oninput="this.onchange();" onpaste="this.onchange();"
+								/>
+							`}
+						</div>
+						<div id="notetag-button-container">
+							${getMoveNotetagButtons()}
+						</div>
 					</div>
 				`;
+			}; 
+			
+			function selectNotetagContainer(container) {
+				for (const selected of document.querySelectorAll('#notetag-container.selected'))
+					selected.classList.remove('selected');
+				container.classList.add('selected');
 			};
 			
 			function sanitizeNotetagName(name = "") {
@@ -190,52 +356,100 @@
 			};
 			
 			function getAddNotetagButton() {
-				return `
-					<span style="cursor: pointer; height: 1.5em;" onclick="addNotetag(this);">
-						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="width: 1.5em; height: 1.5em;">
-							<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"></circle>
-							<line x1="12" y1="7" x2="12" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
-							<line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
-						</svg>
-					</span>
-				`;
+				return `<button onclick="addNotetag(this);" title="Add Notetag">+</button>`;
 			};
 			
 			function getRemoveNotetagButton() {
+				return `<button onclick="removeNotetag(this);" title="Remove Notetag">-</button>`;
+			};
+			
+			function removeNotetag(button) {
+				const container = button.closest('#notetag-container');
+				if (container)
+					container.remove();
+			};
+			
+			function addNotetag(button) {
+				const container = button.closest('#notetag-container');
+				if (container)
+					container.insertAdjacentHTML("afterend", getNotetagElem());
+				else
+					document.querySelector('#notetags-container').firstElementChild.insertAdjacentHTML("afterend", getNotetagElem());
+			};
+			
+			function searchNotetag(input) {
+				const search = input.value.toLowerCase().trim();
+				for (const notetag of document.querySelectorAll('#notetag-container')) {
+					const name = notetag.querySelector('#notetag-name-container > input').value.toLowerCase().trim();
+					const value = notetag.querySelector('#notetag-value-container > #notetag-value-input').value.toLowerCase().trim();
+					if (!name.includes(search) && !value.includes(search))
+						notetag.classList.add('search-hidden');
+					else
+						notetag.classList.remove('search-hidden');
+				}
+			};
+			
+			function getMoveNotetagButtons() {
 				return `
-					<span style="cursor: pointer; height: 1.5em;" onclick="removeNotetag(this);">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" style="width: 1.5em; height: 1.5em;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							<circle cx="12" cy="12" r="10"></circle>
-							<line x1="8" y1="12" x2="16" y2="12"></line>
-						</svg>
-					</span>
-				`;
+					<button onclick="moveNotetagUp(this);" title="Move Notetag Up" style="padding-bottom: 0.2em;">↑</button>	
+					<button onclick="moveNotetagDown(this);" title="Move Notetag Down" style="padding-bottom: 0.2em;">↓</button>
+				`
 			};
 			
-			function removeNotetag(element) {
-				element.parentNode.remove();
+			function moveNotetagUp(elem) {
+				const container = elem.id !== "notetag-container" ? elem.closest('#notetag-container') : elem;
+				if (!container)
+					return;
+				
+				const containers = Array.from(document.querySelectorAll('#notetag-container'));
+				const index = containers.indexOf(container) - 1;
+				if (index === -1)
+					return;
+				
+				const target = containers[index];
+				if (!target)
+					return;
+				
+				container.remove();
+				const parent = target.parentElement;
+				parent.insertBefore(container, target);
 			};
 			
-			function addNotetag(element) {
-				element.parentNode.insertAdjacentHTML("afterend", getNotetagElem())
+			function moveNotetagDown(elem) {
+				const container = elem.id !== "notetag-container" ? elem.closest('#notetag-container') : elem;
+				if (!container)
+					return;
+				
+				const containers = Array.from(document.querySelectorAll('#notetag-container'));
+				const index = containers.indexOf(container) + 2;
+				if (index === -1)
+					return;
+				
+				const target = containers[index];
+				const parent = target ? target.parentElement : container.parentElement;
+				container.remove();
+				if (target)				
+					parent.insertBefore(container, target);
+				else
+					parent.insertAdjacentElement('beforeend', container);
 			};
 			
 			function gatherNotetags() {
-				const noteInput = document.querySelector('#notes-container > input');
-				const note = noteInput ? noteInput.value : "";
+				const noteInput = document.querySelector('#notes-container > #note-input');
+				const note = noteInput ? noteInput.value.trim() : "";
 				
 				let notetags = "";
 				for (const notetagContainer of document.querySelectorAll('#notetag-container')) {
 					const notetagName = sanitizeNotetagName(notetagContainer.querySelector('#notetag-name-container > input').value || "");
-					const notetagValue = sanitizeNotetagValue(notetagContainer.querySelector('#notetag-value-container > input').value || ""); //remove \n ?
+					const notetagValue = sanitizeNotetagValue(notetagContainer.querySelector('#notetag-value-container > #notetag-value-input').value || "");
 
 					if (!notetagName.trim())
 						continue;
 					
-					notetags += `<${notetagName}${notetagValue ? ':' : ''}${notetagValue}>`;
+					notetags += `<${notetagName}${notetagValue ? ':' : ''}${notetagValue}>${data.isTextarea ? "\n\n" : ""}`;
 				};
 				
-				return `${note}${notetags}`;
+				return `${note}${data.isTextarea ? "\n\n" : ""}${notetags}`.trim();
 			};
 
 			function ok() {
@@ -251,6 +465,26 @@
 			function quit() {
 				window.close();
 			};
+			
+			window.addEventListener('keydown', function(event) {
+				if ($.Drag.VisualEvent.isFormInput(document.activeElement))
+					return;
+					
+				const selected = document.querySelector('#notetag-container.selected');
+				if (!selected)
+					return;
+				
+				switch (event.keyCode) {
+					case 38:
+					case 104:
+						moveNotetagUp(selected);
+						break;
+					case 40:
+					case 98:
+						moveNotetagDown(selected);
+						break;
+				}
+			});
 
 			main();
 		</script>

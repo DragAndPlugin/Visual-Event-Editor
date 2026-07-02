@@ -216,6 +216,7 @@
 			padding: 0 1em;
 			border-bottom: 0.0625em solid rebeccapurple;
 			background: var(--background-color2);
+			min-height: fit-content;
 		}
 
 		.tab {
@@ -636,7 +637,7 @@
 				<div id="plugin-add-container">
 					<div>
 						<input type="text" style="cursor: pointer;" placeholder="Add a plugin..."
-							onclick="$.Drag.VisualEvent.openFileExplorer(this);" onchange="$.Drag.VisualEvent.onInputChange(this); addPlugin(this);" onfocus="this.blur()" onload=""
+							onclick="$.Drag.VisualEvent.openFileExplorer(this);" onchange="$.Drag.VisualEvent.onInputChange(this); addPlugin(this);" onfocus="this.blur()"
 							data-src='js/plugins' data-allowNone='true' data-exitFolder='false' data-allowSubFolder='true' data-fileTypes='js' data-inputType="file"  data-defaultValue="" data-isCommandParameter="true" value=""
 							data-allowSubFolder='true' data-type="undefined" data-src='' data-allowNone='true' data-exitFolder='true' data-allowSubFolder='true'
 						/>
@@ -1263,6 +1264,9 @@
 					const container = document.querySelector('#parameters-container');
 					if (container)
 						container.addEventListener('scroll', updateHighlightedParameterTree);
+					
+					for (const input of content.querySelectorAll('*[onload]'))
+						input.onload();
 					
 					break;
 				case "commands":

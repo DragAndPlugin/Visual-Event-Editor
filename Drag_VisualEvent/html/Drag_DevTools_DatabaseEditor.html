@@ -342,7 +342,7 @@
 			align-items: center;
 			justify-content: center;
 			width: 100%;
-			margin-bottom: 0.75em;
+			margin-bottom: 0.25em;
 			padding: 0.5em;
 			box-sizing: border-box;
 		}
@@ -355,10 +355,12 @@
 			box-sizing: border-box;
 			padding-right: 0.75em;
 			height: 100%;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
 		}
 		
 		.database-input-cell > p {
-			text-transform: capitalize;
 			margin-bottom: 0.25em;
 			margin-top: 0em;
 		}
@@ -498,6 +500,14 @@
 			cursor: default;
 			color: grey;
 		}
+		
+		.capitalize {
+			text-transform: capitalize;
+		}
+		
+		#manage-notetag-container, #manage-notetag-container > textarea {
+			min-height: 100%;
+		}
 	</style>
 	<script type="text/javascript" src="../../js/plugins.js"></script>
 </head>
@@ -506,20 +516,20 @@
 		<div id="database-category-panel">
 			<div>Database</div>
 			<div id="database-category-list">
-				<div class="database-category selected" data-databaseCategory="Actors" onclick="selectDatabaseCategory(this);">Actors</div>
-				<div class="database-category" data-databaseCategory="Classes" onclick="selectDatabaseCategory(this);">Classes</div>
-				<div class="database-category" data-databaseCategory="Skills" onclick="selectDatabaseCategory(this);">Skills</div>
-				<div class="database-category" data-databaseCategory="Items" onclick="selectDatabaseCategory(this);">Items</div>
-				<div class="database-category" data-databaseCategory="Weapons" onclick="selectDatabaseCategory(this);">Weapons</div>
-				<div class="database-category" data-databaseCategory="Armors" onclick="selectDatabaseCategory(this);">Armors</div>
-				<div class="database-category" data-databaseCategory="Enemies" onclick="selectDatabaseCategory(this);">Enemies</div>
-				<div class="database-category" data-databaseCategory="States" onclick="selectDatabaseCategory(this);">States</div>
-				<div class="database-category disabled" title="Not yet available" data-databaseCategory="Animations" onclick="selectDatabaseCategory(this);">Animations</div>
-				<div class="database-category disabled" title="Not yet available" data-databaseCategory="Tilesets" onclick="selectDatabaseCategory(this);">Tilesets</div>
-				<div class="database-category" data-databaseCategory="System1" onclick="selectDatabaseCategory(this);">System1</div>
-				<div class="database-category" data-databaseCategory="System2" onclick="selectDatabaseCategory(this);">System2</div>
-				<div class="database-category" data-databaseCategory="Types" onclick="selectDatabaseCategory(this);">Types</div>
-				<div class="database-category" data-databaseCategory="Terms" onclick="selectDatabaseCategory(this);">Terms</div>
+				<div class="database-category selected" data-databaseCategory="Actors" title="Actors" onclick="selectDatabaseCategory(this);">Actors</div>
+				<div class="database-category" data-databaseCategory="Classes" title="Classes" onclick="selectDatabaseCategory(this);">Classes</div>
+				<div class="database-category" data-databaseCategory="Skills" title="Skills" onclick="selectDatabaseCategory(this);">Skills</div>
+				<div class="database-category" data-databaseCategory="Items" title="Items" onclick="selectDatabaseCategory(this);">Items</div>
+				<div class="database-category" data-databaseCategory="Weapons" title="Weapons" onclick="selectDatabaseCategory(this);">Weapons</div>
+				<div class="database-category" data-databaseCategory="Armors" title="Armors" onclick="selectDatabaseCategory(this);">Armors</div>
+				<div class="database-category" data-databaseCategory="Enemies" title="Enemies" onclick="selectDatabaseCategory(this);">Enemies</div>
+				<div class="database-category" data-databaseCategory="States" title="States" onclick="selectDatabaseCategory(this);">States</div>
+				<div class="database-category disabled" data-databaseCategory="Animations" title="Animations" onclick="selectDatabaseCategory(this);">Animations</div>
+				<div class="database-category disabled" data-databaseCategory="Tilesets" title="Tilesets" onclick="selectDatabaseCategory(this);">Tilesets</div>
+				<div class="database-category disabled" data-databaseCategory="System1" title="System1" onclick="selectDatabaseCategory(this);">System1</div>
+				<div class="database-category disabled" data-databaseCategory="System2" title="System2" onclick="selectDatabaseCategory(this);">System2</div>
+				<div class="database-category disabled" data-databaseCategory="Types" title="Types" onclick="selectDatabaseCategory(this);">Types</div>
+				<div class="database-category disabled" data-databaseCategory="Terms" title="Terms" onclick="selectDatabaseCategory(this);">Terms</div>
 			</div>
 		</div>
 		<div id="database-main-panel"></div>
@@ -548,7 +558,9 @@
 			window._databaseEntryId = 1;
 			window._databaseCategoryConfigs = require('./Drag_VisualEvent/js/data/database_data.js')($.Utils.RPGMAKER_NAME);
 			
-			makeDatabaseMainPanelContent();
+			loadDatabaseCache();
+			selectDatabaseCategory(document.querySelector(`.database-category[data-databaseCategory="${window._databaseCategory}"]`));
+			// makeDatabaseMainPanelContent();
 		};
 		
 		function getDatabaseCategoryConfig(category) {
@@ -577,6 +589,7 @@
 			elem.classList.add('selected');
 			
 			window._databaseCategory = category;
+			saveDatabaseCache();
 			makeDatabaseMainPanelContent(mainPanel);
 		};
 		
@@ -621,10 +634,10 @@
 			`;
 			mainPanel.innerHTML = content;
 			
-			makeDatabaseDetailsContent(1, config);
+			makeDatabaseDetailsContent(window._databaseEntryId, config);
 		};
 		
-		function makeDatabaseEntryListContent(config, selectedId = 1) {
+		function makeDatabaseEntryListContent(config, selectedId = window._databaseEntryId) {
 			const organization = getDatabaseOrganization(config.displayName);
 			const groupedEntries = makeGroupedEntries(config);
 			
@@ -683,19 +696,21 @@
 			if (!config)
 				config = getDatabaseCategoryConfig();
 			
-			const entry = window._data[`${config.displayName}`][entryId];
+			let entry = window._data[`${config.displayName}`][entryId];
+			if (!entry)
+				entry = window._data[`${config.displayName}`][1];
+			if (!entry)
+				return;
 			
 			let html = `<div id="database-detail-content">`;
 			for (let col = 1; col <= config.layout.cols; col++) {
 				const colWidth = config.layout.colWidths[col - 1] || (1 / config.layout.cols);
-				
 				html += `
 					<div class="database-detail-column" style="width: ${colWidth * 100}%;">
 						${makeDatabaseDetailColumnContent(entry, config, col)}
 					</div>
 				`;
 			}
-			
 			html += `</div>`;
 			
 			const detailPanel = document.querySelector('#database-detail-panel');
@@ -703,6 +718,11 @@
 			
 			for (const input of detailPanel.querySelectorAll('*[onload]'))
 				input.onload();
+			
+			for (const notetagManager of detailPanel.querySelectorAll('*[data-inputType="notetagManager"]'))
+				notetagManager.setAttribute('data-context', window._databaseCategory);
+			
+			$.Drag.VisualEvent.triggerAllOnReadyOnChange(document);
 		};
 		
 		function makeDatabaseDetailColumnContent(entry, config, col) {
@@ -759,7 +779,7 @@
 			const width = row.layout.width || 1;
 			height = height ? height : (row.layout.height || 0);
 			return `
-				<div class="database-section" style="width: ${width * 100}%; height: ${height * 100}%;">
+				<div class="database-section" style="width: ${width * 100}%; height: ${typeof height === "number" ? `${height * 100}%` : height};">
 					<div class="database-section-title">${$.Drag.VisualEvent.escapeHTML(row.name)}</div>
 					<div class="database-section-content">
 						${makeDatabaseSectionContent(entry, section)}
@@ -775,25 +795,37 @@
 				const rowWidths = Array.isArray(section.widths[rowIndex]) ? section.widths[rowIndex] : [section.widths[rowIndex] || 1];
 				const rowValues = Array.isArray(section.values[rowIndex]) ? section.values[rowIndex] : [section.values[rowIndex]];
 				const rowShowTitles = section.showTitle && Array.isArray(section.showTitle[rowIndex]) ? section.showTitle[rowIndex] : [];
+				const rowStyle = section.rowStyle && Array.isArray(section.rowStyle[rowIndex]) ? section.rowStyle[rowIndex] : [];
 				
-				html += `<div class="database-input-row">`;
+				html += `<div class="database-input-row" style="${rowStyle.join(' ')}">`;
 				for (let i = 0; i < rowInputs.length; i++) {
 					const inputName = rowInputs[i];
 					const width = rowWidths[i] || 1;
 					const value = rowValues[i];
 					const showTitle = rowShowTitles[i];
 					
-					const inputParameters = $.Drag.VisualEvent.getInputParameters(inputName);
-					if (Array.isArray(value))
-						inputParameters.value = value.map(val => entry.hasOwnProperty(val) ? entry[val] : '').join(',');
-					else 
-						inputParameters.value = entry.hasOwnProperty(value) ? entry[value] : inputParameters.hasOwnProperty('default') ? inputParameters.default : '';
+					const inputParameters = $.Drag.VisualEvent.hasInteractiveInputParameters(inputName) ? $.Drag.VisualEvent.getInteractiveInputParameters(inputName) : $.Drag.VisualEvent.getInputParameters(inputName);
+					console.log(inputParameters);
+					console.log(entry);
+					if (value !== undefined) {
+						if (Array.isArray(value))
+							inputParameters.value = value.map(val => entry.hasOwnProperty(val) ? entry[val] : '').join(',');
+						else if (value && typeof value === "object") {
+							const key = Object.keys(value)[0];
+							inputParameters.value = entry[key][value[key]];
+						} else 
+							inputParameters.value = entry.hasOwnProperty(value) ? entry[value] : inputParameters.hasOwnProperty('default') ? inputParameters.default : '';
+					}
 					
 					inputParameters.context = entry;
-					inputParameters.data = `${(inputParameters.data || "")} data-dataKey="${value}"`;
+					if (inputParameters.type === "interactive")
+						assignInteractiveKeyAndValue(inputParameters, inputName, entry, value);	
+					else
+						inputParameters.data = `${(inputParameters.data || "")} ${value !== undefined ? `data-dataKey="${value}"` : ''}`;
+					
 					html += `
-						<div class="database-input-cell" style="width: ${width * 100}%;">
-							<p>${showTitle || showTitle === undefined ? (inputParameters.name || inputName) : ''}</p>
+						<div class="database-input-cell" style="width: ${typeof width === "number" ? `${width * 100}%` : width};">
+							<p class="${typeof showTitle === "boolean" ? 'capitalize' : ''}">${typeof showTitle === "string" ? showTitle : showTitle || showTitle === undefined ? (inputParameters.name || inputName) : ''}</p>
 							${$.Drag.VisualEvent.getInputField(inputParameters)}
 						</div>
 					`;
@@ -804,6 +836,104 @@
 			html += `</div>`;
 			
 			return html;
+		};
+		
+		function assignInteractiveKeyAndValue(parameters, name, entry, key) {
+			const value = parameters.value;
+			delete parameters.value;
+			
+			switch (name) {
+				case "selectInteractiveScope": 
+					parameters.controller.data = `${(parameters.controller.data || "")} data-dataKey="${key}"`;
+					if (value === 0)
+						parameters.controller.value = 0;
+					else if (value > 0 && value < 7) {
+						parameters.controller.value = 1;
+						parameters.dependances[0].controller.value = Math.min(value - 1, 2);
+						if (value > 2)
+							parameters.dependances[0].dependances[0].value = value - 2;
+					} else if (value === 11)
+						parameters.controller.value = 4 
+					else if (value > 6 && value < 14) {
+						parameters.controller.value = 2;
+						if (value === 7 || value === 9 || value === 12) {
+							parameters.dependances[1].value = 0;
+							if (value === 7)
+								parameters.dependances[2].value = 0;
+							if (value === 9)
+								parameters.dependances[2].value = 1;
+							if (value === 12)
+								parameters.dependances[2].value = 2;
+						} else {
+							parameters.dependances[1].value = 1;
+							if (value === 8)
+								parameters.dependances[2].value = 0;
+							if (value === 10)
+								parameters.dependances[2].value = 1;
+							if (value === 13)
+								parameters.dependances[2].value = 2;
+						}
+						
+					} 
+					else if (value === 14)
+						parameters.controller.value = 3
+					break;
+				case "interactiveRemoveTiming":
+					parameters.controller.value = value;
+					parameters.controller.data = `${(parameters.controller.data || "")} data-dataKey="${key}"`;
+					if (value === 1) {
+						parameters.dependances[0].value = entry.minTurns;
+						parameters.dependances[0].data = `${(parameters.dependances[0].data || "")} data-dataKey="minTurns"`;
+						parameters.dependances[1].value = entry.maxTurns;
+						parameters.dependances[1].data = `${(parameters.dependances[1].data || "")} data-dataKey="maxTurns"`;
+					} else if (value === 2) {
+						parameters.dependances[2].value = entry.minTurns;
+						parameters.dependances[2].data = `${(parameters.dependances[0].data || "")} data-dataKey="minTurns"`;
+						parameters.dependances[3].value = entry.maxTurns;
+						parameters.dependances[3].data = `${(parameters.dependances[1].data || "")} data-dataKey="maxTurns"`;
+					}
+					break;
+				case "interactiveRemoveDamage":
+					parameters.controller.value = value;
+					parameters.controller.data = `${(parameters.controller.data || "")} data-dataKey="${key}"`;
+					parameters.dependances[0].value = entry.chanceByDamage;
+					parameters.dependances[0].data = `${(parameters.dependances[0].data || "")} data-dataKey="chanceByDamage"`;
+					break;
+				case "interactiveRemoveWalking":
+					parameters.controller.value = value;
+					parameters.controller.data = `${(parameters.controller.data || "")} data-dataKey="${key}"`;
+					parameters.dependances[0].value = entry.stepsToRemove;
+					parameters.dependances[0].data = `${(parameters.dependances[0].data || "")} data-dataKey="stepsToRemove"`;
+					break;
+				default: 
+					console.warn('Missing interactive input key and value assigner function.');
+			};
+		};
+		
+		function setSkillMessage(type) {
+			const input = document.querySelector('*[data-dataKey="message1"]');
+			if (!input)
+				return;
+			
+			switch (type) {
+				case "cast":
+					input.value = "%1 casts %2!"
+					break;
+				case "does":
+					input.value = "%1 does %2!";
+					break;
+				case "uses":
+				default:
+					input.value = "%1 uses %2!";
+					break;
+			}
+		};
+		
+		function updateImageHue(input) {
+			const image = document.querySelector('*[data-datakey="battlerName"]');
+			const value = parseInt(input.value);
+			image.style.filter = `hue-rotate(${value}deg)`;
+			console.log(image, value);
 		};
 		
 		function refreshDatabaseEntryList() {
@@ -828,6 +958,7 @@
 				return;
 			
 			window._databaseEntryId = id;
+			saveDatabaseCache();
 			makeDatabaseDetailsContent(id);
 			
 			const list = document.querySelector('#database-entry-list');
@@ -839,16 +970,44 @@
 		
 		
 		
+		
+		const DATABASE_CACHE_FILEPATH = './Drag_VisualEvent/cache/database.json';
+		function loadDatabaseCache() {
+			try {
+				const cache = require(DATABASE_CACHE_FILEPATH);
+				if (!cache)
+					return;
+				
+				window._databaseCategory = cache.category || "Actors";
+				window._databaseEntryId = cache.entryId || 1;
+				window._databaseOrganization = cache.organization || {};
+			} catch (error) {
+				console.warn("Couldn't load database cache. Error :", error);
+				window._databaseOrganization = {};
+				window._databaseCategory = "Actors";
+				window._databaseEntryId = 1;
+			}
+		};
+		
+		function saveDatabaseCache() {
+			$.Drag.VisualEvent.writeJSON(DATABASE_CACHE_FILEPATH, {
+				category: window._databaseCategory || "Actors",
+				entryId: window._databaseEntryId || 1,
+				organization: window._databaseOrganization || {},
+			});
+		};
+		
 		function getDatabaseOrganization(category) {
-			window._databaseOrganization = window._databaseOrganization || {};
+			if (!category)
+				category = getDatabaseCategoryConfig().displayName;
+			if (!category)
+				return;
 			
+			window._databaseOrganization = window._databaseOrganization || {};
 			if (!window._databaseOrganization[category]) {
 				window._databaseOrganization[category] = {
-					groups: {
-						"TEST 1": [1, 3, 2],
-						"TEST 2": [5, 6, 8],
-					},
-					groupOrder: ["TEST 2", "TEST 1"],
+					groups: {},
+					groupOrder: [],
 					collapsedGroups: []
 				};
 			}
@@ -909,7 +1068,18 @@
 		};
 		
 		function toggleDatabaseGroup(elem) {
-			elem.setAttribute('data-collapsed', elem.getAttribute('data-collapsed') !== "true");
+			const collapsed = elem.getAttribute('data-collapsed') !== "true";
+			elem.setAttribute('data-collapsed', collapsed);
+			
+			const group = elem.getAttribute('data-group');
+			if (!group)
+				return;
+			
+			const organization = getDatabaseOrganization()
+			if (collapsed)
+				organization.collapsedGroups.push(group);
+			else
+				organization.collapsedGroups = $.Drag.VisualEvent.removeItem(organization.collapsedGroups, group);
 		};
 		
 		function addDatabaseGroup(button) {
@@ -925,6 +1095,7 @@
 			
 			input.style.border = "0.0625em solid transparent";
 			organization.groups[name] = [];
+			saveDatabaseCache();
 			refreshDatabaseEntryList();
 		};
 		
@@ -950,6 +1121,7 @@
 			if (index >= 0)
 				organization.collapsedGroups.splice(index, 1);
 			
+			saveDatabaseCache();
 			refreshDatabaseEntryList();
 		};
 		
@@ -973,6 +1145,7 @@
 			else
 				targetArray.push(entryId);
 			
+			saveDatabaseCache();
 			refreshDatabaseEntryList();
 		};
 		
@@ -987,6 +1160,7 @@
 			else
 				organization.groupOrder.push(groupName);
 			
+			saveDatabaseCache();
 			refreshDatabaseEntryList();
 		};
 		
@@ -1111,6 +1285,10 @@
 			window._draggedEntryId = null;
 		};
 		
+		function handleInteractiveInput(input) {
+			$.Drag.VisualEvent.handleInteractiveInput(input);
+		};
+
 		function gatherDatabaseEntry() {
 			const val = window._data[window._databaseCategory][window._databaseEntryId];
 			for (const input of document.querySelectorAll('#database-detail-content *[data-dataKey]')) {
