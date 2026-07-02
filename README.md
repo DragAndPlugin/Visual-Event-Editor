@@ -50,7 +50,7 @@ Designed for both beginners and advanced users, it brings modern visual scriptin
 
 ## Installation
 
-1. Download the latest release from the **Releases** page.
+1. Download the latest release from the **Itch.io** page : https://drag-and-plug-in.itch.io/visual-event-editor
 2. Copy the folders into your RPG Maker project root (where `Game.rmmzproject` or `Game.rmmvproject` is located).
 3. Open RPG Maker MV or MZ.
 4. Enable the plugin in the **Plugin Manager**.
@@ -113,7 +113,9 @@ Visual Event Editor by DragAndPlugin
 
 ## Roadmap
 
-- Database Manager
+- Database Manager [in progress]
+- Different language support
+- Backup Manager
 - Support for some of my other tools (debugger & database sharer)
 - Editor add-ons and custom nodes framework improvements
 - Continued performance improvements and bug fixes
