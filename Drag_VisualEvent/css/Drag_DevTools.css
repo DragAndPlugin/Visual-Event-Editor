@@ -313,6 +313,11 @@ select {
 option {
 	color: var(--color);
 	background: var(--background-color);
+	cursor: pointer;
+}
+
+option:hover {
+    background-color: rgb(255 255 255 / 20%);
 }
 
 .select {
@@ -524,7 +529,7 @@ input[type="number"] + span.input-tooltip:after {
 	box-sizing: border-box;
 }
 
-.table-input-cell input[type="text"], .table-input-cell input[type="number"], .table-input-cell select {
+.table-input-cell input[type="text"], .table-input-cell input[type="number"] {
 	height: 100%;
 }
 
@@ -1016,4 +1021,28 @@ input.red {
     margin: 0.625em 0;
     position: relative;
     background: -webkit-linear-gradient(left, rgb(255 255 255 / 0%) 0%,rgb(255 255 255 / 0%) 10%,rgb(255 255 255 / 65%) 50%,rgb(255 255 255 / 0%) 90%,rgb(255 255 255 / 0%) 100%);
+}
+
+.rowGap05em > * {
+	margin-bottom: 0.5em;
+}
+
+.rowGap05em > *:last-child {
+	margin-bottom: 0em;
+}
+
+.columnGap05em > * {
+	margin-right: 0.5em;
+}
+
+.columnGap05em > *:last-child {
+	margin-right: 0em;
+}
+
+.columnGap1em > * {
+	margin-right: 1em;
+}
+
+.columnGap1em > *:last-child {
+	margin-right: 0em;
 }

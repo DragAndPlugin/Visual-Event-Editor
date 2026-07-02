@@ -221,6 +221,10 @@ div#functionList {
     margin-top: -1px;
 }
 
+.selected-page + #add-event-page, .selected-page + #event-page {
+    border-left: 0;
+}
+
 #event-page > span {
     min-width: max-content;
     margin-right: 0.5em;
@@ -1646,33 +1650,9 @@ img.noBrokenIcon::after {
     content: attr(alt);
 }
 
-.rowGap05em > * {
-	margin-bottom: 0.5em;
-}
-
-.rowGap05em > *:last-child {
-	margin-bottom: 0em;
-}
-
-.columnGap05em > * {
-	margin-right: 0.5em;
-}
-
-.columnGap05em > *:last-child {
-	margin-right: 0em;
-}
-
-.columnGap1em > * {
-	margin-right: 1em;
-}
-
-.columnGap1em > *:last-child {
-	margin-right: 0em;
-}
-
 #autosave-notification {
 	z-index: 1000;
-    bottom: calc(max(min(5%, 50px), 20px) + 1em);
+    bottom: 3em;
     right: 1em;
     position: absolute;
     font-size: 1.25em;
