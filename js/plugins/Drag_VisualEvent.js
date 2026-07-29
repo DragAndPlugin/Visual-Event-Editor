@@ -6,7 +6,7 @@
  * @target MV MZ
  * @plugindesc A node-based eventing tool for RPG Maker MV & MZ
  * @author DragAndPlugin
- * @version 0.2.195
+ * @version 0.2.274
  * @url https://drag-and-plug-in.itch.io/visual-event-editor
  *
  * @help 
@@ -41,7 +41,7 @@ Imported.Drag_VisualEvent = true;
 var Drag = Drag || {};
 Drag.VisualEvent = {};
 Drag.VisualEvent.alias = {};
-Drag.VisualEvent.version = "0.2.195";
+Drag.VisualEvent.version = "0.2.274";
 
 // (function() {
 	
@@ -170,11 +170,15 @@ Drag.VisualEvent.version = "0.2.195";
 	};
 	
 	Drag.VisualEvent.reloadGame = function() {
-		if (Drag.VisualEvent.getEditor() && Drag.VisualEvent.getEditor().saveCache)
+		const editor = Drag.VisualEvent.getEditor();
+		if (editor && editor.saveCache)
 			try {
-				Drag.VisualEvent.getEditor().saveCache(Drag.VisualEvent.reload);
+				editor.saveCache(Drag.VisualEvent.reload);
 			} catch (error) {
+				if (editor)
+					editor.console.error(error);
 				console.error(error);
+				Drag.VisualEvent.reload();
 			}
 		else
 			Drag.VisualEvent.reload();
@@ -2732,14 +2736,23 @@ Drag.VisualEvent.version = "0.2.195";
 	};
 	
 	Drag.VisualEvent.onAddListInput = function(button) {
+		if (!button)
+			return null;
+		
 		const clone = Drag.VisualEvent.addListInput(button);
+		if (!clone)
+			return null;
+		
 		Drag.VisualEvent.onInputChange(button);
 		
 		const editor = Drag.VisualEvent.getEditor();
 		if (button.ownerDocument.defaultView === editor) {
 			const node = Drag.VisualEvent.getAncestorById(button, 'graphNode');
-			if (node)
+			if (node) {
+				editor.updateCacheGraphNodeConnectionsMap(node);
 				editor.cacheGraphNode(node);
+				editor.redrawNodeCurves(node);
+			}
 		}
 		
 		return clone;
@@ -4020,39 +4033,87 @@ Drag.VisualEvent.version = "0.2.195";
 		select.scrollTop = pos;
 	};
 	
-	Drag.VisualEvent.refreshDatabaseInputOptions = function(input) {
-		const select = input.selectElement || input.nextElementSibling;
-		const selectValue = parseInt(select.value);
-		const selectIndex = select.selectedIndex;
-		const selectOptions = select.options;
+	// Drag.VisualEvent.refreshDatabaseInputOptions = function(input) {
+		// const select = input.selectElement || input.nextElementSibling;
+		// const selectValue = parseInt(select.value);
+		// const selectIndex = select.selectedIndex;
+		// const selectOptions = select.options;
 		
-		//remove old options
-		for (let i = 0; i < selectOptions.length; i++) {
-			if (parseInt(selectOptions[i].value) > 0) {
-				selectOptions[i].remove(i);
-				i--;
-			}
-		}
+		// remove old options
+		// for (let i = 0; i < selectOptions.length; i++) {
+			// if (parseInt(selectOptions[i].value) > 0) {
+				// selectOptions[i].remove(i);
+				// i--;
+			// }
+		// }
 		
-		//make new options
-		const type = input.getAttribute('data-inputType');
-		const databaseOptions = Drag.VisualEvent.getDatabaseData(type);
+		// make new options
+		// const type = input.getAttribute('data-inputType');
+		// const databaseOptions = Drag.VisualEvent.getDatabaseData(type);
 		
-		for (const databaseOption of databaseOptions) {
-			const option = document.createElement("option");
-			option.value = databaseOption.id;
-			option.text = `${String(databaseOption.id).padStart(4, "0")}: ${databaseOption.name || ''}`;
-			option.selected = selectValue === databaseOption.id;
+		// for (const databaseOption of databaseOptions) {
+			// const option = document.createElement("option");
+			// option.value = databaseOption.id;
+			// option.text = `${String(databaseOption.id).padStart(4, "0")}: ${databaseOption.name || ''}`;
+			// option.selected = selectValue === databaseOption.id;
 
-			select.add(option, null);
-		}
+			// select.add(option, null);
+		// }
 		
+		// check if select value still exists
+		// if (!select.options[selectIndex]) {
+			// select.selectedIndex = 0;
+			// Drag.VisualEvent.onSelectComboChange(select);
+		// }
+	// };
+	
+	Drag.VisualEvent.refreshDatabaseInputOptions = function(input) {
+ 		const select = input.selectElement || input.nextElementSibling;
+		// const selectValue = parseInt(select.value);
+		// const selectIndex = select.selectedIndex;
+		const inputValue = parseInt(input.getAttribute('data-value'));
+		const wasPopulated = select._populated === true;
+ 		const selectOptions = select.options;
+ 		
+ 		//remove old options
+ 		for (let i = 0; i < selectOptions.length; i++) {
+ 			if (parseInt(selectOptions[i].value) > 0) {
+ 				selectOptions[i].remove(i);
+ 				i--;
+ 			}
+ 		}
+ 		
+ 		//make new options
+ 		const type = input.getAttribute('data-inputType');
+ 		const databaseOptions = Drag.VisualEvent.getDatabaseData(type);
+ 		
+ 		for (const databaseOption of databaseOptions) {
+ 			const option = document.createElement("option");
+ 			option.value = databaseOption.id;
+ 			option.text = `${String(databaseOption.id).padStart(4, "0")}: ${databaseOption.name || ''}`;
+			// option.selected = selectValue === databaseOption.id;
+			option.selected = inputValue === databaseOption.id;
+ 
+ 			select.add(option, null);
+ 		}
+ 		
 		//check if select value still exists
-		if (!select.options[selectIndex]) {
+		// if (!select.options[selectIndex]) {
+		if (!wasPopulated) {
+			select.innerHTML = '';
+			select._populated = false;
+			return;
+		}
+	
+		const selectedOption = Array.from(select.options).find(option => parseInt(option.value) === inputValue);
+		if (selectedOption) {
+			select.value = String(inputValue);
+		} else if (select.options.length > 0) {
 			select.selectedIndex = 0;
 			Drag.VisualEvent.onSelectComboChange(select);
 		}
-	};
+		// }
+ 	};
 	
 	Drag.VisualEvent.setDatabaseInputFieldValue = function(input, value) {
 		input.setAttribute('data-value', value);
@@ -4789,7 +4850,7 @@ Drag.VisualEvent.version = "0.2.195";
 		const repeat = !useDefaultValue ? params.value[1].repeat : false;
 		return `
 			<button class="${params.class || ''}" style="cursor: pointer;" 
-				onclick="$.Drag.VisualEvent.openMoveRouteMenu(this); ${params.onclick || ''}" onchange="$.Drag.VisualEvent.updateMoveRouteList(this);" ${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} 
+				onclick="$.Drag.VisualEvent.openMoveRouteMenu(this); ${params.onclick || ''}" onchange="$.Drag.VisualEvent.updateMoveRouteList(this); ${params.onchange || ""}" ${params.data || ""} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} 
 				data-repeat="${repeat}" data-eventId="${eventId}" data-skip="${skip}" data-wait="${wait}" 
 				data-list="[${list}]" data-parameters="${parameters}" data-value="" value="" data-thisEventOnly="${params.thisEventOnly === true}" data-mapId="${mapId}" data-x="${params.x || 0}" data-y="${params.y || 0}"
 			>Set Move Route...</button>
