@@ -122,9 +122,14 @@ function showUndoRedoNotification(type, label = "") {
 	if (!eNotification)
 		return;
 	
+	const topPanel = document.querySelector('#topPanel');
+	const topPanelRect = topPanel.getBoundingClientRect();
+	
 	eNotification.innerHTML = `${$.Drag.VisualEvent.capitalize(type)}: ${label || ""}`;	
+	eNotification.style.top = `calc(${topPanelRect.bottom}px + 2em)`;
 	eNotification.style.transition = 'opacity linear 0s';
 	eNotification.style.opacity = 1;
+
 	
 	if (window._history.notificationTimeout)
 		clearTimeout(window._history.notificationTimeout);

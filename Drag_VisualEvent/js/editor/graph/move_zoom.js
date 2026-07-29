@@ -205,9 +205,10 @@ function setGraphEditorScale(scale, showScale = true, redrawCurves = true, refre
 		return;
 	
 	const topPanel = document.querySelector('#topPanel');
+	const topPanelRect = topPanel.getBoundingClientRect();
 	const eShowScale = document.querySelector('#show-scale');
 	eShowScale.innerHTML = `${Math.round(100 * scale)}%`;	
-	eShowScale.style.top = `calc(${topPanel.getBoundingClientRect().bottom}px + 0.5em)`;
+	eShowScale.style.top = `calc(${topPanelRect.bottom}px + 0.5em)`;
 	eShowScale.style.transition = 'opacity linear 0s';
 	eShowScale.style.opacity = 1;
 	

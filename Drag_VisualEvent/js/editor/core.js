@@ -261,6 +261,8 @@ function onDataMapLoad(data) {
 		window.data._cacheMaps = [];
 	window.data._cacheMaps[window.data.mapTargetId] = data;
 	
+	cacheLastMap(window.data.mapTargetId);
+	
 	makeMapEventList();
 	
 	if (window.data._tempTargetId !== undefined && window.data._tempPageId !== undefined) {
@@ -982,25 +984,58 @@ function getEventInput(type = "", id = 0, pageId = 0, mapId = 0) {
 		case "Common Event":
 			return [];
 		case "Map Event": {
-			const eventData = hasItemInEventCache("data", "Map Event", mapId, id) ? getEventCacheItem("data", "Map Event", mapId, id) : (window.data.loadedMap.events[id] || $.Drag.VisualEvent.getDefaultMapEvent());
-			const pageData = eventData.pages[pageId] || $.Drag.VisualEvent.getDefaultEventPage(type);
+			const cachedEvent = hasItemInEventCache("data", "Map Event", mapId, id) ? getEventCacheItem("data", "Map Event", mapId, id) : null;
+			const loadedEvent = window.data.loadedMap && window.data.loadedMap.events ? window.data.loadedMap.events[id] : null;
+			
+			let eventData = cachedEvent || loadedEvent || $.Drag.VisualEvent.getDefaultMapEvent();
+			if (!eventData || !Array.isArray(eventData.pages))
+				eventData = $.Drag.VisualEvent.getDefaultMapEvent();
+			
+			const defaultPage = $.Drag.VisualEvent.getDefaultEventPage("Map Event");
+			const cachedPage = eventData.pages[pageId];
+			const sourcePage = cachedPage && typeof cachedPage === "object" ? cachedPage : {};
+			
+			const pageData = {
+				...defaultPage, ...sourcePage,
+				conditions: {...defaultPage.conditions, ...(sourcePage.conditions && typeof sourcePage.conditions === "object" ? sourcePage.conditions : {})},
+				image: {...defaultPage.image, ...(sourcePage.image && typeof sourcePage.image === "object" ? sourcePage.image : {})},
+				moveRoute: {...defaultPage.moveRoute, ...(sourcePage.moveRoute && typeof sourcePage.moveRoute === "object" ? sourcePage.moveRoute : {})}
+			};
+			if (!Array.isArray(pageData.moveRoute.list))
+				pageData.moveRoute.list = $.Drag.VisualEvent.deepCopyJSON(defaultPage.moveRoute.list);
+			
 			
 			const conditions = $.Drag.VisualEvent.getInputParameters("mapEventConditions");
 			conditions.conditions = pageData.conditions;
 			
 			const character = $.Drag.VisualEvent.getInputParameters("singleFrameCharacter");
-			const tilesets = window.data.$dataTilesets[window.data.loadedMap.tilesetId];
-			const tilesetNames = tilesets ? tilesets.tilesetNames : [];
-			const isBigImage = pageData.image.characterName[0] === "$" || pageData.image.characterName[1] === "$";
-			if (!tilesetNames.includes(pageData.image.characterName)) {
-				const row = Math.floor(pageData.image.characterIndex / 4) * 4 + (pageData.image.direction / 2);
-				const col = (pageData.image.characterIndex % 4 * 3) + pageData.image.pattern + 1;
-				const imageIndex = (row - 1) * (isBigImage ? 3 : 12) + col - 1;
-				character.value = `${pageData.image.characterName},${imageIndex}`;
-			} else
-				character.value = `${tilesetNames[$.Drag.VisualEvent.getTilesetIndex(pageData.image.tileId)]},${pageData.image.tileId}`;
 			
-			character.data += ` data-tilesetNames="${tilesetNames[5]},${tilesetNames[6]},${tilesetNames[7]},${tilesetNames[8]}"`;
+			const tilesets = window.data.$dataTilesets && window.data.loadedMap ? window.data.$dataTilesets[window.data.loadedMap.tilesetId] : null;
+			const tilesetNames = tilesets && Array.isArray(tilesets.tilesetNames) ? tilesets.tilesetNames : [];
+			
+			const pageImage = pageData.image;
+			const characterName = typeof pageImage.characterName === "string" ? pageImage.characterName : "";
+			if (!tilesetNames.includes(characterName)) {
+				const characterIndex = Number.isFinite(Number(pageImage.characterIndex)) ? Number(pageImage.characterIndex) : 0;
+				const isBigImage = characterName.startsWith("$") || characterName.startsWith("!$");
+				
+				const rawDirection = Number(pageImage.direction);
+				const direction = [2, 4, 6, 8].includes(rawDirection) ? rawDirection : 2;
+				const row = Math.floor(characterIndex / 4) * 4 + (direction / 2);
+				
+				const rawPattern = Number(pageImage.pattern);
+				const pattern = Number.isFinite(rawPattern) ? Math.max(0, Math.min(2, rawPattern)) : 0;
+				const col = (characterIndex % 4 * 3) + pattern + 1;
+				
+				const columnCount = isBigImage ? 3 : 12;
+				const imageIndex = (row - 1) * columnCount + (col - 1);
+				character.value = `${characterName},${imageIndex}`;
+			} else {
+				const tileId = Number(pageImage.tileId) || 0;
+				character.value = `${tilesetNames[$.Drag.VisualEvent.getTilesetIndex(tileId)] || ""},${tileId}`;
+			}
+			
+			character.data += ` data-tilesetNames="${tilesetNames[5] || ""},${tilesetNames[6] || ""},${tilesetNames[7] || ""},${tilesetNames[8] || ""}"`;
 			
 			const priority = $.Drag.VisualEvent.getInputParameters("selectPriority");
 			priority.value = pageData.priorityType;

@@ -1,6 +1,9 @@
 function makeNodeFromParams(params = {}, saveInHistory = false, cache = false, onNodeReady = null) {	
 	//node data
 	const node = document.createElement('div');
+	node._preventInputChange = true;
+	node._initializationComplete = false;
+	
 	const nodeId = params.nodeId !== undefined && params.nodeId !== null ? params.nodeId : window.nodes.length;
 	const isCustom = params.isCustom || false;
 	const commandCode = params.commandCode || 0;
@@ -196,20 +199,7 @@ function addNodeToGraphNode(node, saveInHistory = false, cache = false, frag = n
 		node.data.id = window.nodes.length;
 	
 	registerNode(node.data);
-	
-	node.data.inputs = Array.from(node.querySelectorAll('.inputConnection'));
-	for (const [i, inputConnection] of node.data.inputs.entries()) {
-		inputConnection.nodeId = node.data.id;
-		inputConnection.connectionId = i;
-		inputConnection.connected = false;
-	}
-	
-	node.data.outputs = Array.from(node.querySelectorAll('.outputConnection'));
-	for (const [i, outputConnection] of node.data.outputs.entries()) {
-		outputConnection.nodeId = node.data.id;
-		outputConnection.connectionId = i;
-		outputConnection.connected = false;
-	}
+	registerNodeConnections(node);
 	
 	//listeners
 	nodeResizeObserver.observe(node);
@@ -261,6 +251,60 @@ function registerNode(nodeData) {
 	window.nodes[nodeData.id] = nodeData;
 };
 
+function registerNodeConnections(node) {
+	node.data.inputs = Array.from(
+		node.querySelectorAll('.inputConnection')
+	);
+
+	for (const [connectionId, inputConnection] of
+		node.data.inputs.entries()) {
+
+		inputConnection.nodeId = node.data.id;
+		inputConnection.connectionId = connectionId;
+		inputConnection.connected = false;
+		inputConnection.connectedConnections = [];
+
+		inputConnection.setAttribute(
+			'data-nodeId',
+			node.data.id
+		);
+		inputConnection.setAttribute(
+			'data-connectionId',
+			connectionId
+		);
+		inputConnection.setAttribute(
+			'data-connected',
+			false
+		);
+	}
+
+	node.data.outputs = Array.from(
+		node.querySelectorAll('.outputConnection')
+	);
+
+	for (const [connectionId, outputConnection] of
+		node.data.outputs.entries()) {
+
+		outputConnection.nodeId = node.data.id;
+		outputConnection.connectionId = connectionId;
+		outputConnection.connected = false;
+		outputConnection.connectedConnections = [];
+
+		outputConnection.setAttribute(
+			'data-nodeId',
+			node.data.id
+		);
+		outputConnection.setAttribute(
+			'data-connectionId',
+			connectionId
+		);
+		outputConnection.setAttribute(
+			'data-connected',
+			false
+		);
+	}
+};
+
 function getEventContext() {
 	return {
 		eventType: window.data.targetType, 
@@ -282,8 +326,9 @@ function processPendingNodeInputs() {
 
     if (window._pendingNodeInputs.length)
         window._processPendingNodeInputsRequest = requestAnimationFrame(processPendingNodeInputs);
-	else //if (!window._nodesCount || window._nodesCount === window.nodes.length)
-		onAllNodeReady();
+	else
+		tryFinishGraphInitialization();
+		// onAllNodeReady();
 };
 
 function buildNodeInputs(params) {
@@ -304,6 +349,20 @@ function buildNodeInputs(params) {
 	
 	if (params.isLast)
 		onNodeInputsReady(params.node, params.onNodeReady);
+};
+
+function tryFinishGraphInitialization() {
+	if (window._graphReady)
+		return;
+	
+	const graphNodes = window.nodes.filter(nodeData => nodeData && nodeData.node).map(nodeData => nodeData.node).filter(node => !node.isDummy);
+	if (!graphNodes.length)
+		return;
+
+	if (graphNodes.some(node => node._initializationComplete !== true))
+		return;
+
+	onAllNodeReady();
 };
 
 function onNodeInputsReady(node, onNodeReady) {
@@ -332,8 +391,11 @@ function onNodeInputsReady(node, onNodeReady) {
 		}
 	}
 	
-	triggerModsFunction("onNodeReady", node);		
+	triggerModsFunction("onNodeReady", node);	
+	
 	node._preventInputChange = false;
+	node._initializationComplete = true;
+	tryFinishGraphInitialization();
 };
 
 function updateNodeReadyCountGauge() {

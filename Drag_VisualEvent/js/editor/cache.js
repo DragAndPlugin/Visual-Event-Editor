@@ -170,8 +170,27 @@ function deleteEventCache(type, mapTargetId, targetId, pageId) {
 
 //event cache items
 function saveEventInCache() {
-	if (window.data.targetType && window.data.targetId)
-		saveEventDataInCache(parseEventDataFromEditor());				
+	if (!window.data.targetType || !window.data.targetId)
+		return false;
+	
+	const eventNode = getFirstNode();
+	if (window._graphReady !== true || !eventNode || eventNode._inputsReady !== true) {
+		console.log("Event cache save skipped: graph is not ready.");
+
+		return false;
+	}
+	
+	try {
+		const data = parseEventDataFromEditor();
+		if (!data)
+			return false;
+		
+		saveEventDataInCache(data);
+		return true;
+	} catch (error) {
+		console.error(`Failed to save current event: `, error);
+		return false;
+	}
 };
 
 function saveEventDataInCache(data, type = window.data.targetType, mapId = window.data.mapTargetId, targetId = window.data.targetId) {
@@ -307,6 +326,24 @@ function hasLastEventInCache() {
 
 function getLastEventFromCache() {
 	return window._cache.graph["Last Event"] || {targetType: '', mapId: 0, eventId: 0, pageId: 0};
+};
+
+// last map opened
+function cacheLastMap(mapId = window.data.mapTargetId) {
+	mapId = parseInt(mapId);
+	
+	if (!window._cache || !window._cache.editor || !Number.isInteger(mapId) || mapId <= 0)
+		return;
+	
+	window._cache.editor.lastMapId = mapId;
+};
+
+function getLastMapFromCache() {
+	if (!window._cache || !window._cache.editor)
+		return 0;
+	
+	const mapId = parseInt(window._cache.editor.lastMapId);
+	return Number.isInteger(mapId) && mapId > 0 ? mapId : 0;
 };
 
 
@@ -486,7 +523,7 @@ function clearEventNodesCache(targetType, mapTargetId, targetId, pageId) {
 	
 	const eventKeys = getMatchingEventKeys(targetType, mapTargetId, targetId, pageId);
 	for (const eventKey of eventKeys) {
-		const eventCache = getEventCache(window.data.targetType, eventKey);
+		const eventCache = getEventCache(targetType, eventKey);
 		eventCache.nodes = [];
 	}
 };
@@ -706,7 +743,8 @@ function loadMapDataFromCache(mapId = window.data.mapTargetId) {
 		return;
 	}
 	
-	window.data.loadedMap = getMapFromCache(mapId);				
+	window.data.loadedMap = getMapFromCache(mapId);	
+	cacheLastMap(mapId);
 	makeMapEventList();
 };
 

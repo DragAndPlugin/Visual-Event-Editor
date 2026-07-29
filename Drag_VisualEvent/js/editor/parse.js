@@ -102,6 +102,9 @@ function parseEventDataFromEditor(onlySelected = false, sequence = null) {
 				mapEventPages[pageId] = $.Drag.VisualEvent.getDefaultEventPage(window.data.targetType);
 			
 			const mapEventParameters = parseNodeInputs(eventNode, getNodeInputs(eventNode, false));
+			if (!eventNode._inputsReady || mapEventParameters.length < 14)
+				throw new Error("Cannot parse map event: the event node inputs are incomplete.");
+
 			mapEventPages[pageId].list = parseNodesBehavior(eventNode, 0, sequence, onlySelected, true);
 			
 			const tilesets = window.data.$dataTilesets[window.data.loadedMap.tilesetId];

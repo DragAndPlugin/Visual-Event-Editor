@@ -475,6 +475,9 @@ function changeEventPage(element, shouldApply = false) {
 	const eventType = window.data.targetType;
 	const pageId = parseInt(element.getAttribute('data-pageId'));
 	
+	if (pageId === window.data.pageId)
+		return;
+	
 	saveItemInEventCache("lastPage", pageId, eventType, window.data.mapTargetId, eventId);
 	saveEventInCache();
 	

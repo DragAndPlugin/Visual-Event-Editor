@@ -21,12 +21,16 @@ module.exports = [{
 	inputs: [],
 	outputs: [],
 	parse: (editor, command, node, behaviors, inputs, sequence) => {
-		const outputConnections = editor.getNodeConnections(node).outputs;
-		outputConnections.pop(); //last exec connection is processed naturally by native editor parsing function, so we don't process it here 
+		behaviors.pop(); // Remove the editor-only Sequence command.
+		
+		const outputConnections = [...editor.getNodeConnections(node).outputs];
+		outputConnections.pop();
+		
 		for (const [index, outputConnection] of outputConnections.entries())
 			if (editor.isConnectionConnected(outputConnection)) {
 				const connectionConnectedNode = editor.getConnectionConnectedNodes(outputConnection)[0];
-				behaviors.push(...editor.parseNodesBehavior(connectionConnectedNode, command.indent, sequence ? sequence[index] : null, false, false));
+				if (connectionConnectedNode)
+					behaviors.push(...editor.parseNodesBehavior(connectionConnectedNode, command.indent, sequence ? sequence[index] : [], false, false));
 			}
 	}
 }];

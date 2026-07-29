@@ -150,13 +150,14 @@ function clearCommonEvent(eventId = null) {
 		const contextmenu = document.querySelector('#common-event-contextmenu');
 		if (!contextmenu)
 			return;
+		
 		eventId = parseInt(contextmenu.getAttribute('data-eventId'));
 	}
 	
 	if (!eventId)
 		return;
 	
-	if (!confirm(`Are you sure you want to clear this event?\n\nThis will remove all event commands and reset the event to its default empty state.\n\n`));
+	if (!confirm(`Are you sure you want to clear this event?\n\nThis will remove all event commands and reset the event to its default empty state.\n\n`))
 		return;
 	
 	setAsUnsaved("Common Event", eventId);
@@ -683,11 +684,25 @@ function copyMapEvent() {
 	if (!contextmenu)
 		return;
 	
-	const eventId = parseInt(contextmenu.getAttribute('data-eventId'));
-	if (!eventId)
+	const eventId = parseInt(contextmenu.getAttribute('data-eventId'));	
+	const mapId = window.data.mapTargetId;
+	// const eventType = "Map Event";
+	
+	if (!eventId || !mapId)
 		return;
 	
+	// if (window.data.targetType === eventType && window.data.mapTargetId === mapId && window.data.targetId === eventId)
+		// saveEventInCache();
+	
+	// const cachedEvent = getEventCacheItem("data", eventType, mapId, eventId);
+	// const sourceEvent = cachedEvent || window.data.loadedMap.events[eventId] || $.Drag.VisualEvent.getDefaultMapEvent();
+	// const copiedEvent = $.Drag.VisualEvent.deepCopyJSON(sourceEvent);
+	
 	window._copiedMapEvent = $.Drag.VisualEvent.deepCopyJSON(window.data.loadedMap.events[eventId] || $.Drag.VisualEvent.getDefaultMapEvent());
+	// window._copiedMapEvent = {
+		// data: copiedEvent,
+		// pageCaches: pageCaches
+	// };
 	
 	hideMapEventContextMenu();
 };
@@ -712,7 +727,7 @@ function pasteMapEvent() {
 		setAsUnsaved("Map Event", eventId, window.data.mapTargetId, i);
 	
 	saveEventDataInCache(copiedEvent, "Map Event", window.data.mapTargetId, eventId);
-	clearEventNodesCache("Map Event", window.data.targetId, eventId);
+	clearEventNodesCache("Map Event", window.data.mapTargetId, eventId);
 	
 	updateMapEventListName(eventId);
 	hideMapEventContextMenu();

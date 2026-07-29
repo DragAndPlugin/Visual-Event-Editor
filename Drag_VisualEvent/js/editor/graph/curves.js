@@ -198,19 +198,26 @@ function connectPendingCurve(node) {
 	} else { //insert between two nodes
 		const leftNode = getNodeById(leftNodeId);
 		const rightNode = getNodeById(rightNodeId);
-		let outputConnection = getNodeConnections(leftNode).outputs[0];
-		let inputConnection = getNodeConnections(node).inputs[0];
+		const originalOutputConnection = getCurveLeftConnection(pendingCurve);
+		const originalInputConnection = getCurveRightConnection(pendingCurve);
 		
-		connectCurve(outputConnection, inputConnection, pendingCurve);
-		connectConnections(outputConnection, inputConnection, false);
+		const insertedConnections = getNodeConnections(node);
+		const insertedInputConnection = insertedConnections.inputs[0];
+		const insertedOutputConnection = insertedConnections.outputs[0];
+		
+		if (!leftNode || !rightNode || !originalOutputConnection || !originalInputConnection || !insertedInputConnection || !insertedOutputConnection) {
+			console.warn("Couldn't insert node: one or more connections are missing.");
+			return;
+		}
+		
+		connectCurve(originalOutputConnection, insertedInputConnection, pendingCurve);
+		connectConnections(originalOutputConnection, insertedInputConnection, false);
+		connectConnections(insertedOutputConnection, originalInputConnection);
 		
 		pendingCurve.isPending = false;
 		pendingCurve.isTemp = false;
 		window._pendingCurve = null;
 		
-		outputConnection = getNodeConnections(node).outputs[0];
-		inputConnection = getNodeConnections(rightNode).inputs[0];
-		connectConnections(outputConnection, inputConnection);
 		redrawNodeCurves(node);
 		
 		updateCacheGraphNodeConnectionsMap(node);
