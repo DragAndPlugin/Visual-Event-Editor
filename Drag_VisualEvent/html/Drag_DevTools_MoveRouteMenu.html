@@ -722,6 +722,10 @@
 			
 			function ok() {
 				const [list, parameters] = gatherMoveRouteListAndParameters();
+				
+				const targetInput = document.querySelector("#move-route-list-panel select");
+				if (targetInput)
+					data.input.setAttribute("data-eventId", parseInt(targetInput.value));
 
 				data.input.setAttribute('data-list', JSON.stringify(list));
 				data.input.setAttribute('data-parameters', JSON.stringify(parameters));

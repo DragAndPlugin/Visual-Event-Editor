@@ -1467,13 +1467,14 @@
 		function getPluginStructParametersContent(parentParam, structData, plugin, structs, depth = 0) {
 			const params = structData.params || [];
 			const structParams = {};
+			const parentValue = parsePluginStructValue(parentParam.value);
 			
 			for (const param of params) {
 				if (!param || !param.name)
 					continue;
 				
 				structParams[param.name] = Object.assign({}, param);
-				if (parentParam.value)
+				if (Object.prototype.hasOwnProperty.call(parentValue, param.name))
 					structParams[param.name].value = parentParam.value[param.name];
 			}
 			
@@ -1492,6 +1493,23 @@
 			}
 			
 			return rootParams.map(name => getPluginParameterContent(name, structParams, paramsTree, depth, plugin, structs, structData.name)).join("");
+		};
+		
+		function parsePluginStructValue(value) {
+			if (value && typeof value === "object" && !Array.isArray(value))
+				return value;
+			
+			if (typeof value === "string" && value.trim()) {
+				try {
+					const parsed = JSON.parse(value);
+					if (parsed && typeof parsed === "object" && !Array.isArray(parsed))
+						return parsed;
+				} catch (error) {
+					console.warn("Failed to parse plugin struct value:", value, error);
+				}
+			}
+			
+			return {};
 		};
 		
 		function restorePluginParameterDefaultValue(event, button) {
@@ -1658,20 +1676,60 @@
 		};
 		
 		function sanitizePluginParamList(param) {
-			if (!Array.isArray(param.value)) {
-				if (param.hasOwnProperty('default') && typeof param.default === 'string')
-					try {
-						param.value = JSON.parse(param.default);
-					} catch (error) {
-						param.value = [];
-					}
-				
-				if (!Array.isArray(param.value))
-					param.value = [param.value];
+			let value = param.value;
+			if (typeof value === "string") {
+				try {
+					value = JSON.parse(value);
+				} catch (error) {
+					console.warn( "Failed to parse plugin parameter list value:", value, error);
+					value = undefined;
+				}
 			}
 			
-			// if (result.length === 0)
-				// result.push(param.default !== undefined ? param.default : "");
+			if (!Array.isArray(value)) {
+				let defaultValue = param.default;
+				if (typeof defaultValue === "string") {
+					try {
+						defaultValue = JSON.parse(defaultValue);
+					} catch (error) {
+						defaultValue = [];
+					}
+				}
+
+				if (Array.isArray(defaultValue))
+					value = defaultValue;
+				else if (value !== undefined && value !== null)
+					value = [value];
+				else
+					value = [];
+			}
+			
+			if (param.type === "struct")
+				value = value.map(parsePluginStructValue);
+			
+			param.value = value;
+			
+			// if (!Array.isArray(param.value)) {
+				// if (Object.prototype.hasOwnProperty.call(param, "default") && typeof param.default === 'string') {
+					// try {
+						// param.value = JSON.parse(param.default);
+					// } catch (error) {
+						// param.value = [];
+					// }
+				// } else if (typeof param.value === "string") {
+					// try {
+						// param.value = JSON.parse(param.value);
+					// } catch (error) {
+						// param.value = [];
+					// }
+				// }
+				
+				// if (!Array.isArray(param.value))
+					// param.value = [param.value];
+				
+				// if (param.type === "struct")
+					// param.value = param.value.map(parsePluginStructValue);
+			// }
 		};
 		
 		function getPluginParameterListItem(param, value = "", depth = 0, plugin = null, structs = {}) {
@@ -1724,15 +1782,6 @@
 			const item = button.closest('.plugin-param-list-item');
 			if (!item)
 				return;
-			
-			// const list = item.parentElement;
-			// const count = list.querySelectorAll(':scope > .plugin-param-list-item').length;
-			// if (count <= 1) {
-				// const input = item.querySelector('input, select, textarea');
-				// if (input)
-					// restoreInputDefaultValue(input);
-				// return;
-			// }
 			
 			item.remove();
 			refreshParametersTree();
