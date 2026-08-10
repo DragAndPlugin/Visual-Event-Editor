@@ -1,7 +1,7 @@
 {
 	"expandedEventCommands": {
 		"name": "Expanded Event Commands",
-		"version": "1.0.0",
+		"version": "1.0.031",
 		"description": "Adds a large collection of additional event commands and control-flow nodes.",
 		"url": "https://drag-and-plug-in.itch.io/visualevent-expandedeventcommands"
 	},
