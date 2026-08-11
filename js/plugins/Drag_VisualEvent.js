@@ -6,7 +6,7 @@
  * @target MV MZ
  * @plugindesc A node-based eventing tool for RPG Maker MV & MZ
  * @author DragAndPlugin
- * @version 0.2.274
+ * @version 0.2.291
  * @url https://drag-and-plug-in.itch.io/visual-event-editor
  *
  * @help 
@@ -41,7 +41,7 @@ Imported.Drag_VisualEvent = true;
 var Drag = Drag || {};
 Drag.VisualEvent = {};
 Drag.VisualEvent.alias = {};
-Drag.VisualEvent.version = "0.2.274";
+Drag.VisualEvent.version = "0.2.291";
 
 // (function() {
 	
@@ -68,7 +68,6 @@ Drag.VisualEvent.version = "0.2.274";
 	Drag.VisualEvent.databaseTypes = ["actor", "animation", "armor", "class", "common_event", "enemy", "item", "skill", "state", "tileset", "troop", "weapon", "switch", "variable", "map_event", "equipment_type", "element_type", "skill_type", "weapon_type", "armor_type"];
 	Drag.VisualEvent.dataFiles = ["Actors", "Animations", "Armors", "Classes", "CommonEvents", "Enemies", "Items", "MapInfos", "Skills", "States", "System", "Tilesets", "Troops", "Weapons"];
 	Drag.VisualEvent.pluginJSDocData = {};
-	
 	
 	//loader functions for inputs/commands/events data
 	Drag.VisualEvent.loadInputData = function(filename) {
@@ -3715,7 +3714,7 @@ Drag.VisualEvent.version = "0.2.274";
 		return `
 			<div style="display: flex; align-items: flex-start;">
 				<textarea onchange="${params.onchange || ''} if (this.nextElementSibling && this.nextElementSibling.firstElementChild.checked) $.Drag.VisualEvent.autoFitTextArea(this);" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();" 
-					class="unfitTextArea ${params.class || ''}" id="${params.id || ''}" placeholder="${params.placeholder || ''}" ${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} ${params.disabled ? 'disabled' : ''} unfit
+					class="unfitTextArea ${params.class || ''}" id="${params.id || ''}" placeholder="${params.placeholder || ''}" ${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} ${params.textCommandContext ? 'data-hasTextCommandHelper="true"' : ''} ${params.disabled ? 'disabled' : ''} unfit
 				>${params.value || params.default || ''}</textarea>
 				${params.noAutofitCheckbox ? '' : `
 					<div class="flex" style="align-items: center; margin-top: 0.3125em; margin-left: 0.3125em;">
@@ -3729,8 +3728,154 @@ Drag.VisualEvent.version = "0.2.274";
 						</span>
 					</div>`
 				}
+				${params.textCommandContext ? `
+					<button type="button" class="text-command-helper-button" title="Text Commands" 
+						onmousedown="$.Drag.VisualEvent.saveTextCommandInputSelection(this);" onclick="$.Drag.VisualEvent.openTextCommandHelper(this);"
+						data-textCommandContext="${params.textCommandContext}"
+					>\\...</button>
+				` : ''}
 			</div>
 		`;
+	};
+	
+	Drag.VisualEvent.getTextCommandInputFromButton = function(button) {
+		return button.parentElement.querySelector('*[data-has-text-command-helper="true"], *[data-hasTextCommandHelper="true"]');
+	};
+	
+	Drag.VisualEvent.saveTextCommandInputSelection = function(button) {
+		const input = Drag.VisualEvent.getTextCommandInputFromButton(button);
+		if (!input)
+			return;
+
+		button._textCommandInput = input;
+		button._selectionStart = input.selectionStart;
+		button._selectionEnd = input.selectionEnd;
+	};
+	
+	Drag.VisualEvent.openTextCommandHelper = function(button) {
+		const input = button._textCommandInput || Drag.VisualEvent.getTextCommandInputFromButton(button);
+		if (!input)
+			return;
+		
+		Drag.VisualEvent.closePickers(input.ownerDocument);
+		Drag.VisualEvent.onOpenPickers(input.ownerDocument);
+		
+		const picker = document.createElement("div");
+		picker.className = "inline-picker text-command-picker";
+		picker._input = input;
+		picker._selectionStart = button._selectionStart !== undefined && button._selectionStart !== null ? button._selectionStart : input.selectionStart;
+		picker._selectionEnd = button._selectionEnd !== undefined && button._selectionEnd !== null ? button._selectionEnd : input.selectionEnd;
+		picker._context = button.getAttribute('data-textCommandContext');
+		Drag.VisualEvent.buildTextCommandHelper(picker);
+		
+		const rect = button.getBoundingClientRect();
+		picker.style.position = "fixed";
+		picker.style.left = rect.left + "px";
+		picker.style.top = rect.bottom + 4 + "px";
+		picker.style.zIndex = 999999;
+		
+		input.ownerDocument.body.appendChild(picker);
+		Drag.VisualEvent.ensureContextMenuFitViewport(input.ownerDocument.defaultView, picker, rect.left, rect.bottom + 4);
+	};
+	
+	Drag.VisualEvent.buildTextCommandHelper = function(picker) {
+		const engine = Utils.RPGMAKER_NAME;
+		const context = picker._context || "message";
+		const commands = Drag.VisualEvent.textCommands.filter(command => {
+			if (command.engine) {
+				const engines = Array.isArray(command.engine) ? command.engine : [command.engine];
+				if (engines.indexOf(engine) < 0)
+					return false;
+			}
+			
+			if (command.contexts) {
+				const contexts = Array.isArray(command.contexts) ? command.contexts : [command.contexts];
+				if (contexts.indexOf(context) < 0)
+					return false;
+			} 
+			
+			return true;
+		});
+		
+		const categories = {};
+		for (const command of commands) {
+			const category = command.category || "Other";
+			if (!categories[category])
+				categories[category] = [];
+			
+			categories[category].push(command);
+		}
+		
+		for (const [categoryName, categoryCommands] of Object.entries(categories)) {
+			const category = document.createElement("div");
+			category.className = "text-command-category";
+			
+			const title = document.createElement("div");
+			title.className = "text-command-category-title";
+			title.textContent = categoryName;
+			category.appendChild(title);
+			
+			for (const command of categoryCommands) {
+				const item = document.createElement("div");
+				item.className = "text-command-item";
+				
+				const name = document.createElement("span");
+				name.className = "text-command-name";
+				name.textContent = command.name;
+				
+				const code = document.createElement("span");
+				code.className = "text-command-code";
+				code.textContent = command.display || command.code || "";
+				
+				if (command.description)
+					item.title = command.description;
+				
+				item.appendChild(name);
+				item.appendChild(code);
+				item.addEventListener("click", () => Drag.VisualEvent.selectTextCommandHelperItem(picker, command));
+				
+				category.appendChild(item);
+			}
+			
+			picker.appendChild(category);
+		}
+	};
+	
+	Drag.VisualEvent.selectTextCommandHelperItem = function(picker, command) {
+		switch (command.type) {
+			case "color":
+				Drag.VisualEvent.openColorPicker(picker._input, colorIndex => Drag.VisualEvent.insertTextCommand(picker, command.getCode(colorIndex)));
+				break;
+			case "icon":
+				Drag.VisualEvent.openIconPicker(picker._input, iconIndex => Drag.VisualEvent.insertTextCommand(picker, command.getCode(iconIndex)));
+				break;
+			default:
+				const selectStart = command.select ? command.select[0] : null;
+				const selectEnd = command.select ? command.select[1] : null;
+				Drag.VisualEvent.insertTextCommand(picker, command.code, selectStart, selectEnd);
+				break;
+		}
+	};
+	
+	Drag.VisualEvent.insertTextCommand = function(picker, text, selectStartOffset = null, selectEndOffset = null) {
+		const input = picker._input;
+		if (!input)
+			return;
+
+		const start = picker._selectionStart !== undefined && picker._selectionStart !== null ? picker._selectionStart : input.value.length;
+		const end = picker._selectionEnd !== undefined && picker._selectionEnd !== null ? picker._selectionEnd : start;
+		input.value = input.value.slice(0, start) + text + input.value.slice(end);
+		input.focus();
+
+		if (selectStartOffset !== null && selectEndOffset !== null)
+			input.setSelectionRange(start + selectStartOffset, start + selectEndOffset);
+		else {
+			const cursor = start + text.length;
+			input.setSelectionRange(cursor, cursor);
+		}
+
+		input.dispatchEvent(new Event("input", {bubbles: true}));
+		Drag.VisualEvent.closePickers(input.ownerDocument);
 	};
 	
 	Drag.VisualEvent.canvas = document.createElement('canvas');
@@ -3755,7 +3900,14 @@ Drag.VisualEvent.version = "0.2.274";
 		return `
 			<input onchange="${params.onchange || ''}" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();" onclick="${params.onclick || ''}" onfocus="${params.onfocus || ''}"
 				type="text" class="${params.class || ''}" id="${params.id ? params.id : ''}" placeholder="${params.placeholder || ''}" value="${params.value || params.default || ''}" 
-				${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} ${params.disabled ? 'disabled' : ''} style="${params.style ? params.style : ''}">`;
+				${params.data || ''} ${!params.notParam ? 'data-isCommandParameter="true"' : ''} ${params.disabled ? 'disabled' : ''} ${params.textCommandContext ? 'data-hasTextCommandHelper="true"' : ''} style="${params.style ? params.style : ''}">
+			${params.textCommandContext ? `
+				<button type="button" class="text-command-helper-button" title="Text Commands" 
+					onmousedown="$.Drag.VisualEvent.saveTextCommandInputSelection(this);" onclick="$.Drag.VisualEvent.openTextCommandHelper(this);"
+					data-textCommandContext="${params.textCommandContext}"
+				>\\...</button>
+			` : ''}	
+		`;
 	};
 	
 	Drag.VisualEvent.autoFitInput = function(input) {
@@ -4566,7 +4718,7 @@ Drag.VisualEvent.version = "0.2.274";
 			</div>`;
 	};
 	
-	Drag.VisualEvent.openIconPicker = function(input) {
+	Drag.VisualEvent.openIconPicker = function(input, onSelect = null) {
 		input.blur();
 		Drag.VisualEvent.closePickers(input.ownerDocument);
 		Drag.VisualEvent.onOpenPickers(input.ownerDocument);
@@ -4601,6 +4753,7 @@ Drag.VisualEvent.version = "0.2.274";
 			picker.style.top = (rect.bottom + 4) + "px";
 			picker.style.zIndex = 999999;
 			picker._input = input;
+			picker._onSelect = onSelect;
 			input.ownerDocument.body.appendChild(picker);
 			
 			Drag.VisualEvent.ensureContextMenuFitViewport(input.ownerDocument.defaultView, picker, rect.left, rect.bottom + 4);
@@ -4611,11 +4764,15 @@ Drag.VisualEvent.version = "0.2.274";
 		const picker = cell.closest('.inline-picker');
 		const input = picker._input;
 		
-		input.value = value;
-		input.setAttribute("value", value);
-		input.dispatchEvent(new Event("change", {bubbles: true}));
+		if (typeof picker._onSelect === "function")
+			picker._onSelect(value);
+		else {
+			input.value = value;
+			input.setAttribute("value", value);
+			input.dispatchEvent(new Event("change", {bubbles: true}));
+			Drag.VisualEvent.updateIconInputPreview(input);
+		}
 		
-		Drag.VisualEvent.updateIconInputPreview(input);
 		Drag.VisualEvent.closePickers(input.ownerDocument);
 	};
 	
@@ -4654,7 +4811,7 @@ Drag.VisualEvent.version = "0.2.274";
 			</div>`;
 	};
 	
-	Drag.VisualEvent.openColorPicker = function(input) {
+	Drag.VisualEvent.openColorPicker = function(input, onSelect = null) {
 		input.blur();
 		Drag.VisualEvent.closePickers(input.ownerDocument);
 		Drag.VisualEvent.onOpenPickers(input.ownerDocument);
@@ -4690,6 +4847,7 @@ Drag.VisualEvent.version = "0.2.274";
 			picker.style.top = (rect.bottom + 4) + "px";
 			picker.style.zIndex = 999999;
 			picker._input = input;
+			picker._onSelect = onSelect;
 			input.ownerDocument.body.appendChild(picker);
 			
 			Drag.VisualEvent.ensureContextMenuFitViewport(input.ownerDocument.defaultView, picker, rect.left, rect.bottom + 4);
@@ -4706,13 +4864,20 @@ Drag.VisualEvent.version = "0.2.274";
 	
 	Drag.VisualEvent.selectColorPickerValue = function(cell, value) {
 		const picker = cell.closest('.inline-picker');
+		if (!picker)
+			return;
+		
 		const input = picker._input;
+		if (typeof picker._onSelect === "function") 
+			picker._onSelect(value);
+		else {
+			input.value = value;
+			input.setAttribute("value", value);
+			input.dispatchEvent(new Event("change", {bubbles: true}));
+			
+			Drag.VisualEvent.updateColorInputPreview(input);
+		}
 		
-		input.value = value;
-		input.setAttribute("value", value);
-		input.dispatchEvent(new Event("change", {bubbles: true}));
-		
-		Drag.VisualEvent.updateColorInputPreview(input);
 		Drag.VisualEvent.closePickers(input.ownerDocument);
 	};
 	
