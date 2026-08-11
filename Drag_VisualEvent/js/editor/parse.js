@@ -81,18 +81,26 @@ function parseEventDataFromEditor(onlySelected = false, sequence = null) {
 	const topPanel = document.querySelector('#topPanel');
 	if (!topPanel)
 		return null;
-
-	triggerModsFunction('onParseGraph', eventNode);
+	
 	switch (window.data.targetType) {
-		case "Common Event":
-			return {
+		case "Common Event": {
+			const commonEventParameters = parseNodeInputs(eventNode, getNodeInputs(eventNode, false));
+			if (!eventNode._inputsReady || commonEventParameters.length < 2)
+				throw new Error("Cannot parse common event: the event node inputs are incomplete.");
+			
+			const parsedEvent = {
 				id: eventId,
-				name: document.querySelector('#topPanel #common-event-name').value,
-				switchId: parseInt(document.querySelector('#topPanel #common-event-switch').value),
-				trigger: parseInt(document.querySelector('#topPanel #common-event-trigger').value),
+				name: topPanel.querySelector('#common-event-name').value,
+				switchId: commonEventParameters[1],
+				trigger: commonEventParameters[0],
 				list: parseNodesBehavior(eventNode, 0, sequence, onlySelected, true)
 			};
-		case "Map Event":
+
+			triggerModsFunction('onParseGraph', [eventNode, parsedEvent]);
+			return parsedEvent;
+		}
+
+		case "Map Event": {
 			const mapEvent = $.Drag.VisualEvent.deepCopyJSON(getEventCacheItem("data", "Map Event", window.data.mapTargetId, eventId) || window.data.loadedMap.events[eventId] || $.Drag.VisualEvent.getDefaultMapEvent());
 			if (!mapEvent)
 				return null;
@@ -100,24 +108,27 @@ function parseEventDataFromEditor(onlySelected = false, sequence = null) {
 			const mapEventPages = mapEvent.pages;
 			if (!mapEventPages[pageId])
 				mapEventPages[pageId] = $.Drag.VisualEvent.getDefaultEventPage(window.data.targetType);
-			
-			const mapEventParameters = parseNodeInputs(eventNode, getNodeInputs(eventNode, false));
+
+			const mapEventParameters = parseNodeInputs(
+				eventNode,
+				getNodeInputs(eventNode, false)
+			);
 			if (!eventNode._inputsReady || mapEventParameters.length < 14)
 				throw new Error("Cannot parse map event: the event node inputs are incomplete.");
-
+			
 			mapEventPages[pageId].list = parseNodesBehavior(eventNode, 0, sequence, onlySelected, true);
 			
-			const tilesets = window.data.$dataTilesets[window.data.loadedMap.tilesetId];
-			const tilesetNames = tilesets ? tilesets.tilesetNames : [];
+			const tileset = window.data.$dataTilesets[window.data.loadedMap.tilesetId];
+			const tilesetNames = tileset ? tileset.tilesetNames : [];
 			const isTile = tilesetNames.includes(mapEventParameters[1]);
 			mapEventPages[pageId].image = {
 				characterIndex: !isTile ? (Math.floor(mapEventParameters[2] / 48) * 4) + Math.floor((mapEventParameters[2] % 12) / 3) : 0,
 				characterName: isTile ? "" : mapEventParameters[1],
-				direction: !isTile ? Math.max(Math.ceil((mapEventParameters[2] - (Math.floor(mapEventParameters[2] / 48) * 48)) / 12), 1) * 2 : 2,
+				direction: !isTile ? Math.max(Math.ceil((mapEventParameters[2] - Math.floor(mapEventParameters[2] / 48) * 48) / 12), 1) * 2 : 2,
 				pattern: !isTile ? Math.floor((mapEventParameters[2] % 12) % 3) : 0,
 				tileId: isTile ? parseInt(mapEventParameters[2]) : 0
 			};
-			
+
 			mapEventPages[pageId].priorityType = mapEventParameters[3];
 			mapEventPages[pageId].trigger = mapEventParameters[4];
 			mapEventPages[pageId].moveType = mapEventParameters[5];
@@ -128,17 +139,22 @@ function parseEventDataFromEditor(onlySelected = false, sequence = null) {
 			mapEventPages[pageId].stepAnime = mapEventParameters[11];
 			mapEventPages[pageId].directionFix = mapEventParameters[12];
 			mapEventPages[pageId].through = mapEventParameters[13];
-			
-			return {
+
+			const parsedEvent = {
 				id: eventId,
 				name: document.querySelector('#topPanel #map-event-name').value,
 				note: document.querySelector('#topPanel #map-event-notes').value,
 				pages: mapEventPages,
 				x: mapEvent.x,
 				y: mapEvent.y
-			}
-		case "Troop Event":
-			const troopEvent = $.Drag.VisualEvent.deepCopyJSON(getEventCacheItem("data", "Troop Event", 0, eventId) || window.data.$dataTroops[eventId] ||$.Drag.VisualEvent.getDefaultTroopEvent());
+			};
+
+			triggerModsFunction('onParseGraph', [eventNode, parsedEvent]);
+			return parsedEvent;
+		}
+
+		case "Troop Event": {
+			const troopEvent = $.Drag.VisualEvent.deepCopyJSON(getEventCacheItem("data", "Troop Event", 0, eventId) || window.data.$dataTroops[eventId] || $.Drag.VisualEvent.getDefaultTroopEvent());
 			if (!troopEvent)
 				return null;
 			
@@ -148,14 +164,18 @@ function parseEventDataFromEditor(onlySelected = false, sequence = null) {
 			
 			troopEventPages[pageId].span = parseNodeInputs(eventNode)[1];
 			troopEventPages[pageId].list = parseNodesBehavior(eventNode, 0, sequence, onlySelected, true);
-			
-			return {
+
+			const parsedEvent = {
 				id: eventId,
 				members: troopEvent.members,
 				name: document.querySelector('#topPanel #troop-event-name').value,
 				pages: troopEventPages
 			};
-		default: 
+
+			triggerModsFunction('onParseGraph', [eventNode, parsedEvent]);
+			return parsedEvent;
+		}
+		default:
 			console.warn(`Unrecognized event type: ${window.data.targetType}. Couldn't parse event data from editor.`);
 	}
 	
@@ -216,14 +236,21 @@ function parseNodesBehavior(startingNode = getFirstNode(), indent = 0, sequence 
 			try {
 				if (typeof window[`parseNode${commandCode}`] === "function")
 					window[`parseNode${commandCode}`](command, node, nodesBehavior, nodeInputs, data.subSequence);
+				
+				triggerModsFunction(`onParseNode${commandCode}`, [command, node, nodesBehavior, nodeInputs, data.subSequence]);
+				triggerModsFunction(`onParseNode`, [command, node, nodesBehavior, nodeInputs, data.subSequence]);
 			} catch (error) {
 				console.error(`Couldn't parse correctly command ${commandCode}, please retry. Error : `, error);
 			}				
 		} else {
 			nodesBehavior.push(command);
 			try {
-				if (typeof window._customNodes[commandCode].parse === "function")
+				if (typeof window._customNodes[commandCode].parse === "function") {	
+					triggerModsFunction(`onParseNode${commandCode}`, [command, node, nodesBehavior, nodeInputs, data.subSequence]);
+					triggerModsFunction(`onParseNode`, [command, node, nodesBehavior, nodeInputs, data.subSequence]);
+					console.log(command);
 					window._customNodes[commandCode].parse(window, command, node, nodesBehavior, nodeInputs, data.subSequence);
+				}
 			} catch (error) {
 				console.error(`Couldn't parse properly custom node ${commandCode}, please retry or contact author of the custom code. Error : `, error);
 			}
@@ -234,6 +261,31 @@ function parseNodesBehavior(startingNode = getFirstNode(), indent = 0, sequence 
 		nodesBehavior.push({code: 0, indent: indent, parameters: Array(0)});
 	
 	return nodesBehavior;
+};
+
+function createBehaviorFromCommand(command, code, keepMetaData = true, filterMetaData = []) {
+	const behavior = {
+		code: code,
+		indent: command.indent,
+		parameters: command.parameters
+	};
+	
+	if (!keepMetaData)
+		return behavior;
+	
+	const nativeProperties = ["code", "indent", "parameters"];
+	const filter = Array.isArray(filterMetaData) ? filterMetaData : [];
+	for (const property of Object.keys(command)) {
+		if (nativeProperties.includes(property))
+			continue;
+		
+		if (filter.length > 0 && !filter.includes(property))
+			continue;
+		
+		behavior[property] = command[property];
+	}
+	
+	return behavior;
 };
 
 function getRawNodeInputsValues(node, nodeInputs, filterHidden = true) {

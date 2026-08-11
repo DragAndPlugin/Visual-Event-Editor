@@ -432,7 +432,8 @@ function rebuildListFromConnectionsMap(node, connectionsMap) {
 	if (connectionsMap.inputs.length > inputLength) {
 		const list = node.querySelector('#input-container *[data-isList="true"]');
 		if (list) {
-			const button = list.parentElement.querySelector('#add-list-input-button');
+			// const button = list.parentElement.querySelector('#add-list-input-button');
+			const button = findInputAssociatedAddListInputButton(list);
 			for (let i = inputLength; i < connectionsMap.inputs.length; i++)
 				$.Drag.VisualEvent.addListInput(button);
 		}
@@ -442,7 +443,8 @@ function rebuildListFromConnectionsMap(node, connectionsMap) {
 	if (connectionsMap.outputs.length > outputLength) {
 		const list = node.querySelector('#output-container *[data-isList="true"]');
 		if (list) {
-			const button = node.querySelector('#output-container *[data-isList="true"]').parentElement.querySelector('#add-list-input-button');
+			// const button = node.querySelector('#output-container *[data-isList="true"]').parentElement.querySelector('#add-list-input-button');
+			const button = findInputAssociatedAddListInputButton(list);
 			for (let i = outputLength; i < connectionsMap.outputs.length; i++)
 				$.Drag.VisualEvent.addListInput(button);
 		}

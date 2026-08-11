@@ -6,26 +6,13 @@ function setupTopPanel() {
 				getEventCacheItem("data", window.data.targetType, 0, window.data.targetId) 
 				: (window.data.$dataCommonEvents[window.data.targetId] || $.Drag.VisualEvent.getDefaultCommonEvent());
 			
-			const switchParams = $.Drag.VisualEvent.getInputParameters("switchNone");
-			switchParams.value = target.switchId || 0;
-			switchParams.id = "common-event-switch";
-			
 			const name = target.name || "";
-			const trigger = target.trigger || 0;
 			
 			topPanel.innerHTML = `
 				<div id="event-data-container">
 					<div>
 						<label for="common-event-name">Name :</label>
 						${$.Drag.VisualEvent.getInputField({type: "string", id: "common-event-name", value: name, onchange: "updateEventName(this.value);"})}
-					</div>
-					<div>
-						<label for="common-event-trigger">Trigger :</label>
-						${$.Drag.VisualEvent.getInputField({type: "select", options: ["None", "Autorun", "Parallel"], id: "common-event-trigger", value: trigger})}
-					</div>
-					<div>
-						<label for="common-event-switch">Switch :</label>
-						${$.Drag.VisualEvent.getInputField(switchParams)}
 					</div>
 				</div>
 			`;
@@ -384,6 +371,27 @@ function refreshEventPages() {
 		eventPage.setAttribute('data-pageId', pageId);
 		eventPage.setAttribute('data-unsaved', isUnsaved(window.data.targetType, window.data.targetId, window.data.mapTargetId, pageId));
 	}
+};
+
+function updateCommonEventHeaderFromNode(input, propertyName) {
+	if (!input || !window._registerInputChange || window.data.targetType !== "Common Event")
+		return;
+	if (propertyName !== "trigger" && propertyName !== "switchId")
+		return;
+	
+	const value = Number($.Drag.VisualEvent.getInputValue(input));
+	if (!Number.isInteger(value) || (propertyName === "trigger" && (value < 0 || value > 2)) || (propertyName === "switchId" && value < 0))
+		return;
+	
+	const eventId = window.data.targetId;
+	const commonEvent = hasItemInEventCache("data", "Common Event", 0, eventId) ?
+		getEventCacheItem("data", "Common Event", 0, eventId) :
+		$.Drag.VisualEvent.deepCopyJSON(window.data.$dataCommonEvents[eventId] || $.Drag.VisualEvent.getDefaultCommonEvent());
+	if (!commonEvent)
+		return;
+	
+	commonEvent[propertyName] = value;
+	saveEventDataInCache(commonEvent, "Common Event", 0, eventId);
 };
 
 function deleteEventPage(element) {

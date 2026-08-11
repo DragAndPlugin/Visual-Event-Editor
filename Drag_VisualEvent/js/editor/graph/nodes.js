@@ -59,12 +59,14 @@ function makeNodeFromParams(params = {}, saveInHistory = false, cache = false, o
 	const immediateLoadInputs = params._lazyLoadInputs === false ? true : isInGraphBounds(params.x, params.y);
 	const connectionIdOffset = params.haveInputExecNode ? 1 : 0;
 	const lastConnectionId = params.inputs.length - 1 + connectionIdOffset;
+	const typedConnections = $.Drag.VisualEvent.getCommandParameterTypes(commandCode);
 	for (const [i, input] of params.inputs.entries()) {
 		const connectionId = i + connectionIdOffset;
+		const typedConnection = typedConnections[i] || null;
 		nodeContent += `
 				<span id="node-input" class="nodeInput ${input.type === "empty" ? 'hidden' : ''}">
 					<b>${input.text || input.name || ""}</b>
-					<span data-connected="false" data-nodeId="${nodeId}" data-connectionId="${connectionId}" class="inputConnection"></span>
+					<span data-connected="false" data-nodeId="${nodeId}" data-connectionId="${connectionId}" ${typedConnection ? `data-typedConnection="${typedConnection}"` : ''} class="inputConnection"></span>
 					${input.desc ? '<span class="node-input-desc">' + input.desc + '</span>' : '<br>'}
 					<div id="input-wrapper">
 		`;
@@ -155,9 +157,13 @@ function makeNodeFromParams(params = {}, saveInHistory = false, cache = false, o
 		for (let l = 0; l < inputListLength; l++)
 			nodeContent += `
 				<span class="nodeOutput" id="main-exec-output"> 
-					${params.outputLabel || ''}
+					${params.outputLabel || (customOutputExecParams.name ? `<span>${customOutputExecParams.name}</span>` : '') || ''}
 					${isCustom && customOutputExecParams.is_list ? $.Drag.VisualEvent.getListInputButtons(customOutputExecParams.min_list) : ''}
-					<span data-connected="false" data-nodeId="${nodeId}" data-connectionId="${outputConnectionId++}" data-indent="${params.indent || 0}" ${isCustom && customOutputExecParams.is_list ? `data-isList="true"` : ''} ${isCustom && customOutputExecParams.exclusive ? `data-exclusive="${customOutputExecParams.exclusive}"` : 'data-exclusive="exec"'} ${isCustom && customOutputExecParams.curve_color ? `data-curveColor="${customOutputExecParams.curve_color}"` : ''} class="exec outputConnection ${isCustom && customOutputExecParams.symbol ? `noDefaultSymbol ${customNodeData.id}_output` : ''}"></span>
+					<span 
+						data-connected="false" data-nodeId="${nodeId}" data-connectionId="${outputConnectionId++}" data-indent="${params.indent || 0}" ${isCustom && customOutputExecParams.is_list ? `data-isList="true"` : ''} 
+						${isCustom && customOutputExecParams.exclusive ? `data-exclusive="${customOutputExecParams.exclusive}"` : 'data-exclusive="exec"'} 
+						${isCustom && customOutputExecParams.curve_color ? `data-curveColor="${customOutputExecParams.curve_color}"` : ''} 
+						class="exec outputConnection ${isCustom && customOutputExecParams.symbol ? `noDefaultSymbol ${customNodeData.id}_output` : ''}"></span>
 				</span>`;
 		
 	}

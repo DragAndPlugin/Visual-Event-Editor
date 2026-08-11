@@ -23,13 +23,15 @@ function init() {
 	window.graphCamera = document.querySelector('#graph-camera');
 	
 	$.Drag.VisualEvent.getHTTP($.Drag.VisualEvent.pluginVersionUrl, checkNewVersionAvailable);
-	verifyInstalledAddons();
+	// verifyInstalledAddons();
 	
 	window._isGraphNode = true;
 	if (window.data && window.data.targetId)
 		setupTopPanel();
 	
 	importEditorMods();
+	refreshAddonsMenu();
+	checkAddonUpdates();
 	setupNodeList();
 	
 	const setupGraphEditorInterval = setInterval(() => {
@@ -78,25 +80,6 @@ function init() {
 			window._saveCacheOnExit = true;
 		}
 	}, 10);
-};
-
-function verifyInstalledAddons() {
-	const addons = ["expandedEventCommands"];
-	const customNodes = $.Drag.VisualEvent.getFileList('./Drag_VisualEvent/js/custom_nodes');
-	
-	for (const addon of addons) {
-		switch (addon) {
-			case "expandedEventCommands":
-				const installed = customNodes.includes('node_expandedEventCommands.js');
-				const elem = document.querySelector(`#editor-addons-menu *[data-addon="${addon}"]`);
-				if (elem) {
-					elem.innerHTML = installed ? "Installed" : "Not Installed";
-					elem.style.color = installed ? "forestgreen" : "darkgrey";
-				}
-				break;
-		}
-		
-	}
 };
 
 function checkNewVersionAvailable(data) {
@@ -494,6 +477,7 @@ function setupGraphEditor() {
 
 function setupGraphNodesFromCache() {
 	const cacheNodes = getGraphNodesFromCache();
+	validateCachedCustomNodes(cacheNodes);
 	window._nodesCount = cacheNodes.filter(node => node).length;
 	
 	const addedNodes = [];
@@ -580,6 +564,32 @@ function setupGraphNodesFromCache() {
 	
 	// if (window._graphNodeQueue.length > 0)
 		// processNodeQueue();
+};
+
+function validateCachedCustomNodes(cacheNodes) {
+	const unsupportedNodes = [];
+	for (const cacheNode of cacheNodes) {
+		if (!cacheNode || typeof cacheNode.commandCode !== "string")
+			continue;
+
+		if (!window._customNodes || !window._customNodes[cacheNode.commandCode]) {
+			unsupportedNodes.push({
+				nodeId: cacheNode.nodeId,
+				commandCode: cacheNode.commandCode,
+				commandName: cacheNode.commandName || ""
+			});
+		}
+	}
+
+	if (!unsupportedNodes.length)
+		return;
+
+	const error = new Error("The cached graph contains custom nodes that are unavailable in this RPG Maker engine. No nodes were loaded.");
+	error.name = "UnsupportedCustomNodeError";
+	error.code = "VISUAL_EVENT_UNSUPPORTED_CUSTOM_NODES";
+	error.details = {nodes: unsupportedNodes};
+	console.error(error);
+	throw error;
 };
 
 function processNodeQueue() {
@@ -791,7 +801,12 @@ function makeOutputsFromCommand(commandParameters, command = null, commandId = 0
 			
 		if (output.type.toLowerCase() === "stringarray") { 
 			for (let i = 0; i < output.count; i++) {
-				const fOutput = {type: "string", class: "onReadyOnChange", isOutput: true, name: output.name || '', default: output.default[i] || '', data: output.data ? output.data : '', value: command && !output.notParam ? command.parameters[commandParameters.indexOf(output)][i] || '' : ''};
+				const fOutput = {
+					type: "string", class: "onReadyOnChange", isOutput: true, name: output.name || '', default: output.default[i] || '', 
+					data: output.data ? output.data : '', value: command && !output.notParam ? command.parameters[commandParameters.indexOf(output)][i] || '' : '',
+				};
+				if (output.textCommandContext)
+					fOutput.textCommandContext = output.textCommandContext;
 				fOutputs.push(fOutput);
 				if (!commandChildBranch[outputId + i] || commandChildBranch[outputId + i].length === 0)
 					fOutput.connectionData = `${fOutput.connectionData || ''} data-keepUnconnected="true"`;
@@ -981,8 +996,20 @@ function makeInputsFromPluginCommand(pluginName, commandName, commandText, comma
 
 function getEventInput(type = "", id = 0, pageId = 0, mapId = 0) {
 	switch (type) {
-		case "Common Event":
-			return [];
+		case "Common Event": {
+			const eventData = hasItemInEventCache("data", "Common Event", 0, id) ? getEventCacheItem("data", "Common Event", 0, id) : (window.data.$dataCommonEvents[id] || $.Drag.VisualEvent.getDefaultCommonEvent());
+			
+			const commonEventTrigger = $.Drag.VisualEvent.getInputParameters("selectCommonEventTrigger");
+			commonEventTrigger.value = Number.isInteger(Number(eventData.trigger)) ? Number(eventData.trigger) : 0;
+			commonEventTrigger.onchange = `updateCommonEventHeaderFromNode(this, 'trigger');`;
+			
+			const conditionSwitch = $.Drag.VisualEvent.getInputParameters("switchNone");
+			conditionSwitch.name = "Condition";
+			conditionSwitch.value = Number.isInteger(Number(eventData.switchId)) ? Number(eventData.switchId) : 0;
+			conditionSwitch.onchange = `updateCommonEventHeaderFromNode(this, 'switchId');`;
+			
+			return [commonEventTrigger, conditionSwitch];
+		}
 		case "Map Event": {
 			const cachedEvent = hasItemInEventCache("data", "Map Event", mapId, id) ? getEventCacheItem("data", "Map Event", mapId, id) : null;
 			const loadedEvent = window.data.loadedMap && window.data.loadedMap.events ? window.data.loadedMap.events[id] : null;
@@ -1205,6 +1232,14 @@ function addNodeFromParams(params = {}, saveInHistory = false, cache = false, on
 	if (!Array.isArray(commandParameters))
 		return;
 	
+	let parametersValues = params.parametersValues;
+	// fix for legacy common event trigger & condition inputs that was previously in top panel
+	if (commandCode === 0 && window.data.targetType === "Common Event" && (!Array.isArray(parametersValues) || parametersValues.length < 2)) {
+		const commonEventValues = commandParameters.filter(parameter => !parameter.isOutput && !parameter.notParam).map(parameter => parameter.value);
+		if (commonEventValues.length >= 2)
+			parametersValues = commonEventValues;
+	}
+	
 	const commandParametersIndex = $.Drag.VisualEvent.commandsParametersIndex[`command${commandCode || 0}`];
 	setCommandParametersIndexs(commandParameters, commandParametersIndex);
 	const [inputs, attributes, hasWarning] = !params.isPluginCommand ? makeInputsFromCommand(commandParameters) : makeInputsFromPluginCommand(params.commandCategory, params.commandName, params.commandText || params.commandName);
@@ -1248,8 +1283,8 @@ function addNodeFromParams(params = {}, saveInHistory = false, cache = false, on
 	}, saveInHistory, cache, () => {
 		if (params.parameterListsLength)
 			assignNodeListsLength(node, params.parameterListsLength);
-		if (params.parametersValues)
-			assignNodeParametersValues(node, params.parametersValues);
+		if (parametersValues)
+			assignNodeParametersValues(node, parametersValues);
 		
 		triggerAllOnReadyOnChange();
 	});
