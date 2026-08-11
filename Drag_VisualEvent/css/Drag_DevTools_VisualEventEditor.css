@@ -501,7 +501,7 @@ div#functionList {
     user-select: none;
 }
 
-#editor-option-menu, #editor-addons-menu, #editor-logs-menu {
+#editor-option-menu, #editor-logs-menu {
 	position: absolute;
     top: 2.5vh;
     right: 0;
@@ -530,27 +530,111 @@ div#functionList {
     padding: 0.4375em 0px;
 }
 
+#editor-addons-button {
+	position: relative;
+}
+
+#editor-addons-update-badge {
+	position: absolute;
+    bottom: 0.35em;
+    right: 0.35em;
+    min-width: 1.25em;
+    height: 1.25em;
+    padding: 0 0.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65em;
+    font-weight: bold;
+    line-height: 1;
+    color: white;
+    background-color: goldenrod;
+    border-radius: 999px;
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
 #editor-addons-menu {
+	position: absolute;
+	top: 2.5vh;
+	left: 0;
 	right: unset;
-	left: 0px;
+	min-width: 20em;
+	max-width: 26em;
+	padding: 0.625em;
+	background-color: var(--background-color3);
+	border: 1px solid rebeccapurple;
+	border-top: 0;
+	box-shadow: 10px 10px 10px 0px black;
+	z-index: 1000;
 }
 
-#editor-addons-menu > p {
-	margin-bottom: 0.25em;
-    margin-top: 0em;
-    cursor: pointer;
+#editor-addons-menu .editor-addon-item {
+	padding: 0.75em;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-#editor-addons-menu > p:hover {
+#editor-addons-menu .editor-addon-item:last-child {
+	border-bottom: 0;
+}
+
+#editor-addons-menu .editor-addon-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+#editor-addons-menu .editor-addon-name {
+	font-size: 1em;
+	font-weight: 600;
+	cursor: default;
+}
+
+#editor-addons-menu .editor-addon-name.clickable {
+	cursor: pointer;
+}
+
+#editor-addons-menu .editor-addon-name.clickable:hover {
 	text-decoration: underline;
 }
 
-#editor-addons-menu > span {
-	display: block;
+#editor-addons-menu .editor-addon-status {
+	flex-shrink: 0;
+	font-size: 0.75em;
 	text-align: right;
-    font-size: 0.75em;
-    color: grey;
-    text-transform: capitalize;
+}
+
+#editor-addons-menu .editor-addon-status.installed {
+	color: forestgreen;
+}
+
+#editor-addons-menu .editor-addon-status.not-installed {
+	color: grey;
+}
+
+#editor-addons-menu .editor-addon-version {
+	margin-top: 0.45em;
+	font-size: 0.75em;
+	color: forestgreen;
+	text-align: right;
+}
+
+#editor-addons-menu .editor-addon-update {
+	margin-top: 0.25em;
+	font-size: 0.75em;
+	color: goldenrod;
+	text-align: right;
+}
+
+#editor-addons-menu .editor-addon-update::before {
+	content: "↑ ";
+}
+
+#editor-addons-menu .editor-addon-description {
+	margin-top: 0.5em;
+	font-size: 0.8em;
+	line-height: 1.35em;
+	color: grey;
 }
 
 #editor-logs-menu {
@@ -770,7 +854,6 @@ div#functionList {
     overflow-x: auto;
     max-width: 100%;
     align-items: center;
-    gap: 0.3em;
     padding: 0.1em 0.1em 0.45em 0.1em;
 }
 
@@ -838,10 +921,12 @@ div#functionList {
 
 .event-list-group-tab[draggable="true"] {
 	cursor: grab;
+	cursor: -webkit-grab;
 }
 
 .event-list-group-tab[draggable="true"]:active, .event-list-group-tab.event-list-group-tab-dragging {
 	cursor: grabbing;
+	cursor: -webkit-grabbing;
 }
 
 .event-list-group-tab.event-list-group-tab-dragging {
@@ -1187,7 +1272,7 @@ div#functionList {
 }
 
 #nodeList .node-list-command:active, #node-list-paste:active {
-	transform: scale(0.985);
+	transform: none;
 }
 
 #node-list-paste.disabled {
@@ -1279,7 +1364,6 @@ div#functionList {
 #nodeList[data-display-mode="expanded"] #node-list-commands-container {
 	display: block;
 	column-width: 12.5em;
-	column-gap: 1em;
 }
 
 #nodeList[data-display-mode="expanded"] #node-list-commands-container > * {
@@ -1460,6 +1544,7 @@ div#functionList {
     font-size: 1.25em;
     border-bottom: 1px solid black;
     cursor: grab;
+	cursor: -webkit-grab;
     border-radius: 0.25em 0.25em 0px 0px;
     height: auto;
     min-height: 3.125em;
@@ -2229,3 +2314,78 @@ img.noBrokenIcon::after {
 	pointer-events: auto;
 }
 
+.text-command-helper-button {
+	min-width: 3.5em;
+    height: 2em;
+    margin-left: 0.4em;
+    margin-top: 0.3125em;
+    padding: 0;
+    background-color: var(--background-color3);
+    color: inherit;
+    border: 0.0625em solid rebeccapurple;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8em;
+}
+
+.text-command-picker {
+	min-width: 18em;
+    max-width: 24em;
+    max-height: 26em;
+    padding: 0.5em;
+    overflow-y: auto;
+    background-color: var(--background-color3);
+    border: 0.0625em solid rebeccapurple;
+}
+
+.text-command-category {
+	margin-bottom: 0.65em;
+}
+
+.text-command-category:last-child {
+	margin-bottom: 0;
+}
+
+.text-command-category-title {
+	padding: 0.25em 0.45em;
+    margin-bottom: 0.15em;
+    font-size: 0.75em;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: mediumpurple;
+    border-bottom: 0.0625em solid rgb(255 255 255 / 15%);
+}
+
+
+/* ==========================================================================
+   Commands
+   ========================================================================== */
+
+.text-command-item {
+	display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.35em 0.5em;
+    cursor: pointer;
+    user-select: none;
+}
+
+.text-command-item:hover {
+	background-color: rgb(255 255 255 / 5%);
+}
+
+.text-command-item:active {
+	background-color: rgb(255 255 255 / 10%);
+}
+
+.text-command-name {
+	flex: 1;
+	font-size: 0.85em;
+	white-space: nowrap;
+}
+
+.text-command-code {
+	font-family: monospace;
+    font-size: 0.85em;
+    color: darkgrey;
+}
