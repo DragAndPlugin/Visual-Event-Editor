@@ -204,12 +204,13 @@ module.exports = function(VisualEvent, RPGMAKER_NAME) {
 			:
 			{controller: 0, dependances: [1, 2, 1, 4, {controller: 2, dependances: [3, 3]}, 1, 2, 2, 1, 1, 1, {controller: 2, dependances: [3, 3, 3, 3, 3, 3]}, 1, {controller: 2, dependances: [3]}, 1, 2, 2, 1, 1, 1, 2, 1, 2, 1, 1, 1]}
 		],
+		command121: [{controller: -1, dependances: [0, 1]}, 2],
 		command122: [{controller: -1, dependances: [0, 1]}, 2, {controller: 3, dependances: [4, 4, 4, 5, {controller: 4, dependances: RPGMAKER_NAME === "MZ" ? [5, 5, 5, 5, 6, 5, 6, 5, 6, 5, 5, 5] : [5, 5, 5, 5, 6, 5, 6, 5, 6, 5, 5,]}, 4]}],
 	};
 	
 	VisualEvent.commandsParameters = {		
-		command101: RPGMAKER_NAME === "MZ" ? [VisualEvent.inputs.face, VisualEvent.inputs.selectWindowBackground, VisualEvent.inputs.selectVerticalPosition, VisualEvent.inputs.name] : [VisualEvent.inputs.face, VisualEvent.inputs.selectWindowBackground, VisualEvent.inputs.selectVerticalPosition],
-		command401: [VisualEvent.inputs.text],
+		command101: RPGMAKER_NAME === "MZ" ? [VisualEvent.inputs.face, VisualEvent.inputs.selectWindowBackground, VisualEvent.inputs.selectVerticalPosition, VisualEvent.inputs.nameWithTextCommands] : [VisualEvent.inputs.face, VisualEvent.inputs.selectWindowBackground, VisualEvent.inputs.selectVerticalPosition],
+		command401: [VisualEvent.inputs.textWithTextCommands],
 		command102: [VisualEvent.inputs.choicesOutput, VisualEvent.inputs.cancelOutput, VisualEvent.inputs.selectWindowBackground, VisualEvent.inputs.selectHorizontalPosition, VisualEvent.inputs.defaultChoice, VisualEvent.inputs.cancelChoice],
 		command402: [],
 		command403: [],
@@ -217,7 +218,7 @@ module.exports = function(VisualEvent, RPGMAKER_NAME) {
 		command103: [VisualEvent.inputs.variable, VisualEvent.inputs.digits],
 		command104: [VisualEvent.inputs.variable, VisualEvent.inputs.selectItemType],
 		command105: [VisualEvent.inputs.scrollingSpeed, VisualEvent.inputs.fastForward],
-		command405: [VisualEvent.inputs.text],
+		command405: [VisualEvent.inputs.textWithScrollingTextCommands],
 		command108: [VisualEvent.inputs.text],
 		command408: [VisualEvent.inputs.text],
 		command111: [VisualEvent.interactiveInputs.selectConditional, VisualEvent.inputs.ifOutput, VisualEvent.inputs.elseOutput],
@@ -251,7 +252,7 @@ module.exports = function(VisualEvent, RPGMAKER_NAME) {
 		command201: [VisualEvent.interactiveInputs.selectLocationWithDesignation, VisualEvent.inputs.selectDirectionRetain, VisualEvent.inputs.selectFade],
 		command202: [VisualEvent.inputs.selectVehicle, VisualEvent.interactiveInputs.selectLocationWithDesignation],
 		command203: [VisualEvent.inputs.mapEventWithThis, VisualEvent.interactiveInputs.selectEventLocationWithDesignation, VisualEvent.inputs.selectDirectionRetain], //remove mapID value since it use current map
-		command204: [VisualEvent.inputs.selectDirection, VisualEvent.inputs.distance, VisualEvent.inputs.selectSpeed, VisualEvent.inputs.waitForCompletion],
+		command204: RPGMAKER_NAME === "MZ" ? [VisualEvent.inputs.selectDirection, VisualEvent.inputs.distance, VisualEvent.inputs.selectSpeed, VisualEvent.inputs.waitForCompletion] : [VisualEvent.inputs.selectDirection, VisualEvent.inputs.distance, VisualEvent.inputs.selectSpeed],
 		command205: [VisualEvent.inputs.moveRoute],
 		command505: [],
 		command206: [],
@@ -333,6 +334,40 @@ module.exports = function(VisualEvent, RPGMAKER_NAME) {
 		command657: []
 	};
 	
+	VisualEvent.commandsParameterTypes = {
+		command105: [null, "boolean"], // Allow fast-forward
+		command111: ["boolean", null, null], // Conditional Branch condition
+		command121: [null, "boolean"], // Control Switches operation: ON / OFF
+		command123: [null, "boolean"], // Control Self Switch operation: ON / OFF
+		command127: [null, null, null, "boolean"], // Include equipped weapons
+		command128: [null, null, null, "boolean"], // Include equipped armor
+		command129: [null, null, "boolean"], // Initialize actor
+		command134: ["boolean"], // Save access
+		command135: ["boolean"], // Menu access
+		command136: ["boolean"], // Encounter access
+		command137: ["boolean"], // Formation access
+		command204: RPGMAKER_NAME === "MZ" ? [null, null, null, "boolean"] : [null, null, null], // Wait for completion
+		command211: ["boolean"], // Player transparency
+		command212: [null, null, "boolean"], // Wait for animation completion
+		command213: [null, null, "boolean"], // Wait for balloon completion
+		command216: ["boolean"], // Followers visibility
+		command223: [null, null, "boolean"], // Wait for tint completion
+		command224: [null, null, "boolean"], // Wait for flash completion
+		command225: [null, null, null, "boolean"], // Wait for shake completion
+		command232: [null, null, null, null, null, null, null, null, null, "boolean", null], // Wait for move-picture completion
+		command234: [null, null, null, "boolean"], // Wait for picture-tint completion
+		command236: [null, null, null, "boolean"], // Wait for weather completion
+		command281: ["boolean"], // Map name display
+		command284: [null, "boolean", "boolean", null, null], // Horizontal / vertical parallax loops
+		command301: [null, "boolean", "boolean", null, null, null], // Can escape / can lose
+		command302: [null, "boolean"], // Purchase only
+		command311: [null, null, null, "boolean"], // Allow death
+		command315: [null, null, null, "boolean"], // Show level-up message
+		command316: [null, null, null, "boolean"], // Show level-up message
+		command321: [null, null, "boolean"], // Save EXP
+		command337: RPGMAKER_NAME === "MZ" ? [null, null] : [null, null, "boolean"] // Target all enemies, MV only
+	};
+	
 	VisualEvent.moveRouteNames = [
 		'End', 'Move Down', 'Move Left', 'Move Right', 'Move Up', 'Move Lower Left', 'Move Lower Right', 'Move Upper Left', 'Move Upper Right', 'Move at Random', 'Move Toward Player', 'Move Away from Player', 'Move Forward', 'Move Backward', 
 		'Jump', 'Wait', 'Turn Down', 'Turn Left', 'Turn Right', 'Turn Up', 'Turn 90° Right', 'Turn 90° Left', 'Turn 180°', 'Turn 90° Right or Left', 'Turn at Random', 'Turn Toward Player', 'Turn Away from Player', 
@@ -392,6 +427,13 @@ module.exports = function(VisualEvent, RPGMAKER_NAME) {
 				return key;
 	};
 	
+	VisualEvent.getCommandParameterTypes = function(code) {
+		if (typeof code === "number")
+			return VisualEvent.commandsParameterTypes[`command${code}`] || [];
+		else 
+			return VisualEvent.commandsParameterTypes[code] || [];
+	};
+	
 	VisualEvent.getCommandParameters = function(code) {
 		try {
 			const commandParameters = typeof code === "number" ? VisualEvent.commandsParameters[`command${code}`] : VisualEvent.commandsParameters[code];
@@ -408,5 +450,186 @@ module.exports = function(VisualEvent, RPGMAKER_NAME) {
 	VisualEvent.getMoveCommandParameters = function(code) {
 		return VisualEvent.moveRouteParameters[parseInt(code)].map(item => {return {...item}}); 
 	};
-
+	
+	VisualEvent.textCommands = [
+		{
+			category: "Values",
+			name: "Variable",
+			display: "\\V[n]",
+			code: "\\V[1]",
+			description: "Displays the value of the specified variable.",
+			select: [3, 4],
+			engine: ["MV", "MZ"],
+			contexts: ["message", "name", "choice", "scrollingText"]
+		},
+		{
+			category: "Values",
+			name: "Actor Name",
+			display: "\\N[n]",
+			code: "\\N[1]",
+			description: "Displays the name of the specified actor.",
+			select: [3, 4],
+			engine: ["MV", "MZ"],
+			contexts: ["message", "name", "choice", "scrollingText"]
+		},
+		{
+			category: "Values",
+			name: "Party Member Name",
+			display: "\\P[n]",
+			code: "\\P[1]",
+			description: "Displays the name of the specified party member.",
+			select: [3, 4],
+			engine: ["MV", "MZ"],
+			contexts: ["message", "name", "choice", "scrollingText"]
+		},
+		{
+			category: "Values",
+			name: "Currency Unit",
+			display: "\\G",
+			code: "\\G",
+			description: "Displays the game's currency unit.",
+			engine: ["MV", "MZ"],
+			contexts: ["message", "name", "choice", "scrollingText"]
+		},
+		{
+			category: "Display",
+			name: "Text Color",
+			display: "\\C[n]",
+			type: "color",
+			getCode: value => `\\C[${value}]`,
+			description: "Changes the color of subsequent text.",
+			engine: ["MV", "MZ"],
+			contexts: ["message", "name", "choice", "scrollingText"]
+		},
+		{
+			category: "Display",
+			name: "Icon",
+			display: "\\I[n]",
+			type: "icon",
+			getCode: value => `\\I[${value}]`,
+			description: "Displays the specified icon.",
+			engine: ["MV", "MZ"],
+			contexts: ["message", "name", "choice", "scrollingText"]
+		},
+		{
+			category: "Display",
+			name: "Increase Font Size",
+			display: "\\{",
+			code: "\\{",
+			description: "Increases the text size by one step.",
+			engine: ["MV", "MZ"],
+			contexts: ["message", "name", "choice", "scrollingText"]
+		},
+		{
+			category: "Display",
+			name: "Decrease Font Size",
+			display: "\\}",
+			code: "\\}",
+			description: "Decreases the text size by one step.",
+			engine: ["MV", "MZ"],
+			contexts: ["message", "name", "choice", "scrollingText"]
+		},
+		{
+			category: "Display",
+			name: "Set Font Size",
+			display: "\\FS[n]",
+			code: "\\FS[28]",
+			description: "Sets the text size to the specified value.",
+			select: [4, 6],
+			engine: ["MZ"],
+			contexts: ["message", "name", "choice", "scrollingText"]
+		},
+		{
+			category: "Position",
+			name: "X Position",
+			display: "\\PX[n]",
+			code: "\\PX[0]",
+			description: "Sets the text X position relative to the top-left of the window.",
+			select: [4, 5],
+			engine: ["MZ"],
+			contexts: ["message"]
+		},
+		{
+			category: "Position",
+			name: "Y Position",
+			display: "\\PY[n]",
+			code: "\\PY[0]",
+			description: "Sets the text Y position relative to the top-left of the window.",
+			select: [4, 5],
+			engine: ["MZ"],
+			contexts: ["message"]
+		},
+		{
+			category: "Timing",
+			name: "Short Wait",
+			display: "\\.",
+			code: "\\.",
+			description: "Waits for 1/4 second.",
+			engine: ["MV", "MZ"],
+			contexts: ["message"]
+		},
+		{
+			category: "Timing",
+			name: "Long Wait",
+			display: "\\|",
+			code: "\\|",
+			description: "Waits for 1 second.",
+			engine: ["MV", "MZ"],
+			contexts: ["message"]
+		},
+		{
+			category: "Timing",
+			name: "Wait For Input",
+			display: "\\!",
+			code: "\\!",
+			description: "Waits for player input before continuing.",
+			engine: ["MV", "MZ"],
+			contexts: ["message"]
+		},
+		{
+			category: "Timing",
+			name: "Instant Text",
+			display: "\\>",
+			code: "\\>",
+			description: "Displays the rest of the current line instantly.",
+			engine: ["MV", "MZ"],
+			contexts: ["message"]
+		},
+		{
+			category: "Timing",
+			name: "Cancel Instant Text",
+			display: "\\<",
+			code: "\\<",
+			description: "Cancels instant text display.",
+			engine: ["MV", "MZ"],
+			contexts: ["message"]
+		},
+		{
+			category: "Timing",
+			name: "No Final Input Wait",
+			display: "\\^",
+			code: "\\^",
+			description: "Does not wait for player input after the message finishes.",
+			engine: ["MV", "MZ"],
+			contexts: ["message"]
+		},
+		{
+			category: "Other",
+			name: "Gold Window",
+			display: "\\$",
+			code: "\\$",
+			description: "Opens the gold window while the message is displayed.",
+			engine: ["MV", "MZ"],
+			contexts: ["message"]
+		},
+		{
+			category: "Other",
+			name: "Backslash",
+			display: "\\\\",
+			code: "\\\\",
+			description: "Displays a literal backslash character.",
+			engine: ["MV", "MZ"],
+			contexts: ["message"]
+		}
+	];
 };
