@@ -132,7 +132,10 @@
 					<path style="stroke-width: 1px; stroke: white; fill: white;" d="M10 20h5l-2.5 2.574zm2.5-18.574L10 4h5zM2 6h9v5H2zm1 4h7V7H3zm11-4h9v5h-9zm1 4h7V7h-7zm-1 3h9v5h-9zm1 4h7v-3h-7zm-4 1H2v-5h9zm-1-4H3v3h7z"></path>
 				</svg>
 			</span>
-			<span onclick="toggleEditorAddonsMenu(this);">Add-Ons</span>
+			<span id="editor-addons-button" onclick="toggleEditorAddonsMenu(this);">
+				Add-Ons
+				<span id="editor-addons-update-badge" class="hidden">0</span>
+			</span>
 			<span onclick="$.Drag.VisualEvent.openPluginManager(this);">Plugin Manager</span>
 			<span data-type="switch" onclick="$.Drag.VisualEvent.openSwitchVariableMenu(this);">Switches</span>
 			<span data-type="variable" onclick="$.Drag.VisualEvent.openSwitchVariableMenu(this);">Variables</span>
@@ -144,10 +147,7 @@
 				</svg>
 			</span>
 		</div>
-		<div id="editor-addons-menu" class="hidden">
-			<p onclick="openExpandedEventCommandsLink();">Expanded Event Commands</p>
-			<span data-addon="expandedEventCommands">Not installed</span>
-		</div>
+		<div id="editor-addons-menu" class="hidden"></div>
 		<div id="editor-logs-menu" class="hidden">
 			<h3>Logs</h3>
 			<div>
@@ -318,7 +318,7 @@
 						<span title="Expanded" onclick="setNodeListDisplayMode('expanded')">☷</span>
 					</div>
 					<span id="node-list-paste" class="disabled" onclick="pasteNodes(true);">Paste<span class='shortcut'>(CTRL+V)</span></span>
-					<input type="text" id="node-list-search" placeholder="Search command" style="margin-top: 0.625em;" onchange="searchNodeList(this)" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+					<input type="text" id="node-list-search" placeholder="Search command" style="margin-top: 0.625em;" onchange="searchNodeList(this)" onkeyup="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();" oncontextmenu="event.preventDefault();"/>
 					<div id="node-list-compacted"></div>
 					<div id="node-list-expanded"></div>
 				</div>
