@@ -48,33 +48,37 @@ function setupNodeList() {
 		// const container = nodeList.querySelector('#node-list-commands-container:last-of-type');
 		
 		for (filename of filenames) {
-			const path = `./Drag_VisualEvent/js/custom_nodes/${filename.replace('.js', '')}`;
-			const customNodes = typeof require(path) === 'function' ? require(path)(window) : require(path);
-			for (const customNode of Array.isArray(customNodes) ? customNodes : [customNodes]) {
-				if (!customNode.id || !customNode.engine)
-					continue;
-				
-				if (!Array.isArray(customNode.engine))
-					customNode.engine = [customNode.engine];
-				
-				if (!customNode.engine.map(item => item.toUpperCase().trim()).includes(RMName))
-					continue;
-				
-				window._customNodes[customNode.id] = customNode;
-				addCustomNodeToNodeList(customNode, compactedContainer, expandedContainer.lastElementChild);
-				
-				if (customNode.exec_input_params && customNode.exec_input_params.symbol)
-					$.Drag.VisualEvent.addCSSStylesheet(document, $.Drag.VisualEvent.createCSSStylesheet(`.${customNode.id}_input::after { content: url(${$.Drag.VisualEvent.SVGtoURI(customNode.exec_input_params.symbol)}) !important; }`));
-				if (customNode.exec_output_params && customNode.exec_output_params.symbol)
-					$.Drag.VisualEvent.addCSSStylesheet(document, $.Drag.VisualEvent.createCSSStylesheet(`.${customNode.id}_output::after { content: url(${$.Drag.VisualEvent.SVGtoURI(customNode.exec_output_params.symbol)}) !important; }`));
-				
-				if (customNode.onimport && typeof customNode.onimport === "function")
-					customNode.onimport(window);
-				
-				if (customNode.stylesheet && typeof customNode.stylesheet === "string") 
-					$.Drag.VisualEvent.addCSSStylesheet(document, $.Drag.VisualEvent.createCSSStylesheet(customNode.stylesheet));
+			try {
+				const path = `./Drag_VisualEvent/js/custom_nodes/${filename.replace('.js', '')}`;
+				const customNodes = typeof require(path) === 'function' ? require(path)(window) : require(path);
+				for (const customNode of Array.isArray(customNodes) ? customNodes : [customNodes]) {
+					if (!customNode.id || !customNode.engine)
+						continue;
+					
+					if (!Array.isArray(customNode.engine))
+						customNode.engine = [customNode.engine];
+					
+					if (!customNode.engine.map(item => item.toUpperCase().trim()).includes(RMName))
+						continue;
+					
+					window._customNodes[customNode.id] = customNode;
+					addCustomNodeToNodeList(customNode, compactedContainer, expandedContainer.lastElementChild);
+					
+					if (customNode.exec_input_params && customNode.exec_input_params.symbol)
+						$.Drag.VisualEvent.addCSSStylesheet(document, $.Drag.VisualEvent.createCSSStylesheet(`.${customNode.id}_input::after { content: url(${$.Drag.VisualEvent.SVGtoURI(customNode.exec_input_params.symbol)}) !important; }`));
+					if (customNode.exec_output_params && customNode.exec_output_params.symbol)
+						$.Drag.VisualEvent.addCSSStylesheet(document, $.Drag.VisualEvent.createCSSStylesheet(`.${customNode.id}_output::after { content: url(${$.Drag.VisualEvent.SVGtoURI(customNode.exec_output_params.symbol)}) !important; }`));
+					
+					if (customNode.onimport && typeof customNode.onimport === "function")
+						customNode.onimport(window);
+					
+					if (customNode.stylesheet && typeof customNode.stylesheet === "string") 
+						$.Drag.VisualEvent.addCSSStylesheet(document, $.Drag.VisualEvent.createCSSStylesheet(customNode.stylesheet));
+				}
+				console.log(`Imported ${filename} successfully !`);
+			} catch (error) {
+				console.error(`Couldn't import ${filename}, error: `, error);
 			}
-			console.log(`Imported ${filename} successfully !`);
 		}
 	}
 	

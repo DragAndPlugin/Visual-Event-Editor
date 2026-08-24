@@ -206,6 +206,8 @@ function isConnectionConnected(connection) {
 function setConnectionConnected(connection, connected) {
 	connection.connected = connected === true || connected === "true";
 	connection.setAttribute('data-connected', connection.connected); //setting attribute is needed for css
+	
+	onTypedNodeConnection(connection, connected);
 	triggerModsFunction("onNodeConnection", [getConnectionNode(connection), connection, connected]);
 };
 

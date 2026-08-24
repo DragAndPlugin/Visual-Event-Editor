@@ -66,7 +66,7 @@ function makeNodeFromParams(params = {}, saveInHistory = false, cache = false, o
 		nodeContent += `
 				<span id="node-input" class="nodeInput ${input.type === "empty" ? 'hidden' : ''}">
 					<b>${input.text || input.name || ""}</b>
-					<span data-connected="false" data-nodeId="${nodeId}" data-connectionId="${connectionId}" ${typedConnection ? `data-typedConnection="${typedConnection}"` : ''} class="inputConnection"></span>
+					<span data-connected="false" data-nodeId="${nodeId}" data-connectionId="${connectionId}" ${typedConnection ? `data-typedConnection="${typedConnection}"` : ''} ${input.isPluginParameter ? `data-pluginParameterName=${input.pluginParameterName}` : ''} class="inputConnection"></span>
 					${input.desc ? '<span class="node-input-desc">' + input.desc + '</span>' : '<br>'}
 					<div id="input-wrapper">
 		`;
@@ -397,6 +397,7 @@ function onNodeInputsReady(node, onNodeReady) {
 		}
 	}
 	
+	initializeNodeTypedConnections(node);
 	triggerModsFunction("onNodeReady", node);	
 	
 	node._preventInputChange = false;

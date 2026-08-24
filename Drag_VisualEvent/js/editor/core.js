@@ -952,6 +952,7 @@ function makeInputsFromPluginCommand(pluginName, commandName, commandText, comma
 		input.pluginName = pluginName;
 		input.data = `data-parameterName="${input.name}" data-parameterText="${input.text || ""}"`;
 		input.isPluginParameter = true;
+		input.pluginParameterName = input.name;
 		
 		if (!input.value)
 			input.value = commandValues[input.name] !== undefined ? commandValues[input.name] : input.default !== undefined ? input.default : "";
