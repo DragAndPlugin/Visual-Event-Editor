@@ -335,8 +335,11 @@ module.exports = function(VisualEvent, RPGMAKER_NAME) {
 	};
 	
 	VisualEvent.commandsParameterTypes = {
+		command101: RPGMAKER_NAME === "MZ" ? [null, null, null, "string", "string"] : [null, null, null, "string",],
 		command105: [null, "boolean"], // Allow fast-forward
 		command111: ["boolean", null, null], // Conditional Branch condition
+		command118: ["string"],
+		command119: ["string"],
 		command121: [null, "boolean"], // Control Switches operation: ON / OFF
 		command123: [null, "boolean"], // Control Self Switch operation: ON / OFF
 		command127: [null, null, null, "boolean"], // Include equipped weapons
@@ -364,7 +367,10 @@ module.exports = function(VisualEvent, RPGMAKER_NAME) {
 		command311: [null, null, null, "boolean"], // Allow death
 		command315: [null, null, null, "boolean"], // Show level-up message
 		command316: [null, null, null, "boolean"], // Show level-up message
+		command320: [null, "string"],
 		command321: [null, null, "boolean"], // Save EXP
+		command324: [null, "string"],
+		command325: [null, "string"],
 		command337: RPGMAKER_NAME === "MZ" ? [null, null] : [null, null, "boolean"] // Target all enemies, MV only
 	};
 	
