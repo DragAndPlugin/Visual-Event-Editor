@@ -346,7 +346,11 @@
 				for (const selected of container.querySelectorAll('.file.selected'))
 					selected.classList.remove('selected');
 				element.classList.add('selected');
+				
+				// const tilesetSrc = element.getAttribute('data-src').split('/');
+				// data.selectedFile[0] = tilesetSrc[tilesetSrc.length - 1];
 				data.selectedFile[0] = element.getAttribute('data-src');
+				data._selectedTilesetId = parseInt(element.getAttribute('data-tileset'));
 			};
 			
 			function selectFile(element) {
@@ -358,12 +362,13 @@
 					selected.classList.remove('selected');
 				element.classList.add('selected');
 				data.selectedFile[containerId] = src;
+				data._selectedTilesetId = null;
 				
-				// if (data.previewType && (src || data.selectedFile.some(file => !!file)))
 				if (src || data.selectedFile.some(file => !!file))
 					showFilePreview();
 				else
 					hideFilePreview();
+					
 			};
 			
 			function selectFolder(element) {
@@ -526,25 +531,41 @@
 				data.selectedIndex = element.getAttribute('data-index');
 			};
 			
-			function getFileList() {
-				const fs = require('fs');
-				const path = require('path');
-				const directoryPath = getSrc();
-				
-				const types = getAllowedFilesTypes();			
-				const files = directoryPath.map(dirPath => {
-					const filesAndFolders = fs.readdirSync(dirPath);
-					const files = filesAndFolders.filter((item) => {
-						const itemPath = path.join(dirPath, item);
-						const extName = path.extname(itemPath);
-						const stats = fs.statSync(itemPath);
-						return stats.isFile() && (types.includes(extName) || types === '*');
-					});
+			function getFileList(stacked = false) {
+				try {
+					const fs = require('fs');
+					const path = require('path');
+					const directoryPath = getSrc();
 					
-					return files;
-				});
+					const types = getAllowedFilesTypes();			
+					const files = directoryPath.map(dirPath => {
+						const filesAndFolders = fs.readdirSync(dirPath);
+						const files = filesAndFolders.filter((item) => {
+							const itemPath = path.join(dirPath, item);
+							const extName = path.extname(itemPath);
+							const stats = fs.statSync(itemPath);
+							return stats.isFile() && (types.includes(extName) || types === '*');
+						});
+						
+						return files;
+					});
 
-				return files;
+					return files;
+				} catch (err) {
+					console.error(err);
+					data.fileValue = "";
+					if (data.restrictedFolder) {
+						const restrictedIndex = data.src.indexOf(data.restrictedFolder);
+						if (restrictedIndex > -1)
+							data.src = data.src.filter((item, index) => index <= restrictedIndex);
+						else
+							data.src = [];
+					} else
+						data.src = [];
+					
+					
+					return stacked ? [] : getFileList(true);
+				}
 			};
 			
 			function getAllowedFilesTypes() {
@@ -610,7 +631,11 @@
 						const restrictedFolder = getRestrictedFolder(i);
 						const restrictedIndex = srcFolders.indexOf(restrictedFolder);
 						
-						const src = selectedFile && restrictedIndex >= 0 ? srcFolders.slice(restrictedIndex + 1).join("/") : "";
+						let src = "";
+						if (data._selectedTilesetId === null)
+							src = selectedFile && restrictedIndex >= 0 ? srcFolders.slice(restrictedIndex + 1).join("/") : "";
+						else
+							src = data.tilesetNames[data._selectedTilesetId].split('/').slice(0, -1).join('/');
 						
 						if (hasSubSelection())
 							value += (src !== "" ? src + "/" : "") + selectedFile + "," + (selectedFile !== "" ? data.selectedIndex : "");
@@ -619,6 +644,7 @@
 						
 						value += ",";
 					}
+					
 					value = value.slice(0, -1); 
 					
 					data.input.value = value;
